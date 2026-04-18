@@ -1,19 +1,19 @@
 <template>
-    <div class="bg-white border border-slate-100 rounded-2xl p-6 md:p-8">
+    <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 md:p-8">
         <h3 class="text-xl font-bold mb-6">Simulateur d'investissement diaspora</h3>
 
         <form @submit.prevent="simulate" class="space-y-5">
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Montant (€)</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Montant (€)</label>
                     <input v-model.number="form.amount" type="number" min="100" max="10000000" step="100"
-                        class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         placeholder="10 000" required />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Type d'investissement</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Type d'investissement</label>
                     <select v-model="form.investment_type"
-                        class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option value="equity">Prise de participation (equity)</option>
                         <option value="loan">Prêt (loan)</option>
                         <option value="donation">Don (donation)</option>
@@ -24,16 +24,16 @@
 
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Pays de résidence</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Pays de résidence</label>
                     <select v-model="form.origin_country"
-                        class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option v-for="c in residenceCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Pays de destination</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Pays de destination</label>
                     <select v-model="form.destination_country"
-                        class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option v-for="c in destinationCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
                 </div>
@@ -41,18 +41,18 @@
 
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Secteur cible</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Secteur cible</label>
                     <select v-model="form.target_sector"
-                        class="w-full border border-slate-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option value="">Tous secteurs</option>
                         <option v-for="s in sectors" :key="s" :value="s">{{ s }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Durée (mois)</label>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Durée (mois)</label>
                     <input v-model.number="form.duration_months" type="range" min="6" max="120" step="6"
                         class="w-full accent-emerald-600 mt-2" />
-                    <div class="text-sm text-slate-500 mt-1">{{ form.duration_months }} mois ({{ (form.duration_months / 12).toFixed(1) }} ans)</div>
+                    <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ form.duration_months }} mois ({{ (form.duration_months / 12).toFixed(1) }} ans)</div>
                 </div>
             </div>
 
@@ -64,7 +64,7 @@
 
         <!-- Results -->
         <transition name="fade">
-            <div v-if="result" class="mt-8 border-t border-slate-100 pt-8">
+            <div v-if="result" class="mt-8 border-t border-slate-100 dark:border-slate-700 pt-8">
                 <h4 class="font-bold text-lg mb-4">Résultats de la simulation</h4>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
@@ -82,29 +82,29 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-50 rounded-xl p-5 space-y-3">
+                <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 space-y-3">
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-600">Montant investi</span>
+                        <span class="text-slate-600 dark:text-slate-300">Montant investi</span>
                         <span class="font-semibold">{{ fmt(form.amount) }} €</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-600">Coût de transfert estimé ({{ result.impact.transfer_cost_pct }}%)</span>
+                        <span class="text-slate-600 dark:text-slate-300">Coût de transfert estimé ({{ result.impact.transfer_cost_pct }}%)</span>
                         <span class="font-semibold text-red-600">-{{ fmt(result.impact.transfer_cost) }} €</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-600">Investissement net</span>
+                        <span class="text-slate-600 dark:text-slate-300">Investissement net</span>
                         <span class="font-bold text-emerald-700">{{ fmt(result.impact.net_investment) }} €</span>
                     </div>
-                    <div v-if="result.impact.estimated_return > 0" class="flex justify-between text-sm pt-3 border-t border-slate-200">
-                        <span class="text-slate-600">Rendement estimé ({{ result.impact.annual_return_pct }}%/an sur {{ (form.duration_months / 12).toFixed(1) }} ans)</span>
+                    <div v-if="result.impact.estimated_return > 0" class="flex justify-between text-sm pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <span class="text-slate-600 dark:text-slate-300">Rendement estimé ({{ result.impact.annual_return_pct }}%/an sur {{ (form.duration_months / 12).toFixed(1) }} ans)</span>
                         <span class="font-bold text-emerald-700">+{{ fmt(result.impact.estimated_return) }} €</span>
                     </div>
-                    <div v-else class="text-sm text-slate-500 pt-3 border-t border-slate-200 italic">
+                    <div v-else class="text-sm text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-700 italic">
                         Ce type d'investissement ({{ typeLabel }}) n'a pas de rendement financier, mais un impact social direct.
                     </div>
                 </div>
 
-                <p class="text-xs text-slate-400 mt-4">
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-4">
                     * Estimations basées sur des moyennes sectorielles et des données World Bank. Ne constitue pas un conseil en investissement.
                 </p>
             </div>

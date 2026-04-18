@@ -1,6 +1,6 @@
 <template>
     <!-- Hero -->
-    <section class="relative overflow-hidden bg-gradient-to-br from-violet-50 via-fuchsia-50 to-slate-50">
+    <section class="relative overflow-hidden bg-gradient-to-br from-violet-50 via-fuchsia-50 to-slate-50 dark:from-violet-950/40 dark:via-fuchsia-950/30 dark:to-slate-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div>

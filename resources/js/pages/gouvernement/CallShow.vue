@@ -1,9 +1,9 @@
 <template>
-    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-16 text-slate-500">Chargement…</div>
-    <div v-else-if="!call" class="max-w-7xl mx-auto px-4 py-16 text-slate-500">Appel introuvable.</div>
+    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-16 text-slate-500 dark:text-slate-400">Chargement…</div>
+    <div v-else-if="!call" class="max-w-7xl mx-auto px-4 py-16 text-slate-500 dark:text-slate-400">Appel introuvable.</div>
     <div v-else>
         <!-- Header -->
-        <section class="bg-gradient-to-br from-sky-50 via-blue-50 to-slate-50 border-b border-slate-100">
+        <section class="bg-gradient-to-br from-sky-50 via-blue-50 to-slate-50 dark:from-sky-950/40 dark:via-blue-950/30 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <router-link to="/gouvernement" class="text-sm text-sky-600 hover:underline mb-4 inline-block">
                     ← Tous les appels
@@ -19,9 +19,9 @@
 
                 <h1 class="text-3xl md:text-4xl font-black tracking-tight">{{ call.title }}</h1>
 
-                <div class="flex flex-wrap gap-5 mt-4 text-sm text-slate-600">
+                <div class="flex flex-wrap gap-5 mt-4 text-sm text-slate-600 dark:text-slate-300">
                     <span>{{ call.country }}<template v-if="call.geographic_zone"> — {{ call.geographic_zone }}</template></span>
-                    <span v-if="call.budget" class="font-bold text-slate-800">Budget : {{ fmtMoney(call.budget) }} {{ call.currency }}</span>
+                    <span v-if="call.budget" class="font-bold text-slate-800 dark:text-slate-200">Budget : {{ fmtMoney(call.budget) }} {{ call.currency }}</span>
                     <span v-if="call.opens_at">Ouvert : {{ formatDate(call.opens_at) }}</span>
                     <span v-if="call.closes_at" :class="isExpired ? 'text-rose-600 font-semibold' : ''">
                         Limite : {{ formatDate(call.closes_at) }} {{ isExpired ? '(expiré)' : '' }}
@@ -29,7 +29,7 @@
                     <span>{{ call.applications_count || 0 }} candidature(s)</span>
                 </div>
 
-                <div v-if="call.author" class="mt-3 text-sm text-slate-500">
+                <div v-if="call.author" class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                     Publié par <strong class="text-sky-700">{{ call.author.name }}</strong>
                 </div>
             </div>
@@ -42,25 +42,25 @@
                     <!-- Description -->
                     <div>
                         <h2 class="text-xl font-bold mb-3">Description</h2>
-                        <div class="prose prose-slate max-w-none text-slate-700 whitespace-pre-line">{{ call.description }}</div>
+                        <div class="prose prose-slate max-w-none text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ call.description }}</div>
                     </div>
 
                     <!-- Eligibility -->
                     <div v-if="call.eligibility_criteria">
                         <h2 class="text-xl font-bold mb-3">Critères d'éligibilité</h2>
-                        <div class="bg-sky-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700">{{ call.eligibility_criteria }}</div>
+                        <div class="bg-sky-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{{ call.eligibility_criteria }}</div>
                     </div>
 
                     <!-- Required documents -->
                     <div v-if="call.required_documents">
                         <h2 class="text-xl font-bold mb-3">Documents requis</h2>
-                        <div class="bg-amber-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700">{{ call.required_documents }}</div>
+                        <div class="bg-amber-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{{ call.required_documents }}</div>
                     </div>
 
                     <!-- Evaluation criteria -->
                     <div v-if="call.evaluation_criteria">
                         <h2 class="text-xl font-bold mb-3">Critères d'évaluation</h2>
-                        <div class="bg-violet-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700">{{ call.evaluation_criteria }}</div>
+                        <div class="bg-violet-50 rounded-xl p-5 whitespace-pre-line text-sm text-slate-700 dark:text-slate-200">{{ call.evaluation_criteria }}</div>
                     </div>
                 </div>
 
@@ -81,42 +81,42 @@
                             Se connecter pour candidater
                         </router-link>
                     </div>
-                    <div v-else-if="call.status === 'closed'" class="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-center">
-                        <p class="text-sm text-slate-600 font-semibold">Cet appel est clôturé.</p>
+                    <div v-else-if="call.status === 'closed'" class="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl p-5 text-center">
+                        <p class="text-sm text-slate-600 dark:text-slate-300 font-semibold">Cet appel est clôturé.</p>
                     </div>
                     <div v-else-if="call.status === 'awarded'" class="bg-violet-50 border border-violet-100 rounded-2xl p-5 text-center">
                         <p class="text-sm text-violet-700 font-semibold">Projets attribués.</p>
                     </div>
 
                     <!-- Key info -->
-                    <div class="bg-white border border-slate-100 rounded-2xl p-5 space-y-3 text-sm">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5 space-y-3 text-sm">
                         <div v-if="call.budget">
-                            <span class="text-slate-500">Budget :</span>
+                            <span class="text-slate-500 dark:text-slate-400">Budget :</span>
                             <span class="font-bold ml-1">{{ fmtMoney(call.budget) }} {{ call.currency }}</span>
                         </div>
                         <div v-if="call.sector">
-                            <span class="text-slate-500">Secteur :</span>
+                            <span class="text-slate-500 dark:text-slate-400">Secteur :</span>
                             <span class="font-semibold ml-1">{{ call.sector }}</span>
                         </div>
                         <div v-if="call.geographic_zone">
-                            <span class="text-slate-500">Zone :</span>
+                            <span class="text-slate-500 dark:text-slate-400">Zone :</span>
                             <span class="font-medium ml-1">{{ call.geographic_zone }}</span>
                         </div>
                         <div>
-                            <span class="text-slate-500">Vues :</span>
+                            <span class="text-slate-500 dark:text-slate-400">Vues :</span>
                             <span class="font-medium ml-1">{{ call.views_count || 0 }}</span>
                         </div>
                     </div>
 
                     <!-- Related calls -->
-                    <div v-if="related.length" class="bg-white border border-slate-100 rounded-2xl p-5">
+                    <div v-if="related.length" class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
                         <h3 class="font-bold text-sm mb-3">Autres appels ({{ call.country }})</h3>
                         <div class="space-y-3">
                             <router-link v-for="r in related" :key="r.id"
                                 :to="{ name: 'gouvernement.call', params: { slug: r.slug } }"
                                 class="block text-sm hover:text-sky-700">
                                 <div class="font-medium">{{ r.title }}</div>
-                                <div class="text-xs text-slate-500">{{ r.sector }} · {{ r.budget ? fmtMoney(r.budget) + ' ' + (r.currency||'') : '' }}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ r.sector }} · {{ r.budget ? fmtMoney(r.budget) + ' ' + (r.currency||'') : '' }}</div>
                             </router-link>
                         </div>
                     </div>
@@ -126,15 +126,15 @@
 
         <!-- Apply modal -->
         <div v-if="showApplyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showApplyModal = false">
-            <div class="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold">Candidater</h3>
-                    <button @click="showApplyModal = false" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+                    <button @click="showApplyModal = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 text-xl">&times;</button>
                 </div>
                 <form @submit.prevent="submitApplication" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Projet lié (optionnel)</label>
-                        <select v-model="applyForm.project_id" class="w-full px-3 py-2 rounded-md border border-slate-200 text-sm">
+                        <select v-model="applyForm.project_id" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                             <option :value="null">— Aucun projet spécifique —</option>
                             <option v-for="p in myProjects" :key="p.id" :value="p.id">{{ p.title }}</option>
                         </select>
@@ -143,13 +143,13 @@
                         <label class="block text-sm font-medium mb-1">Motivation *</label>
                         <textarea v-model="applyForm.motivation" rows="4" required maxlength="5000"
                             placeholder="Pourquoi votre projet/organisation est le meilleur candidat…"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-sky-400 focus:outline-none text-sm"></textarea>
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:outline-none text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Proposition technique</label>
                         <textarea v-model="applyForm.proposal" rows="3" maxlength="5000"
                             placeholder="Décrivez votre approche, méthodologie, planning…"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-sky-400 focus:outline-none text-sm"></textarea>
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:outline-none text-sm"></textarea>
                     </div>
                     <p v-if="applyError" class="text-sm text-rose-600">{{ applyError }}</p>
                     <p v-if="applySuccess" class="text-sm text-emerald-600">{{ applySuccess }}</p>
@@ -186,7 +186,7 @@ const applySuccess = ref('');
 const isExpired = computed(() => call.value?.closes_at && new Date(call.value.closes_at) < new Date());
 
 function statusClass(s) {
-    return { open: 'bg-emerald-100 text-emerald-700', closed: 'bg-slate-100 text-slate-600', awarded: 'bg-violet-100 text-violet-700' }[s] || 'bg-slate-100 text-slate-600';
+    return { open: 'bg-emerald-100 text-emerald-700', closed: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', awarded: 'bg-violet-100 text-violet-700' }[s] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 }
 function statusLabel(s) {
     return { open: 'Ouvert', closed: 'Clôturé', awarded: 'Attribué' }[s] || s;

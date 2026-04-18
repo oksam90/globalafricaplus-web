@@ -3,40 +3,40 @@
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
                 <h1 class="text-3xl md:text-4xl font-black tracking-tight">Projets</h1>
-                <p class="text-slate-600 mt-2">Découvrez les initiatives entrepreneuriales qui transforment l'Afrique.</p>
+                <p class="text-slate-600 dark:text-slate-300 mt-2">Découvrez les initiatives entrepreneuriales qui transforment l'Afrique.</p>
             </div>
             <div class="flex gap-2">
                 <router-link v-if="auth.hasRole('entrepreneur') || auth.hasRole('admin')" to="/projets/nouveau"
                     class="text-sm font-semibold px-3 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white">
                     + Nouveau projet
                 </router-link>
-                <router-link to="/secteurs" class="text-sm font-semibold px-3 py-2 rounded-md border border-slate-200 hover:border-emerald-300">
+                <router-link to="/secteurs" class="text-sm font-semibold px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 hover:border-emerald-300">
                     Par secteur
                 </router-link>
             </div>
         </div>
 
         <!-- Filters -->
-        <div class="bg-white border border-slate-100 rounded-2xl p-4 mb-6">
+        <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 mb-6">
             <div class="grid md:grid-cols-4 gap-3">
                 <input v-model="filters.search" @input="debouncedLoad"
                     type="search" placeholder="Rechercher un projet…"
-                    class="px-3 py-2 rounded-md border border-slate-200 focus:border-emerald-400 focus:outline-none text-sm md:col-span-2" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-emerald-400 focus:outline-none text-sm md:col-span-2" />
 
-                <select v-model="filters.category" @change="onCategoryChange" class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                <select v-model="filters.category" @change="onCategoryChange" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                     <option value="">Tous secteurs</option>
                     <option v-for="c in categories" :key="c.id" :value="c.slug">{{ c.name }}</option>
                 </select>
 
-                <select v-model="filters.sub_category" @change="load" class="px-3 py-2 rounded-md border border-slate-200 text-sm" :disabled="!subCategories.length">
+                <select v-model="filters.sub_category" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" :disabled="!subCategories.length">
                     <option value="">Sous-secteur</option>
                     <option v-for="s in subCategories" :key="s.id" :value="s.slug">{{ s.name }}</option>
                 </select>
 
                 <input v-model="filters.country" @input="debouncedLoad" type="text" placeholder="Pays"
-                    class="px-3 py-2 rounded-md border border-slate-200 focus:border-emerald-400 focus:outline-none text-sm" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-emerald-400 focus:outline-none text-sm" />
 
-                <select v-model="filters.stage" @change="load" class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                <select v-model="filters.stage" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                     <option value="">Tous stades</option>
                     <option value="idea">Idée</option>
                     <option value="mvp">MVP</option>
@@ -44,14 +44,14 @@
                     <option value="scaling">Croissance</option>
                 </select>
 
-                <select v-model="filters.sdg" @change="load" class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                <select v-model="filters.sdg" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                     <option value="">Tous ODD</option>
                     <option v-for="s in sdgs" :key="s.id" :value="s.number">
                         ODD {{ s.number }} — {{ s.name }}
                     </option>
                 </select>
 
-                <select v-model="filters.sort" @change="load" class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                <select v-model="filters.sort" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                     <option value="">Plus récents</option>
                     <option value="popular">Plus populaires</option>
                     <option value="trending">Tendance</option>
@@ -63,21 +63,21 @@
 
             <div class="grid md:grid-cols-4 gap-3 mt-3">
                 <input v-model.number="filters.amount_min" @input="debouncedLoad" type="number" min="0" placeholder="Montant min (€)"
-                    class="px-3 py-2 rounded-md border border-slate-200 text-sm" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" />
                 <input v-model.number="filters.amount_max" @input="debouncedLoad" type="number" min="0" placeholder="Montant max (€)"
-                    class="px-3 py-2 rounded-md border border-slate-200 text-sm" />
-                <button @click="reset" class="text-sm text-slate-600 hover:text-emerald-700 md:col-span-2 text-right">
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" />
+                <button @click="reset" class="text-sm text-slate-600 dark:text-slate-300 hover:text-emerald-700 md:col-span-2 text-right">
                     Réinitialiser les filtres
                 </button>
             </div>
         </div>
 
-        <div class="text-sm text-slate-500 mb-4" v-if="meta.total !== undefined">
+        <div class="text-sm text-slate-500 dark:text-slate-400 mb-4" v-if="meta.total !== undefined">
             {{ meta.total }} projet{{ meta.total > 1 ? 's' : '' }} trouvé{{ meta.total > 1 ? 's' : '' }}
         </div>
 
-        <div v-if="loading" class="text-slate-500">Chargement…</div>
-        <div v-else-if="projects.length === 0" class="text-center py-20 text-slate-500">
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400">Chargement…</div>
+        <div v-else-if="projects.length === 0" class="text-center py-20 text-slate-500 dark:text-slate-400">
             Aucun projet ne correspond à vos critères.
         </div>
         <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,7 +89,7 @@
             <button v-for="n in meta.last_page" :key="n"
                 @click="goToPage(n)"
                 class="px-3 py-1.5 rounded-md text-sm font-medium border"
-                :class="n === meta.current_page ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 hover:border-emerald-300'">
+                :class="n === meta.current_page ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-200 dark:border-slate-700 hover:border-emerald-300'">
                 {{ n }}
             </button>
         </div>

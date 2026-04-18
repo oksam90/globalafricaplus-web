@@ -2,7 +2,7 @@
     <div>
         <!-- Hero -->
         <section class="relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-emerald-50 via-amber-50 to-violet-50"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-50 via-amber-50 to-violet-50 dark:from-emerald-950/40 dark:via-amber-950/30 dark:to-violet-950/40"></div>
             <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
                 <span class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-4">
                     Packs & Tarifs

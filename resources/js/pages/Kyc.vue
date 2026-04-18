@@ -1,23 +1,23 @@
 <template>
-    <div class="min-h-screen bg-slate-50">
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
         <!-- Hero -->
-        <section class="bg-gradient-to-br from-orange-50 via-amber-50 to-slate-50 border-b border-orange-100">
+        <section class="bg-gradient-to-br from-orange-50 via-amber-50 to-slate-50 dark:from-orange-950/40 dark:via-amber-950/30 dark:to-slate-900 border-b border-orange-100">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center">
                 <div class="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-4">
                     <svg class="w-8 h-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                 </div>
-                <h1 class="text-3xl font-black tracking-tight text-slate-900">Vérification KYC — Globalafrica+</h1>
-                <p class="mt-2 text-slate-600">Système de Confiance et Transparence — Vérification d'identité eKYC via IDNorm</p>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Vérification KYC — Globalafrica+</h1>
+                <p class="mt-2 text-slate-600 dark:text-slate-300">Système de Confiance et Transparence — Vérification d'identité eKYC via IDNorm</p>
 
                 <!-- Progress bar -->
                 <div class="mt-6 max-w-lg mx-auto">
-                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 mb-2">
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                         <span>Progression</span>
                         <span>{{ completion }}%</span>
                     </div>
-                    <div class="h-2 bg-white rounded-full overflow-hidden border border-slate-200">
+                    <div class="h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                         <div class="h-full bg-gradient-to-r from-orange-400 to-emerald-500 rounded-full transition-all duration-500"
                             :style="{ width: completion + '%' }"></div>
                     </div>
@@ -35,7 +35,7 @@
                 </div>
                 <h2 class="text-2xl font-black text-emerald-900">KYC Vérifié</h2>
                 <p class="mt-2 text-emerald-700">Votre identité a été vérifiée avec succès par Globalafrica+. Vous avez désormais accès à toutes les fonctionnalités de la plateforme, y compris les transactions escrow, le mentorat et la publication de projets.</p>
-                <div class="mt-4 text-sm text-slate-500">
+                <div class="mt-4 text-sm text-slate-500 dark:text-slate-400">
                     Verifie le {{ session?.verified_at ? new Date(session.verified_at).toLocaleDateString('fr-FR') : '' }}
                 </div>
                 <router-link to="/dashboard"
@@ -74,13 +74,13 @@
                     </button>
                 </div>
 
-                <div v-if="loading" class="text-center py-12 text-slate-500">Chargement...</div>
+                <div v-if="loading" class="text-center py-12 text-slate-500 dark:text-slate-400">Chargement...</div>
 
                 <template v-else>
                     <!-- ═══ STEP 1: Identity ═══ -->
-                    <div v-if="currentStep === 1" class="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+                    <div v-if="currentStep === 1" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8">
                         <h2 class="text-xl font-black mb-1">Étape 1 — Collecte des données d'identité</h2>
-                        <p class="text-sm text-slate-500 mb-6">Renseignez vos informations personnelles ou celles de votre entreprise. Ces données sont requises conformément à la Directive UEMOA N° 02/2015/CM/UEMOA.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Renseignez vos informations personnelles ou celles de votre entreprise. Ces données sont requises conformément à la Directive UEMOA N° 02/2015/CM/UEMOA.</p>
 
                         <!-- Person type -->
                         <div class="mb-6">
@@ -88,12 +88,12 @@
                             <div class="flex gap-3">
                                 <button @click="form.person_type = 'physical'"
                                     class="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all"
-                                    :class="form.person_type === 'physical' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 hover:border-slate-300'">
+                                    :class="form.person_type === 'physical' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'">
                                     Personne physique
                                 </button>
                                 <button @click="form.person_type = 'moral'"
                                     class="flex-1 py-3 rounded-lg border-2 text-sm font-semibold transition-all"
-                                    :class="form.person_type === 'moral' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 hover:border-slate-300'">
+                                    :class="form.person_type === 'moral' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'">
                                     Personne morale
                                 </button>
                             </div>
@@ -102,27 +102,27 @@
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Prenom *</label>
-                                <input v-model="form.first_name" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.first_name" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Nom *</label>
-                                <input v-model="form.last_name" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.last_name" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Date de naissance *</label>
-                                <input v-model="form.date_of_birth" type="date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.date_of_birth" type="date" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Lieu de naissance</label>
-                                <input v-model="form.place_of_birth" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.place_of_birth" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Nationalite *</label>
-                                <input v-model="form.nationality" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.nationality" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Genre</label>
-                                <select v-model="form.gender" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <select v-model="form.gender" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                     <option value="">--</option>
                                     <option value="male">Homme</option>
                                     <option value="female">Femme</option>
@@ -131,42 +131,42 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-semibold mb-1">Adresse *</label>
-                                <input v-model="form.address" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.address" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Ville *</label>
-                                <input v-model="form.city" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.city" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Code postal</label>
-                                <input v-model="form.postal_code" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.postal_code" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Pays *</label>
-                                <input v-model="form.country" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.country" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Telephone *</label>
-                                <input v-model="form.phone" type="tel" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.phone" type="tel" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                         </div>
 
                         <!-- Legal entity fields -->
                         <template v-if="form.person_type === 'moral'">
-                            <hr class="my-6 border-slate-200">
-                            <h3 class="font-bold text-sm text-slate-700 mb-4 uppercase tracking-wider">Informations de l'entreprise</h3>
+                            <hr class="my-6 border-slate-200 dark:border-slate-700">
+                            <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 uppercase tracking-wider">Informations de l'entreprise</h3>
                             <div class="grid md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-semibold mb-1">Denomination sociale *</label>
-                                    <input v-model="form.company_name" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <input v-model="form.company_name" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold mb-1">N RCCM *</label>
-                                    <input v-model="form.company_registration_number" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <input v-model="form.company_registration_number" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold mb-1">Forme juridique</label>
-                                    <select v-model="form.legal_form" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <select v-model="form.legal_form" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                         <option value="">--</option>
                                         <option value="ei">Entreprise Individuelle</option>
                                         <option value="suarl">SUARL</option>
@@ -179,11 +179,11 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold mb-1">Representant legal</label>
-                                    <input v-model="form.legal_representative_name" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <input v-model="form.legal_representative_name" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-semibold mb-1">Adresse du siege</label>
-                                    <input v-model="form.company_address" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <input v-model="form.company_address" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                 </div>
                             </div>
                         </template>
@@ -197,14 +197,14 @@
                     </div>
 
                     <!-- ═══ STEP 2: Documents ═══ -->
-                    <div v-if="currentStep === 2" class="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+                    <div v-if="currentStep === 2" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8">
                         <h2 class="text-xl font-black mb-1">Étape 2 — Vérification des documents KYC</h2>
-                        <p class="text-sm text-slate-500 mb-6">Fournissez un document d'identité officiel en cours de validité. Globalafrica+ vérifie l'authenticité via son service eKYC, compatible avec les documents d'identité locaux et internationaux.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Fournissez un document d'identité officiel en cours de validité. Globalafrica+ vérifie l'authenticité via son service eKYC, compatible avec les documents d'identité locaux et internationaux.</p>
 
                         <div class="grid md:grid-cols-2 gap-4 mb-6">
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Type de document *</label>
-                                <select v-model="form.document_type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <select v-model="form.document_type" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                     <option value="">--</option>
                                     <option value="cni">Carte Nationale d'Identite</option>
                                     <option value="passport">Passeport</option>
@@ -214,27 +214,27 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Numero du document *</label>
-                                <input v-model="form.document_number" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.document_number" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Date d'expiration *</label>
-                                <input v-model="form.document_expiry" type="date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.document_expiry" type="date" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Pays de delivrance *</label>
-                                <input v-model="form.document_issuing_country" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.document_issuing_country" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                         </div>
 
                         <!-- File uploads -->
-                        <h3 class="font-bold text-sm text-slate-700 mb-4 uppercase tracking-wider">Pieces jointes</h3>
+                        <h3 class="font-bold text-sm text-slate-700 dark:text-slate-200 mb-4 uppercase tracking-wider">Pieces jointes</h3>
                         <div class="grid md:grid-cols-2 gap-4">
                             <div v-for="doc in docUploads" :key="doc.field"
                                 class="border-2 border-dashed rounded-xl p-4 text-center transition-colors"
-                                :class="form[doc.field + '_url'] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 hover:border-orange-300'">
+                                :class="form[doc.field + '_url'] ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 dark:border-slate-700 hover:border-orange-300'">
                                 <div class="text-2xl mb-1">{{ form[doc.field + '_url'] ? '&#10003;' : doc.icon }}</div>
                                 <div class="text-sm font-semibold mb-1">{{ doc.label }}</div>
-                                <div class="text-xs text-slate-500 mb-2">{{ doc.hint }}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">{{ doc.hint }}</div>
                                 <label class="inline-block px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors"
                                     :class="form[doc.field + '_url'] ? 'bg-emerald-600 text-white' : 'bg-orange-100 text-orange-700 hover:bg-orange-200'">
                                     {{ form[doc.field + '_url'] ? 'Remplacer' : 'Telecharger' }}
@@ -246,7 +246,7 @@
 
                         <div class="mt-6 flex justify-between">
                             <button @click="currentStep = 1"
-                                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                                class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50">
                                 Retour
                             </button>
                             <button @click="saveStep2" :disabled="saving"
@@ -257,18 +257,18 @@
                     </div>
 
                     <!-- ═══ STEP 3: Risk Assessment ═══ -->
-                    <div v-if="currentStep === 3" class="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+                    <div v-if="currentStep === 3" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8">
                         <h2 class="text-xl font-black mb-1">Étape 3 — Évaluation du risque lié au client</h2>
-                        <p class="text-sm text-slate-500 mb-6">Informations requises pour l'évaluation du profil de risque conformément aux normes UEMOA. Cela inclut la source de vos fonds, notamment pour les investissements via escrow et les transferts diaspora.</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Informations requises pour l'évaluation du profil de risque conformément aux normes UEMOA. Cela inclut la source de vos fonds, notamment pour les investissements via escrow et les transferts diaspora.</p>
 
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Profession / Occupation *</label>
-                                <input v-model="form.occupation" type="text" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <input v-model="form.occupation" type="text" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Source des fonds *</label>
-                                <select v-model="form.source_of_funds" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                <select v-model="form.source_of_funds" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                     <option value="">--</option>
                                     <option value="salaire">Salaire</option>
                                     <option value="activite_commerciale">Activite commerciale</option>
@@ -282,19 +282,19 @@
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Volume mensuel estime (EUR) *</label>
                                 <input v-model.number="form.expected_monthly_volume" type="number" min="0" step="100"
-                                    class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-semibold mb-1">Personne Politiquement Exposee (PPE) *</label>
                                 <div class="flex gap-3 mt-1">
                                     <button @click="form.is_pep = false"
                                         class="flex-1 py-2 rounded-lg border-2 text-sm font-semibold"
-                                        :class="form.is_pep === false ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200'">
+                                        :class="form.is_pep === false ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 dark:border-slate-700'">
                                         Non
                                     </button>
                                     <button @click="form.is_pep = true"
                                         class="flex-1 py-2 rounded-lg border-2 text-sm font-semibold"
-                                        :class="form.is_pep === true ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200'">
+                                        :class="form.is_pep === true ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 dark:border-slate-700'">
                                         Oui
                                     </button>
                                 </div>
@@ -311,14 +311,14 @@
                                 </div>
                                 <div>
                                     <div class="font-bold text-sm">Niveau de risque estime : {{ riskLabel }}</div>
-                                    <div class="text-xs text-slate-500">Ce niveau sera confirme apres l'analyse complete.</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">Ce niveau sera confirme apres l'analyse complete.</div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-6 flex justify-between">
                             <button @click="currentStep = 2"
-                                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                                class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50">
                                 Retour
                             </button>
                             <button @click="saveStep3" :disabled="saving"
@@ -329,9 +329,9 @@
                     </div>
 
                     <!-- ═══ STEP 4: AML Verification & Submit ═══ -->
-                    <div v-if="currentStep === 4" class="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+                    <div v-if="currentStep === 4" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-8">
                         <h2 class="text-xl font-black mb-1">Étape 4 — Vérification AML (Anti-Blanchiment)</h2>
-                        <p class="text-sm text-slate-500 mb-6">
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
                             Soumettez votre dossier pour vérification automatisée via IDNorm.
                             Les contrôles anti-blanchiment, listes de sanctions et PPE seront effectués automatiquement,
                             conformément à l'article 81 de la Directive UEMOA et aux obligations de la Cellule Nationale de Traitement des Informations Financières.
@@ -359,7 +359,7 @@
                         </div>
 
                         <!-- AML checks description -->
-                        <div class="bg-slate-50 rounded-xl p-5 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 mb-6">
                             <h3 class="font-bold text-sm mb-3">Vérifications qui seront effectuées par Globalafrica+ via IDNorm :</h3>
                             <div class="grid md:grid-cols-2 gap-3">
                                 <div class="flex items-center gap-2 text-sm">
@@ -383,14 +383,14 @@
 
                         <div class="mt-6 flex justify-between">
                             <button @click="currentStep = 3"
-                                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                                class="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50">
                                 Retour
                             </button>
                             <button @click="submitKyc" :disabled="saving || !allStepsComplete"
                                 class="px-6 py-3 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
                                 :class="allStepsComplete
                                     ? 'bg-gradient-to-r from-orange-600 to-emerald-600 hover:from-orange-700 hover:to-emerald-700 text-white shadow-lg'
-                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'">
+                                    : 'bg-slate-200 text-slate-500 dark:text-slate-400 cursor-not-allowed'">
                                 {{ saving ? 'Soumission en cours...' : 'Soumettre pour verification IDNorm' }}
                             </button>
                         </div>
@@ -491,12 +491,12 @@ const riskIconClass = computed(() => ({
 function stepClass(s) {
     if (s === currentStep.value) return 'bg-orange-100 text-orange-800 border border-orange-300';
     if (isStepComplete(s)) return 'bg-emerald-50 text-emerald-700';
-    return 'bg-white text-slate-500 border border-slate-200';
+    return 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
 }
 function stepIconClass(s) {
     if (isStepComplete(s)) return 'bg-emerald-600 text-white';
     if (s === currentStep.value) return 'bg-orange-600 text-white';
-    return 'bg-slate-100 text-slate-500';
+    return 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400';
 }
 function isStepComplete(s) {
     if (!session.value) return false;

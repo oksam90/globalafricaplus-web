@@ -1,9 +1,9 @@
 <template>
-    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-16 text-slate-500">Chargement du guide…</div>
-    <div v-else-if="!guide" class="max-w-7xl mx-auto px-4 py-16 text-slate-500">Guide pays introuvable.</div>
+    <div v-if="loading" class="max-w-7xl mx-auto px-4 py-16 text-slate-500 dark:text-slate-400">Chargement du guide…</div>
+    <div v-else-if="!guide" class="max-w-7xl mx-auto px-4 py-16 text-slate-500 dark:text-slate-400">Guide pays introuvable.</div>
     <div v-else>
         <!-- Header -->
-        <section class="bg-gradient-to-br from-rose-50 via-amber-50 to-slate-50 border-b border-slate-100">
+        <section class="bg-gradient-to-br from-rose-50 via-amber-50 to-slate-50 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <router-link to="/diaspora" class="text-sm text-rose-600 hover:underline mb-4 inline-block">
                     ← Portail Diaspora
@@ -12,7 +12,7 @@
                     <span class="text-5xl">{{ guide.flag }}</span>
                     <div>
                         <h1 class="text-3xl md:text-4xl font-black tracking-tight">{{ guide.country }}</h1>
-                        <p class="text-slate-500 mt-1">
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">
                             {{ guide.official_language }} · {{ guide.currency }} · {{ guide.population }}M habitants
                         </p>
                     </div>
@@ -20,25 +20,25 @@
 
                 <!-- Key metrics -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <div class="bg-white rounded-xl p-4 text-center border border-slate-100">
-                        <div class="text-xl font-black text-slate-900">{{ guide.gdp }} Md$</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">PIB</div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
+                        <div class="text-xl font-black text-slate-900 dark:text-slate-100">{{ guide.gdp }} Md$</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">PIB</div>
                     </div>
-                    <div class="bg-white rounded-xl p-4 text-center border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
                         <div class="text-xl font-black text-emerald-700">{{ guide.gdp_growth }}%</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Croissance</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Croissance</div>
                     </div>
-                    <div class="bg-white rounded-xl p-4 text-center border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
                         <div class="text-xl font-black text-blue-700">{{ guide.ease_of_business_score }}/100</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Doing Business</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Doing Business</div>
                     </div>
-                    <div class="bg-white rounded-xl p-4 text-center border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
                         <div class="text-xl font-black text-amber-600">{{ guide.remittances_gdp }}%</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Remittances / PIB</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Remittances / PIB</div>
                     </div>
-                    <div class="bg-white rounded-xl p-4 text-center border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
                         <div class="text-xl font-black text-rose-600">{{ countryStats.projects_count }}</div>
-                        <div class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Projets Africa+</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Projets Africa+</div>
                     </div>
                 </div>
             </div>
@@ -47,11 +47,11 @@
         <!-- Main content -->
         <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <!-- Tabs -->
-            <div class="flex gap-1 mb-8 bg-slate-100 rounded-lg p-1 overflow-x-auto">
+            <div class="flex gap-1 mb-8 bg-slate-100 dark:bg-slate-700 rounded-lg p-1 overflow-x-auto">
                 <button v-for="tab in tabs" :key="tab.id"
                     @click="activeTab = tab.id"
                     class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition"
-                    :class="activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                    :class="activeTab === tab.id ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'">
                     {{ tab.label }}
                 </button>
             </div>
@@ -80,9 +80,9 @@
                                     <div class="flex-1">
                                         <div class="flex justify-between items-baseline">
                                             <span class="font-medium text-sm">{{ sec.name }}</span>
-                                            <span class="text-xs text-slate-500">{{ sec.count }} projet{{ sec.count > 1 ? 's' : '' }} · {{ fmtShort(sec.raised) }}</span>
+                                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ sec.count }} projet{{ sec.count > 1 ? 's' : '' }} · {{ fmtShort(sec.raised) }}</span>
                                         </div>
-                                        <div class="mt-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="mt-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                             <div class="h-full rounded-full"
                                                 :style="{ width: barWidth(sec.count) + '%', backgroundColor: sec.color }"></div>
                                         </div>
@@ -106,28 +106,28 @@
 
                     <!-- Sidebar -->
                     <div class="space-y-5">
-                        <div class="bg-slate-50 rounded-2xl p-5">
+                        <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-5">
                             <h3 class="font-bold text-sm mb-3">Agence d'investissement</h3>
-                            <p class="text-sm text-slate-700 font-medium">{{ guide.investment_agency || 'Non renseignée' }}</p>
+                            <p class="text-sm text-slate-700 dark:text-slate-200 font-medium">{{ guide.investment_agency || 'Non renseignée' }}</p>
                             <a v-if="guide.investment_agency_url" :href="guide.investment_agency_url" target="_blank" rel="noopener"
                                 class="text-sm text-rose-600 hover:underline mt-1 inline-block">
                                 Visiter le site →
                             </a>
                         </div>
 
-                        <div class="bg-slate-50 rounded-2xl p-5">
+                        <div class="bg-slate-50 dark:bg-slate-900 rounded-2xl p-5">
                             <h3 class="font-bold text-sm mb-3">Statistiques Africa+</h3>
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between">
-                                    <span class="text-slate-600">Projets publiés</span>
+                                    <span class="text-slate-600 dark:text-slate-300">Projets publiés</span>
                                     <span class="font-semibold">{{ countryStats.projects_count }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-slate-600">Montant levé</span>
+                                    <span class="text-slate-600 dark:text-slate-300">Montant levé</span>
                                     <span class="font-semibold text-emerald-700">{{ fmtShort(countryStats.total_raised) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-slate-600">Emplois visés</span>
+                                    <span class="text-slate-600 dark:text-slate-300">Emplois visés</span>
                                     <span class="font-semibold">{{ countryStats.jobs_target }}</span>
                                 </div>
                             </div>
@@ -146,11 +146,11 @@
                 <div class="max-w-3xl space-y-8">
                     <div v-if="guide.legal_framework">
                         <h2 class="text-xl font-bold mb-3">Cadre juridique</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white rounded-xl p-6 border border-slate-100">{{ guide.legal_framework }}</div>
+                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">{{ guide.legal_framework }}</div>
                     </div>
                     <div v-if="guide.taxation">
                         <h2 class="text-xl font-bold mb-3">Fiscalité</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white rounded-xl p-6 border border-slate-100">{{ guide.taxation }}</div>
+                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">{{ guide.taxation }}</div>
                     </div>
                     <div v-if="guide.investment_incentives">
                         <h2 class="text-xl font-bold mb-3">Incitations à l'investissement</h2>
@@ -166,7 +166,7 @@
                         <h2 class="text-xl font-bold mb-3">Programmes diaspora</h2>
                         <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-rose-50 rounded-xl p-6 border border-rose-100">{{ guide.diaspora_programs }}</div>
                     </div>
-                    <div v-else class="text-slate-500 py-10 text-center">
+                    <div v-else class="text-slate-500 dark:text-slate-400 py-10 text-center">
                         Aucun programme diaspora documenté pour ce pays.
                     </div>
                 </div>
@@ -174,7 +174,7 @@
 
             <!-- Tab: Projects -->
             <div v-show="activeTab === 'projects'">
-                <div v-if="!topProjects.length" class="text-center py-12 text-slate-500">
+                <div v-if="!topProjects.length" class="text-center py-12 text-slate-500 dark:text-slate-400">
                     Aucun projet publié dans ce pays pour le moment.
                 </div>
                 <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">

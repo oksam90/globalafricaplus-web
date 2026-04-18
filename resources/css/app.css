@@ -58,3 +58,35 @@ html.dark {
     transition-duration: 0.15s;
     transition-timing-function: ease;
 }
+
+/* ─── Dark mode: native form controls ───────────
+   Inputs/selects/textareas inherit body color in dark mode, which makes
+   their content & placeholders invisible on their white default background.
+   Force dark-aware colors globally so we don't have to touch every field.
+   Overridable per-field with explicit `dark:bg-*` / `dark:text-*` classes. */
+html.dark input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="color"]),
+html.dark select,
+html.dark textarea {
+    background-color: rgb(30 41 59);   /* slate-800 */
+    color: rgb(241 245 249);            /* slate-100 */
+    border-color: rgb(71 85 105);       /* slate-600 */
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: rgb(148 163 184);            /* slate-400 */
+    opacity: 1;
+}
+
+html.dark select option {
+    background-color: rgb(30 41 59);    /* slate-800 */
+    color: rgb(241 245 249);            /* slate-100 */
+}
+
+/* Disabled fields keep a distinct (dimmer) look in dark mode */
+html.dark input:disabled,
+html.dark select:disabled,
+html.dark textarea:disabled {
+    background-color: rgb(15 23 42);    /* slate-900 */
+    color: rgb(100 116 139);            /* slate-500 */
+}
