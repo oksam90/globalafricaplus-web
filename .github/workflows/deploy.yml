@@ -1,0 +1,124 @@
+name: CI/CD — GlobalAfrica+
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 1) Tests & build (runs on GitHub's runner)
+  # ─────────────────────────────────────────────
+  test-and-build:
+    name: Tests & build frontend
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # ─── PHP ──────────────────────────────────
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, bcmath, mysql, pdo_mysql, gd, zip, intl, curl, fileinfo
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install Composer deps
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy .env for build
+        run: cp .env.example .env && php artisan key:generate
+
+      - name: Lint PHP (syntax)
+        run: find app config database routes -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      # ─── Node ─────────────────────────────────
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build frontend (Vite)
+        run: npm run build
+
+      # ─── Package release artifact ─────────────
+      - name: Package release
+        run: |
+          tar --exclude='.git' --exclude='node_modules' --exclude='tests' \
+              --exclude='.github' --exclude='storage/logs/*' \
+              -czf /tmp/release.tar.gz .
+          ls -lh /tmp/release.tar.gz
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: /tmp/release.tar.gz
+          retention-days: 7
+
+  # ─────────────────────────────────────────────
+  # 2) Deploy to Hostinger VPS via SSH
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to production VPS
+    needs: test-and-build
+    runs-on: ubuntu-22.04
+    environment:
+      name: production
+      url: https://globalafricaplus.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: /tmp
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload release tarball
+        run: |
+          scp -P ${{ secrets.SSH_PORT }} /tmp/release.tar.gz \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/release-${{ github.sha }}.tar.gz
+
+      - name: Upload deploy script
+        run: |
+          scp -P ${{ secrets.SSH_PORT }} deploy/deploy.sh \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/deploy.sh
+
+      - name: Execute remote deployment
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /tmp/deploy.sh && /tmp/deploy.sh ${{ github.sha }}"
+
+      - name: Smoke test
+        run: |
+          sleep 3
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://globalafricaplus.com)
+          echo "HTTP $code"
+          test "$code" = "200" || test "$code" = "302"
