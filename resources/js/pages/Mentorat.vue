@@ -7,13 +7,13 @@
                     <span class="inline-block px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold mb-4">
                         Mentorat & Compétences
                     </span>
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-[1.05]">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-slate-100 leading-[1.05]">
                         Apprenez des
                         <span class="block bg-gradient-to-r from-violet-500 via-fuchsia-500 to-purple-600 bg-clip-text text-transparent">
                             meilleurs.
                         </span>
                     </h1>
-                    <p class="mt-6 text-lg text-slate-600 max-w-xl">
+                    <p class="mt-6 text-lg text-slate-600 dark:text-slate-300 max-w-xl">
                         Marketplace panafricaine de compétences. Connectez-vous à des mentors experts
                         ou partagez votre savoir-faire pour accompagner la prochaine génération d'entrepreneurs.
                     </p>
@@ -21,27 +21,27 @@
                         <a href="#mentors" class="px-5 py-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-sm">
                             Trouver un mentor
                         </a>
-                        <router-link to="/inscription" class="px-5 py-3 rounded-lg bg-white border border-slate-200 hover:border-violet-300 font-semibold text-slate-800">
+                        <router-link to="/inscription" class="px-5 py-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-violet-300 font-semibold text-slate-800 dark:text-slate-200">
                             Devenir mentor →
                         </router-link>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="text-2xl font-black text-violet-600">{{ stats.mentors_count || 0 }}</div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Mentors actifs</div>
+                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Mentors actifs</div>
                     </div>
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                        <div class="text-2xl font-black text-slate-900">{{ stats.skills_count || 0 }}</div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Compétences</div>
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
+                        <div class="text-2xl font-black text-slate-900 dark:text-slate-100">{{ stats.skills_count || 0 }}</div>
+                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Compétences</div>
                     </div>
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="text-2xl font-black text-emerald-600">{{ stats.completed_mentorships || 0 }}</div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Mentorats terminés</div>
+                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Mentorats terminés</div>
                     </div>
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="text-2xl font-black text-amber-500">{{ stats.avg_rating || '—' }}★</div>
-                        <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">Note moyenne</div>
+                        <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Note moyenne</div>
                     </div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
     </section>
 
     <!-- How it works -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-white dark:bg-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-black tracking-tight text-center mb-12">Comment ça marche ?</h2>
             <div class="grid md:grid-cols-4 gap-6">
@@ -58,27 +58,27 @@
                         {{ i + 1 }}
                     </div>
                     <h3 class="font-bold text-lg">{{ step.title }}</h3>
-                    <p class="text-sm text-slate-600 mt-2">{{ step.text }}</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mt-2">{{ step.text }}</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Skills by category -->
-    <section class="py-16 bg-slate-50">
+    <section class="py-16 bg-slate-50 dark:bg-slate-900">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-black tracking-tight text-center mb-4">Compétences disponibles</h2>
-            <p class="text-center text-slate-600 mb-10">Nos mentors couvrent un large éventail de domaines.</p>
+            <p class="text-center text-slate-600 dark:text-slate-300 mb-10">Nos mentors couvrent un large éventail de domaines.</p>
 
             <div v-if="skillsGrouped" class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div v-for="(skills, category) in skillsGrouped" :key="category"
-                    class="bg-white rounded-2xl border border-slate-100 p-5">
+                    class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 p-5">
                     <h3 class="font-bold text-sm text-violet-700 uppercase tracking-wider mb-3">{{ category }}</h3>
                     <div class="flex flex-wrap gap-1.5">
                         <button v-for="s in skills" :key="s.id"
                             @click="filterBySkill(s.slug)"
                             class="text-xs px-2.5 py-1 rounded-full font-medium transition"
-                            :class="filters.skill === s.slug ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-violet-50 hover:text-violet-700'">
+                            :class="filters.skill === s.slug ? 'bg-violet-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-violet-50 hover:text-violet-700'">
                             {{ s.name }}
                         </button>
                     </div>
@@ -88,30 +88,30 @@
     </section>
 
     <!-- Mentor directory -->
-    <section id="mentors" class="py-16 bg-white">
+    <section id="mentors" class="py-16 bg-white dark:bg-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
                     <h2 class="text-3xl font-black tracking-tight">Annuaire des mentors</h2>
-                    <p class="text-slate-600 mt-2">{{ mentorsMeta.total || 0 }} mentors à votre disposition.</p>
+                    <p class="text-slate-600 dark:text-slate-300 mt-2">{{ mentorsMeta.total || 0 }} mentors à votre disposition.</p>
                 </div>
             </div>
 
             <!-- Filters -->
-            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
+            <div class="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 mb-6">
                 <div class="grid md:grid-cols-4 gap-3">
                     <input v-model="filters.search" @input="debouncedLoadMentors"
                         type="search" placeholder="Rechercher un mentor…"
-                        class="px-3 py-2 rounded-md border border-slate-200 focus:border-violet-400 focus:outline-none text-sm md:col-span-2" />
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-violet-400 focus:outline-none text-sm md:col-span-2" />
 
                     <select v-model="filters.country" @change="loadMentors"
-                        class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                         <option value="">Tous pays</option>
                         <option v-for="c in mentorCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
 
                     <select v-model="filters.sort" @change="loadMentors"
-                        class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
                         <option value="rating">Mieux notés</option>
                         <option value="sessions">Plus expérimentés</option>
                         <option value="recent">Derniers inscrits</option>
@@ -119,7 +119,7 @@
                 </div>
 
                 <div v-if="filters.skill" class="mt-3 flex items-center gap-2">
-                    <span class="text-sm text-slate-600">Filtré par compétence :</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-300">Filtré par compétence :</span>
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-medium">
                         {{ skillNameFor(filters.skill) }}
                         <button @click="filters.skill = ''; loadMentors()" class="ml-1 hover:text-violet-900">&times;</button>
@@ -128,8 +128,8 @@
             </div>
 
             <!-- Grid -->
-            <div v-if="mentorsLoading" class="text-slate-500 py-8">Chargement des mentors…</div>
-            <div v-else-if="mentors.length === 0" class="text-center py-16 text-slate-500">
+            <div v-if="mentorsLoading" class="text-slate-500 dark:text-slate-400 py-8">Chargement des mentors…</div>
+            <div v-else-if="mentors.length === 0" class="text-center py-16 text-slate-500 dark:text-slate-400">
                 Aucun mentor ne correspond à vos critères.
             </div>
             <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,7 +141,7 @@
                 <button v-for="n in mentorsMeta.last_page" :key="n"
                     @click="goToPage(n)"
                     class="px-3 py-1.5 rounded-md text-sm font-medium border"
-                    :class="n === mentorsMeta.current_page ? 'bg-violet-600 border-violet-600 text-white' : 'border-slate-200 hover:border-violet-300'">
+                    :class="n === mentorsMeta.current_page ? 'bg-violet-600 border-violet-600 text-white' : 'border-slate-200 dark:border-slate-700 hover:border-violet-300'">
                     {{ n }}
                 </button>
             </div>
@@ -176,7 +176,7 @@
             </div>
             <div class="mt-10 text-center">
                 <router-link to="/inscription"
-                    class="inline-block px-6 py-3 rounded-lg bg-white text-violet-700 font-semibold hover:bg-violet-50">
+                    class="inline-block px-6 py-3 rounded-lg bg-white dark:bg-slate-800 text-violet-700 font-semibold hover:bg-violet-50">
                     Créer mon compte mentor
                 </router-link>
             </div>

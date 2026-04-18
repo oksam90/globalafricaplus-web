@@ -2,9 +2,15 @@
     <div class="min-h-full flex flex-col bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         <SiteHeader />
         <main class="flex-1">
-            <router-view v-slot="{ Component }">
+            <router-view v-slot="{ Component, route }">
                 <transition name="fade" mode="out-in">
-                    <component :is="Component" />
+                    <!--
+                        :key="route.fullPath" forces a full remount whenever the URL
+                        (path OR query) changes, so onMounted() refires and pages
+                        reload their data — fixes the "stale data until reload" issue
+                        on filtered pages (mentorat, gouvernement, …).
+                    -->
+                    <component :is="Component" :key="route.fullPath" />
                 </transition>
             </router-view>
         </main>

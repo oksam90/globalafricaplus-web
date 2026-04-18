@@ -7,24 +7,24 @@
                 <span class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold mb-4">
                     Packs & Tarifs
                 </span>
-                <h1 class="text-4xl md:text-5xl font-black tracking-tight text-slate-900">
+                <h1 class="text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                     Choisissez le pack
                     <span class="bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-600 bg-clip-text text-transparent">
                         adapté à vos besoins
                     </span>
                 </h1>
-                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+                <p class="mt-4 text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
                     Entrepreneurs, investisseurs, mentors, talents, gouvernements : chaque profil trouve son pack.
                 </p>
                 <div class="mt-6 flex items-center justify-center gap-3">
-                    <span class="text-sm text-slate-500" :class="{ 'font-bold text-slate-900': !yearly }">Mensuel</span>
+                    <span class="text-sm text-slate-500 dark:text-slate-400" :class="{ 'font-bold text-slate-900 dark:text-slate-100': !yearly }">Mensuel</span>
                     <button @click="yearly = !yearly"
                         class="relative inline-flex h-7 w-14 items-center rounded-full transition-colors"
                         :class="yearly ? 'bg-emerald-600' : 'bg-slate-300'">
-                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
+                        <span class="inline-block h-5 w-5 transform rounded-full bg-white dark:bg-slate-800 shadow transition-transform"
                             :class="yearly ? 'translate-x-8' : 'translate-x-1'"></span>
                     </button>
-                    <span class="text-sm text-slate-500" :class="{ 'font-bold text-slate-900': yearly }">
+                    <span class="text-sm text-slate-500 dark:text-slate-400" :class="{ 'font-bold text-slate-900 dark:text-slate-100': yearly }">
                         Annuel <span class="text-emerald-600 font-semibold text-xs">-17%</span>
                     </span>
                 </div>
@@ -32,8 +32,8 @@
         </section>
 
         <!-- Guarantees bar -->
-        <section class="bg-white border-y border-slate-100">
-            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-wrap items-center justify-center gap-8 text-sm text-slate-600">
+        <section class="bg-white dark:bg-slate-800 border-y border-slate-100 dark:border-slate-700">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-wrap items-center justify-center gap-8 text-sm text-slate-600 dark:text-slate-300">
                 <div class="flex items-center gap-2">
                     <span class="text-lg">🛡️</span>
                     <span>Garantie satisfait ou remboursé <strong>30 jours</strong></span>
@@ -50,13 +50,13 @@
         </section>
 
         <!-- Plans grid -->
-        <section class="py-16 bg-slate-50">
+        <section class="py-16 bg-slate-50 dark:bg-slate-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div v-if="loadingPlans" class="text-center text-slate-500 py-12">Chargement des plans...</div>
+                <div v-if="loadingPlans" class="text-center text-slate-500 dark:text-slate-400 py-12">Chargement des plans...</div>
                 <div v-else class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div v-for="plan in plans" :key="plan.slug"
-                        class="relative bg-white rounded-2xl border-2 p-6 flex flex-col transition-all hover:shadow-lg"
-                        :class="plan.is_popular ? 'border-emerald-500 shadow-md' : 'border-slate-100'">
+                        class="relative bg-white dark:bg-slate-800 rounded-2xl border-2 p-6 flex flex-col transition-all hover:shadow-lg"
+                        :class="plan.is_popular ? 'border-emerald-500 shadow-md' : 'border-slate-100 dark:border-slate-700'">
                         <!-- Popular badge -->
                         <div v-if="plan.is_popular"
                             class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-xs font-bold rounded-full">
@@ -65,17 +65,17 @@
 
                         <div class="text-center mb-6">
                             <h3 class="text-xl font-black">{{ plan.name }}</h3>
-                            <p class="text-sm text-slate-500 mt-1">{{ plan.subtitle }}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ plan.subtitle }}</p>
                             <div class="mt-4">
                                 <template v-if="plan.slug === 'free'">
-                                    <span class="text-4xl font-black text-slate-900">0 €</span>
-                                    <span class="text-sm text-slate-500">/toujours</span>
+                                    <span class="text-4xl font-black text-slate-900 dark:text-slate-100">0 €</span>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400">/toujours</span>
                                 </template>
                                 <template v-else>
-                                    <span class="text-4xl font-black text-slate-900">
+                                    <span class="text-4xl font-black text-slate-900 dark:text-slate-100">
                                         {{ yearly ? formatPrice(plan.price_yearly) : formatPrice(plan.price_monthly) }}
                                     </span>
-                                    <span class="text-sm text-slate-500">{{ yearly ? '/an' : '/mois' }}</span>
+                                    <span class="text-sm text-slate-500 dark:text-slate-400">{{ yearly ? '/an' : '/mois' }}</span>
                                     <div v-if="yearly" class="text-xs text-emerald-600 font-semibold mt-1">
                                         soit {{ formatPrice(plan.price_yearly / 12) }}/mois
                                     </div>
@@ -83,7 +83,7 @@
                             </div>
                         </div>
 
-                        <p class="text-sm text-slate-600 mb-4">{{ plan.description }}</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">{{ plan.description }}</p>
 
                         <!-- Features list -->
                         <ul class="space-y-2 mb-6 flex-1">
@@ -96,7 +96,7 @@
 
                         <!-- CTA -->
                         <button v-if="plan.slug === 'free'" disabled
-                            class="w-full py-3 rounded-lg text-sm font-semibold bg-slate-100 text-slate-500 cursor-not-allowed">
+                            class="w-full py-3 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed">
                             Plan actuel par défaut
                         </button>
                         <button v-else-if="currentPlan === plan.slug"
@@ -117,20 +117,20 @@
         </section>
 
         <!-- Role recommendations -->
-        <section class="py-16 bg-white">
+        <section class="py-16 bg-white dark:bg-slate-800">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-10">
                     <h2 class="text-3xl font-black tracking-tight">Quel pack pour votre profil ?</h2>
-                    <p class="mt-2 text-slate-600">Recommandations par type d'utilisateur</p>
+                    <p class="mt-2 text-slate-600 dark:text-slate-300">Recommandations par type d'utilisateur</p>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
                     <div v-for="rec in recommendations" :key="rec.role"
-                        class="bg-slate-50 rounded-xl p-5 border border-slate-100">
+                        class="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-100 dark:border-slate-700">
                         <div class="flex items-center gap-3 mb-3">
                             <span class="text-2xl">{{ rec.icon }}</span>
                             <h3 class="font-bold">{{ rec.role }}</h3>
                         </div>
-                        <p class="text-sm text-slate-600 mb-3">{{ rec.text }}</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">{{ rec.text }}</p>
                         <span class="inline-block text-xs font-bold px-3 py-1 rounded-full"
                             :class="rec.planClass">{{ rec.plan }}</span>
                     </div>
@@ -139,18 +139,18 @@
         </section>
 
         <!-- FAQ -->
-        <section class="py-16 bg-slate-50">
+        <section class="py-16 bg-slate-50 dark:bg-slate-900">
             <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h2 class="text-3xl font-black tracking-tight text-center mb-10">Questions fréquentes</h2>
                 <div class="space-y-4">
                     <div v-for="(faq, i) in faqs" :key="i"
-                        class="bg-white rounded-xl border border-slate-100 overflow-hidden">
+                        class="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
                         <button @click="openFaq = openFaq === i ? -1 : i"
                             class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-sm hover:bg-slate-50">
                             {{ faq.q }}
-                            <span class="text-slate-400 transition-transform" :class="{ 'rotate-180': openFaq === i }">&#9660;</span>
+                            <span class="text-slate-400 dark:text-slate-500 transition-transform" :class="{ 'rotate-180': openFaq === i }">&#9660;</span>
                         </button>
-                        <div v-if="openFaq === i" class="px-5 pb-4 text-sm text-slate-600">{{ faq.a }}</div>
+                        <div v-if="openFaq === i" class="px-5 pb-4 text-sm text-slate-600 dark:text-slate-300">{{ faq.a }}</div>
                     </div>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                     30 jours de garantie satisfait ou remboursé. Sans engagement. Support 24/7.
                 </p>
                 <router-link v-if="!auth.isAuthenticated" to="/inscription"
-                    class="mt-8 inline-block px-6 py-3 rounded-lg bg-white text-emerald-700 font-semibold hover:bg-emerald-50">
+                    class="mt-8 inline-block px-6 py-3 rounded-lg bg-white dark:bg-slate-800 text-emerald-700 font-semibold hover:bg-emerald-50">
                     Commencer gratuitement
                 </router-link>
             </div>
