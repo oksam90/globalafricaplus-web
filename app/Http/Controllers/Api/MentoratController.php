@@ -109,10 +109,14 @@ class MentoratController extends Controller
             default => $query->orderByDesc('avg_rating')->orderByDesc('mentorships_completed_count'),
         };
 
-        // Only select safe fields
-        $query->select([
-            'id', 'name', 'country', 'city', 'avatar', 'bio',
-            'is_diaspora', 'kyc_level', 'created_at',
+        // Only select safe fields.
+        // IMPORTANT: use addSelect() — select() would replace the column list
+        // and wipe out the subquery columns added by withCount()/withAvg()
+        // (avg_rating, mentorships_completed_count, ...), breaking the
+        // orderByDesc('avg_rating') above with SQLSTATE[42S22].
+        $query->addSelect([
+            'users.id', 'users.name', 'users.country', 'users.city', 'users.avatar', 'users.bio',
+            'users.is_diaspora', 'users.kyc_level', 'users.created_at',
         ]);
 
         $perPage = min(24, (int) $request->input('per_page', 12));
@@ -139,7 +143,8 @@ class MentoratController extends Controller
                 'mentorReviewsReceived as reviews_count',
             ])
             ->withAvg('mentorReviewsReceived as avg_rating', 'rating')
-            ->select(['id', 'name', 'country', 'city', 'avatar', 'bio', 'is_diaspora', 'kyc_level', 'created_at'])
+            // addSelect() (not select()) so withCount/withAvg subquery columns survive
+            ->addSelect(['users.id', 'users.name', 'users.country', 'users.city', 'users.avatar', 'users.bio', 'users.is_diaspora', 'users.kyc_level', 'users.created_at'])
             ->firstOrFail();
 
         // Latest reviews
