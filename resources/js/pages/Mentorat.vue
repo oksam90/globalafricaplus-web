@@ -185,8 +185,11 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import MentorCard from '../components/MentorCard.vue';
+
+const route = useRoute();
 
 const stats = ref({});
 const mentors = ref([]);
@@ -274,4 +277,7 @@ async function load() {
 }
 
 onMounted(load);
+
+// Refetch mentor list when URL / query params change on /mentorat
+watch(() => route.fullPath, () => { if (route.name === 'mentorat') loadMentors(); });
 </script>

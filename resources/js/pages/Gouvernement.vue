@@ -201,10 +201,12 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 const auth = useAuthStore();
+const route = useRoute();
 
 const stats = ref({});
 const calls = ref([]);
@@ -281,4 +283,7 @@ async function load() {
 }
 
 onMounted(load);
+
+// Refetch calls list when URL / query params change on /gouvernement
+watch(() => route.fullPath, () => { if (route.name === 'gouvernement') loadCalls(); });
 </script>

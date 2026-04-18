@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useUiStore } from '../stores/ui';
 
 const routes = [
     { path: '/', name: 'home', component: () => import('../pages/Home.vue') },
@@ -170,16 +171,16 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
     const auth = useAuthStore();
+    const ui = useUiStore();
+    ui.startNav();
 
     // Only block navigation to fetch user if we haven't bootstrapped yet
     // AND the target page actually needs auth info (auth-gated pages).
     // Public pages render immediately without waiting.
     if (!auth.bootstrapped) {
         if (to.meta.requiresAuth) {
-            // Must wait — we need to know if user is logged in
             await auth.fetchUser();
         } else {
-            // Fire & forget — page renders while user check happens in background
             auth.fetchUser();
         }
     }
@@ -187,6 +188,16 @@ router.beforeEach(async (to) => {
     if (to.meta.requiresAuth && !auth.user) {
         return { name: 'login', query: { redirect: to.fullPath } };
     }
+});
+
+router.afterEach(() => {
+    const ui = useUiStore();
+    ui.endNav();
+});
+
+router.onError(() => {
+    const ui = useUiStore();
+    ui.endNav();
 });
 
 export default router;

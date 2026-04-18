@@ -1,7 +1,8 @@
 <template>
     <header class="sticky top-0 z-40 backdrop-blur bg-white/90 dark:bg-brand-black/90 border-b border-brand-gold-200/60 dark:border-brand-gold-700/30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-            <router-link to="/" class="flex items-center group shrink-0" aria-label="GlobalAfrica+ — Accueil">
+            <router-link to="/" @click="mobileOpen = false"
+                class="flex items-center group shrink-0" aria-label="GlobalAfrica+ — Accueil">
                 <img :src="logoUrl" alt="GlobalAfrica+"
                     class="h-10 md:h-12 w-auto rounded-md" />
             </router-link>
