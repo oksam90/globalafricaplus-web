@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" width="800" height="300">
+  <defs>
+    <linearGradient id="gd2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4B96A"/>
+      <stop offset="50%" stop-color="#C5A54E"/>
+      <stop offset="100%" stop-color="#A68A3E"/>
+    </linearGradient>
+    <filter id="gl2"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="800" height="300" fill="#1A1A1A"/>
+  
+  <circle cx="135" cy="150" r="108" fill="none" stroke="#C5A54E" stroke-width="3.5" opacity="0.6"/>
+  
+  <g transform="translate(48, 38) scale(0.83)" filter="url(#gl2)">
+    <path d="M 100,32 C 108,28 118,25 128,22 C 138,19 148,16 158,18 C 165,20 170,18 176,15 C 182,12 188,14 192,18 C 196,14 200,12 206,14 C 212,16 216,14 222,16 C 228,18 234,22 238,28 C 242,34 246,40 248,48 C 250,56 252,64 254,72 C 256,80 258,88 262,94 C 266,100 272,104 278,106 C 284,108 290,108 294,112 C 290,116 284,118 278,120 C 272,122 266,126 262,132 C 258,140 256,148 254,156 C 252,164 250,172 248,180 C 246,188 244,196 240,204 C 236,212 232,218 228,224 C 224,230 220,236 216,240 C 212,244 208,248 202,252 C 196,256 190,260 184,262 C 178,264 172,266 168,264 C 164,262 162,258 160,254 C 156,248 152,240 148,232 C 144,224 140,216 138,208 C 136,200 134,192 130,186 C 126,180 122,174 118,168 C 114,162 110,156 108,150 C 106,144 102,138 98,134 C 94,130 90,128 86,126 C 82,124 78,124 76,122 C 74,120 72,116 70,112 C 68,108 66,104 64,100 C 62,96 60,92 58,88 C 56,84 54,80 52,76 C 50,72 50,68 52,64 C 54,60 56,56 60,54 C 64,52 66,48 64,44 C 62,40 60,36 62,34 C 64,32 68,30 72,30 C 78,30 84,30 90,30 C 96,30 98,32 100,32 Z" fill="url(#gd2)"/>
+    <path d="M 260,196 C 264,192 268,194 270,198 C 272,204 272,212 270,220 C 268,226 264,230 260,228 C 256,226 256,218 256,212 C 256,204 258,200 260,196 Z" fill="url(#gd2)" opacity="0.5"/>
+  </g>
+  
+  <text x="290" y="180" font-family="'Georgia',serif" font-size="130" font-weight="bold" fill="#F5F5F5" letter-spacing="-4">GA</text>
+  <text x="488" y="180" font-family="'Georgia',serif" font-size="130" font-weight="bold" fill="#C4344E">+</text>
+  
+  <text x="295" y="222" font-family="'Helvetica Neue',sans-serif" font-size="24" fill="#C5A54E" letter-spacing="7" font-weight="300">GlobalAfrica</text>
+  <text x="518" y="222" font-family="'Helvetica Neue',sans-serif" font-size="24" fill="#C4344E" font-weight="600">+</text>
+  
+  <text x="295" y="252" font-family="'Helvetica Neue',sans-serif" font-size="10" fill="#D4B96A" letter-spacing="3.5" opacity="0.4">CONNECTER L'AFRIQUE ET SA DIASPORA</text>
+</svg>

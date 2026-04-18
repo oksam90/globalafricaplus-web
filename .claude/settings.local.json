@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/user/Documents/egov/archive/**)",
+      "Bash(python -c \"from docx import Document; d=Document\\('AfricaPlus_Document_Technique_v1_1.docx'\\); [print\\(p.text\\) for p in d.paragraphs]\")",
+      "Bash(pandoc AfricaPlus_Document_Technique_v1_1.docx -o /tmp/africaplus.md)",
+      "Read(//tmp/**)",
+      "Bash(where pandoc:*)",
+      "Bash(where soffice:*)",
+      "Bash(pip install:*)",
+      "Bash(python -c ':*)",
+      "Bash(ls -la .env*)",
+      "Bash(npm install:*)",
+      "Bash(C:/xampp/php/php.exe artisan:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://127.0.0.1:8000/api/stats)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:8000/)",
+      "Bash(php artisan:*)",
+      "Bash(npx vite:*)",
+      "Bash(python3 -c \" import sys, json for line in sys.stdin: try: obj = json.loads\\(line.strip\\(\\)\\) if obj.get\\('type'\\) == 'human': msg = obj.get\\('message', {}\\) if isinstance\\(msg, dict\\): content = msg.get\\('content', ''\\) if isinstance\\(content, str\\) and len\\(content\\) > 5: print\\('USER:', content[:500]\\) elif isinstance\\(content, list\\): for c in content: if isinstance\\(c, dict\\) and c.get\\('type'\\) == 'text': print\\('USER:', c.get\\('text',''\\)[:500]\\) except: pass \")",
+      "Bash(python \"C:\\\\Users\\\\user\\\\.claude\\\\projects\\\\C--xampp-htdocs-globalafrica-\\\\8805f208-a47b-4492-a5b7-e33b29f2f67b.jsonl\")",
+      "Bash(where python:*)",
+      "Bash(grep -n \"class Role\" /c/xampp/htdocs/globalafrica+/app/Models/*.php)",
+      "Bash(find . -type f \\\\\\( -name \"*.vue\" -o -name \"*.php\" -o -name \"*.js\" \\\\\\) -exec grep -l \"government\\\\|gouvernement\\\\|ZES\\\\|appels\" {} \\\\;)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
+      "Bash(grep -E \"\\\\.php$\")",
+      "Bash(grep -l \"Skill\" /c/xampp/htdocs/globalafrica+/database/seeders/*.php)",
+      "Bash(xargs wc:*)",
+      "WebFetch(domain:idnorm.com)",
+      "WebFetch(domain:clustdoc.com)",
+      "WebFetch(domain:docs.idnorm.com)",
+      "Bash(mkdir -p \"C:/xampp/htdocs/globalafrica+/public/brand\")",
+      "Bash(cp \"C:/Users/user/Documents/globalafrica+/GA_Plus_Logos/06_SVG_Sources/GA+_02_horizontal_sombre.svg\" \"C:/xampp/htdocs/globalafrica+/public/brand/logo-horizontal-dark.svg\")",
+      "Bash(cp \"C:/Users/user/Documents/globalafrica+/GA_Plus_Logos/06_SVG_Sources/GA+_06_favicon.svg\" \"C:/xampp/htdocs/globalafrica+/public/brand/favicon.svg\")",
+      "Bash(cp \"C:/Users/user/Documents/globalafrica+/GA_Plus_Logos/06_SVG_Sources/GA+_01_horizontal_clair.svg\" \"C:/xampp/htdocs/globalafrica+/public/brand/logo-horizontal-light.svg\")",
+      "Bash(cp \"C:/Users/user/Documents/globalafrica+/GA_Plus_Logos/06_SVG_Sources/GA+_04_icone_sombre.svg\" \"C:/xampp/htdocs/globalafrica+/public/brand/icon-dark.svg\")",
+      "Bash(cp \"C:/Users/user/Documents/globalafrica+/GA_Plus_Logos/06_SVG_Sources/GA+_03_icone_clair.svg\" \"C:/xampp/htdocs/globalafrica+/public/brand/icon-light.svg\")"
+    ]
+  }
+}

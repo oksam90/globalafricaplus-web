@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/* Tailwind v4: enable class-based dark mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* ─── GlobalAfrica+ Brand Palette ───────────── */
+    /* Or (Gold) — couleur principale décorative */
+    --color-brand-gold-50:  #fbf7ec;
+    --color-brand-gold-100: #f5ebcc;
+    --color-brand-gold-200: #ecd89a;
+    --color-brand-gold-300: #e0c267;
+    --color-brand-gold-400: #d4b96a;
+    --color-brand-gold-500: #c5a54e;
+    --color-brand-gold-600: #a68a3e;
+    --color-brand-gold-700: #856e31;
+    --color-brand-gold-800: #625124;
+    --color-brand-gold-900: #403418;
+
+    /* Rouge cerise — accent "+" & CTA */
+    --color-brand-red-50:  #fceef1;
+    --color-brand-red-100: #f7d4db;
+    --color-brand-red-200: #eda4b2;
+    --color-brand-red-300: #e1778c;
+    --color-brand-red-400: #d45269;
+    --color-brand-red-500: #c4344e;
+    --color-brand-red-600: #a62942;
+    --color-brand-red-700: #851f35;
+    --color-brand-red-800: #631725;
+    --color-brand-red-900: #410e18;
+
+    /* Noir profond (fond logo) */
+    --color-brand-black:    #1a1a1a;
+    --color-brand-black-50: #2a2a2a;
+    --color-brand-charcoal: #0f0f0f;
+}
+
+/* ─── Dark mode global transitions ────────────── */
+html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark {
+    color-scheme: dark;
+}
+
+/* Smooth transitions for dark mode toggle */
+*, *::before, *::after {
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
+}
