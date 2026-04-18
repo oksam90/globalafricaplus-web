@@ -42,7 +42,7 @@ ln -sfn "${SHARED_PATH}/bootstrap/cache" "${NEW_RELEASE}/bootstrap/cache"
 chown -R "$(whoami)":www-data "${NEW_RELEASE}"
 find "${NEW_RELEASE}" -type d -exec chmod 2775 {} \;
 find "${NEW_RELEASE}" -type f -exec chmod 0664 {} \;
-chmod -R ug+rwX "${SHARED_PATH}/storage" "${SHARED_PATH}/bootstrap/cache"
+chmod -R ug+rwX "${SHARED_PATH}/storage" "${SHARED_PATH}/bootstrap/cache" 2>/dev/null || true
 
 # ─── 4. APP_KEY si absent ──────────────────────────────
 if ! grep -q "^APP_KEY=base64:" "${SHARED_PATH}/.env"; then
