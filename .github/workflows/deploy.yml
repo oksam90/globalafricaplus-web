@@ -97,9 +97,34 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add VPS to known_hosts
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          if [ -z "${SSH_HOST:-}" ]; then
+            echo "::error::SSH_HOST secret is empty or undefined"
+            exit 1
+          fi
+          PORT="${SSH_PORT:-22}"
+          echo "Scanning ${SSH_HOST}:${PORT}…"
+          # -T 10 = connect timeout; retry once if first attempt yields nothing
+          ssh-keyscan -T 10 -p "${PORT}" -H "${SSH_HOST}" > /tmp/known_hosts.tmp 2> /tmp/keyscan.err || true
+          if [ ! -s /tmp/known_hosts.tmp ]; then
+            echo "First scan empty, retrying with verbose output…"
+            cat /tmp/keyscan.err || true
+            ssh-keyscan -v -T 15 -p "${PORT}" -H "${SSH_HOST}" > /tmp/known_hosts.tmp 2>&1 || true
+          fi
+          if [ ! -s /tmp/known_hosts.tmp ]; then
+            echo "::error::ssh-keyscan returned no host keys for ${SSH_HOST}:${PORT} — check SSH_HOST secret, port reachability, and VPS firewall"
+            cat /tmp/known_hosts.tmp || true
+            exit 1
+          fi
+          cat /tmp/known_hosts.tmp >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          echo "known_hosts populated ($(wc -l < /tmp/known_hosts.tmp) key(s))."
 
       - name: Upload release tarball
         run: |
