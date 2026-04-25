@@ -3,37 +3,37 @@
         <div class="flex items-end justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tight">Mon parcours de formalisation</h1>
-                <p class="text-slate-600 mt-1">Suivez vos progrès étape par étape pour formaliser votre entreprise.</p>
+                <p class="text-slate-600 dark:text-slate-300 mt-1">Suivez vos progrès étape par étape pour formaliser votre entreprise.</p>
             </div>
             <div class="flex gap-2">
-                <router-link to="/formalisation" class="text-sm font-semibold text-emerald-600 hover:underline">Hub formalisation →</router-link>
-                <router-link to="/formalisation/business-plans" class="text-sm font-semibold text-sky-600 hover:underline">Templates BP →</router-link>
+                <router-link to="/formalisation" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Hub formalisation →</router-link>
+                <router-link to="/formalisation/business-plans" class="text-sm font-semibold text-sky-600 dark:text-sky-400 hover:underline">Templates BP →</router-link>
             </div>
         </div>
 
         <!-- Country selector -->
         <div class="mb-6 flex items-center gap-3">
-            <label class="text-sm font-medium text-slate-700">Pays :</label>
-            <select v-model="country" @change="load" class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+            <label class="text-sm font-medium text-slate-700 dark:text-slate-200">Pays :</label>
+            <select v-model="country" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm">
                 <option v-for="c in availableCountries" :key="c.country" :value="c.country">
                     {{ c.country }} ({{ c.steps_count }} étapes)
                 </option>
             </select>
         </div>
 
-        <div v-if="loading" class="text-slate-500 py-8">Chargement…</div>
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-8">Chargement…</div>
         <template v-else>
             <!-- Progress banner -->
-            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 mb-8">
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl p-6 mb-8">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-bold text-emerald-900">Progression — {{ country }}</h3>
-                    <span class="text-sm font-semibold text-emerald-700">{{ progress.completion }}%</span>
+                    <h3 class="font-bold text-emerald-900 dark:text-emerald-200">Progression — {{ country }}</h3>
+                    <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ progress.completion }}%</span>
                 </div>
-                <div class="h-3 bg-white rounded-full overflow-hidden">
+                <div class="h-3 bg-white dark:bg-slate-900 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all"
                         :style="{ width: progress.completion + '%' }"></div>
                 </div>
-                <div class="flex justify-between text-xs text-emerald-700 mt-2">
+                <div class="flex justify-between text-xs text-emerald-700 dark:text-emerald-300 mt-2">
                     <span>{{ progress.completed_steps }} / {{ progress.total_steps }} étapes complétées</span>
                     <span v-if="progress.completion === 100" class="font-bold">🎉 Formalisation terminée !</span>
                 </div>
@@ -42,11 +42,11 @@
             <!-- Steps -->
             <div class="space-y-4">
                 <div v-for="item in stepsWithProgress" :key="item.step.id"
-                    class="bg-white border rounded-2xl overflow-hidden transition"
+                    class="bg-white dark:bg-slate-800 border rounded-2xl overflow-hidden transition"
                     :class="{
-                        'border-emerald-300 bg-emerald-50/20': item.progress.status === 'completed',
-                        'border-amber-300 bg-amber-50/20': item.progress.status === 'in_progress',
-                        'border-slate-100': item.progress.status === 'not_started'
+                        'border-emerald-300 dark:border-emerald-800/60 bg-emerald-50/20 dark:bg-emerald-900/10': item.progress.status === 'completed',
+                        'border-amber-300 dark:border-amber-800/60 bg-amber-50/20 dark:bg-amber-900/10': item.progress.status === 'in_progress',
+                        'border-slate-100 dark:border-slate-700': item.progress.status === 'not_started'
                     }">
                     <div class="flex items-start gap-4 p-5">
                         <!-- Step number + status icon -->
@@ -54,7 +54,7 @@
                             :class="{
                                 'bg-emerald-500 text-white': item.progress.status === 'completed',
                                 'bg-amber-400 text-white': item.progress.status === 'in_progress',
-                                'bg-slate-100 text-slate-500': item.progress.status === 'not_started'
+                                'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300': item.progress.status === 'not_started'
                             }">
                             <span v-if="item.progress.status === 'completed'">✓</span>
                             <span v-else>{{ item.step.order }}</span>
@@ -68,9 +68,9 @@
                                     {{ statusLabel(item.progress.status) }}
                                 </span>
                             </div>
-                            <p class="text-sm text-slate-600">{{ item.step.description }}</p>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">{{ item.step.description }}</p>
 
-                            <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                            <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
                                 <span v-if="item.step.institution">🏛️ {{ item.step.institution }}</span>
                                 <span v-if="item.step.estimated_duration">⏱️ {{ item.step.estimated_duration }}</span>
                                 <span v-if="item.step.estimated_cost">💰 {{ item.step.estimated_cost }}</span>
@@ -78,31 +78,31 @@
 
                             <!-- Documents requis -->
                             <div v-if="item.step.required_documents?.length" class="mt-3">
-                                <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Documents requis</h5>
+                                <h5 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Documents requis</h5>
                                 <div class="flex flex-wrap gap-1.5">
                                     <span v-for="(doc, i) in item.step.required_documents" :key="i"
-                                        class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                        class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                         {{ doc }}
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Tips -->
-                            <div v-if="item.step.tips" class="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                <p class="text-xs text-amber-800"><strong>💡</strong> {{ item.step.tips }}</p>
+                            <div v-if="item.step.tips" class="mt-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-900/50 rounded-xl p-3">
+                                <p class="text-xs text-amber-800 dark:text-amber-200"><strong>💡</strong> {{ item.step.tips }}</p>
                             </div>
 
                             <!-- Notes -->
                             <div v-if="editingStep === item.step.id" class="mt-3">
-                                <textarea v-model="editNotes" rows="2" class="w-full px-3 py-2 rounded-md border border-slate-200 text-sm"
+                                <textarea v-model="editNotes" rows="2" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm"
                                     placeholder="Ajoutez des notes personnelles (RDV, documents reçus…)"></textarea>
                             </div>
-                            <div v-else-if="item.progress.notes" class="mt-2 text-xs text-slate-500 italic">
+                            <div v-else-if="item.progress.notes" class="mt-2 text-xs text-slate-500 dark:text-slate-400 italic">
                                 📝 {{ item.progress.notes }}
                             </div>
 
                             <!-- Completed date -->
-                            <div v-if="item.progress.completed_at" class="mt-1 text-xs text-emerald-600 font-medium">
+                            <div v-if="item.progress.completed_at" class="mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                                 ✓ Complétée le {{ formatDate(item.progress.completed_at) }}
                             </div>
                         </div>
@@ -112,20 +112,20 @@
                             <select v-if="editingStep !== item.step.id"
                                 :value="item.progress.status"
                                 @change="quickUpdate(item.step.id, $event.target.value, item.progress.notes)"
-                                class="text-xs px-2 py-1 rounded-md border border-slate-200">
+                                class="text-xs px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                                 <option value="not_started">Non commencé</option>
                                 <option value="in_progress">En cours</option>
                                 <option value="completed">Terminé</option>
                             </select>
                             <button v-if="editingStep !== item.step.id" @click="startEdit(item)"
-                                class="text-xs text-slate-500 hover:text-slate-700">📝 Notes</button>
+                                class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">📝 Notes</button>
                             <template v-if="editingStep === item.step.id">
                                 <button @click="saveNotes(item.step.id, item.progress.status)"
                                     class="text-xs px-3 py-1 rounded bg-emerald-600 text-white font-medium">Sauver</button>
-                                <button @click="editingStep = null" class="text-xs text-slate-500">Annuler</button>
+                                <button @click="editingStep = null" class="text-xs text-slate-500 dark:text-slate-400">Annuler</button>
                             </template>
                             <a v-if="item.step.link" :href="item.step.link" target="_blank"
-                                class="text-xs text-emerald-600 hover:underline">Lien →</a>
+                                class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline">Lien →</a>
                         </div>
                     </div>
                 </div>
@@ -148,7 +148,7 @@ const editingStep = ref(null);
 const editNotes = ref('');
 
 function statusClass(s) {
-    return { completed: 'bg-emerald-100 text-emerald-700', in_progress: 'bg-amber-100 text-amber-700', not_started: 'bg-slate-100 text-slate-600' }[s] || 'bg-slate-100 text-slate-600';
+    return { completed: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300', in_progress: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300', not_started: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }[s] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 }
 function statusLabel(s) {
     return { completed: 'Terminé', in_progress: 'En cours', not_started: 'Non commencé' }[s] || s;

@@ -1,13 +1,13 @@
 <template>
     <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <router-link to="/projets/mes-projets" class="text-sm text-emerald-700 hover:underline">← Mes projets</router-link>
+        <router-link to="/projets/mes-projets" class="text-sm text-emerald-700 dark:text-emerald-400 hover:underline">← Mes projets</router-link>
 
-        <h1 class="mt-4 text-3xl font-black tracking-tight">
+        <h1 class="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
             {{ isEdit ? 'Modifier le projet' : 'Nouveau projet' }}
         </h1>
-        <p class="text-slate-600 mt-1">Présentez votre initiative pour trouver du financement, des talents et des partenaires.</p>
+        <p class="text-slate-600 dark:text-slate-300 mt-1">Présentez votre initiative pour trouver du financement, des talents et des partenaires.</p>
 
-        <form @submit.prevent="submit" class="mt-8 bg-white border border-slate-100 rounded-2xl p-6 space-y-5">
+        <form @submit.prevent="submit" class="mt-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 space-y-5">
             <Field label="Titre du projet *">
                 <input v-model="form.title" type="text" required maxlength="200" class="input" />
             </Field>
@@ -83,7 +83,7 @@
                 <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     <label v-for="s in sdgs" :key="s.id"
                         class="flex items-center gap-1 cursor-pointer text-xs p-2 rounded border"
-                        :class="form.sdg_ids.includes(s.id) ? 'ring-2 ring-offset-1' : 'border-slate-200 hover:border-emerald-300'"
+                        :class="form.sdg_ids.includes(s.id) ? 'ring-2 ring-offset-1' : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-emerald-300 dark:hover:border-emerald-500/60'"
                         :style="form.sdg_ids.includes(s.id) ? { backgroundColor: s.color, color: 'white', borderColor: s.color } : {}">
                         <input type="checkbox" :value="s.id" v-model="form.sdg_ids" class="hidden" />
                         <span class="font-bold">{{ s.number }}</span>
@@ -115,7 +115,7 @@
                     class="px-5 py-2.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60">
                     {{ isEdit && form.status === 'published' ? 'Mettre à jour' : 'Publier' }}
                 </button>
-                <router-link to="/projets/mes-projets" class="px-5 py-2.5 rounded-md border border-slate-200 hover:bg-slate-50 text-slate-800 font-semibold">
+                <router-link to="/projets/mes-projets" class="px-5 py-2.5 rounded-md border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold">
                     Annuler
                 </router-link>
             </div>
@@ -245,6 +245,22 @@ onMounted(async () => {
     border: 1px solid rgb(226 232 240);
     outline: none;
     background: white;
+    color: rgb(15 23 42); /* slate-900 */
 }
+.input::placeholder { color: rgb(148 163 184); /* slate-400 */ }
 .input:focus { border-color: rgb(52 211 153); }
+
+:global(.dark) .input {
+    background: rgb(15 23 42); /* slate-900 */
+    border-color: rgb(71 85 105); /* slate-600 */
+    color: rgb(241 245 249); /* slate-100 */
+}
+:global(.dark) .input::placeholder { color: rgb(100 116 139); /* slate-500 */ }
+:global(.dark) .input:focus { border-color: rgb(52 211 153); }
+
+/* Also style native option elements inside <select class="input"> in dark mode */
+:global(.dark) .input option {
+    background: rgb(15 23 42);
+    color: rgb(241 245 249);
+}
 </style>

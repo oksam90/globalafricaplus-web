@@ -1,16 +1,16 @@
 <template>
-    <div v-if="!auth.kyc?.is_verified" class="bg-gradient-to-r from-orange-50 via-amber-50 to-red-50 border-2 border-orange-300 rounded-2xl p-6 mb-8">
+    <div v-if="!auth.kyc?.is_verified" class="bg-gradient-to-r from-orange-50 via-amber-50 to-red-50 dark:from-orange-950/40 dark:via-amber-950/40 dark:to-red-950/40 border-2 border-orange-300 dark:border-orange-800/60 rounded-2xl p-6 mb-8">
         <!-- Alert header -->
         <div class="flex items-start gap-4">
             <div class="shrink-0">
-                <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <div class="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-orange-600 dark:text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                     </svg>
                 </div>
             </div>
             <div class="flex-1">
-                <h3 class="text-lg font-bold text-orange-900">
+                <h3 class="text-lg font-bold text-orange-900 dark:text-orange-200">
                     Veuillez dans un premier temps renseigner les informations de votre KYC.
                 </h3>
 
@@ -20,13 +20,13 @@
                         <span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-amber-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                     </span>
-                    <span class="text-sm font-semibold text-amber-700">Vérification en cours...</span>
+                    <span class="text-sm font-semibold text-amber-700 dark:text-amber-300">Vérification en cours...</span>
                 </div>
 
                 <!-- Explanation text with read more -->
-                <div class="mt-4 text-sm text-slate-700 leading-relaxed space-y-3">
-                    <p class="font-semibold text-orange-800 text-base">C'est quoi le KYC ?</p>
-                    <p class="italic text-slate-500 text-xs">
+                <div class="mt-4 text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-3">
+                    <p class="font-semibold text-orange-800 dark:text-orange-300 text-base">C'est quoi le KYC ?</p>
+                    <p class="italic text-slate-500 dark:text-slate-400 text-xs">
                         Les informations remplies à chaque étape du formulaire seront enregistrées avant soumission pour une meilleure expérience.
                     </p>
                     <p>
@@ -50,7 +50,7 @@
                             <strong>A. Personnes physiques</strong> — L'identification d'une personne physique implique l'obtention des nom et prénoms complets, de la date et du lieu de naissance et de l'adresse de son domicile principal. La vérification de l'identité d'une personne physique requiert la présentation d'un document officiel original en cours de validité et comportant une photographie, dont il en est pris copie...
                         </p>
                         <button @click="showMore = true"
-                            class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700 mt-1">
+                            class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 mt-1">
                             Lire plus
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -75,7 +75,7 @@
                             </p>
                         </div>
                         <button @click="showMore = false"
-                            class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700 mt-1">
+                            class="inline-flex items-center gap-1 text-sm font-semibold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 mt-1">
                             Lire moins
                             <svg class="w-4 h-4 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -87,17 +87,17 @@
                 <!-- 4 steps overview -->
                 <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div v-for="step in steps" :key="step.num"
-                        class="bg-white rounded-xl p-3 border text-center"
-                        :class="step.done ? 'border-emerald-200 bg-emerald-50' : 'border-orange-100'">
+                        class="bg-white dark:bg-slate-800 rounded-xl p-3 border text-center"
+                        :class="step.done ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/30' : 'border-orange-100 dark:border-orange-900/50'">
                         <div class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm font-bold mb-1.5"
-                            :class="step.done ? 'bg-emerald-600 text-white' : 'bg-orange-100 text-orange-700'">
+                            :class="step.done ? 'bg-emerald-600 text-white' : 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300'">
                             <template v-if="step.done">&#10003;</template>
                             <template v-else>{{ step.num }}</template>
                         </div>
-                        <div class="text-xs font-semibold" :class="step.done ? 'text-emerald-700' : 'text-slate-700'">
+                        <div class="text-xs font-semibold" :class="step.done ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-200'">
                             {{ step.title }}
                         </div>
-                        <div class="text-[10px] text-slate-500 mt-0.5">{{ step.desc }}</div>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{{ step.desc }}</div>
                     </div>
                 </div>
 

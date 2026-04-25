@@ -102,16 +102,16 @@
                 <div class="grid md:grid-cols-4 gap-3">
                     <input v-model="filters.search" @input="debouncedLoadMentors"
                         type="search" placeholder="Rechercher un mentor…"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-violet-400 focus:outline-none text-sm md:col-span-2" />
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none text-sm md:col-span-2" />
 
                     <select v-model="filters.country" @change="loadMentors"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm">
                         <option value="">Tous pays</option>
                         <option v-for="c in mentorCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
 
                     <select v-model="filters.sort" @change="loadMentors"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm">
                         <option value="rating">Mieux notés</option>
                         <option value="sessions">Plus expérimentés</option>
                         <option value="recent">Derniers inscrits</option>

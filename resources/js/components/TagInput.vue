@@ -1,12 +1,12 @@
 <template>
-    <div class="flex flex-wrap items-center gap-1.5 p-1.5 rounded-md border border-slate-200 bg-white focus-within:border-emerald-400">
+    <div class="flex flex-wrap items-center gap-1.5 p-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus-within:border-emerald-400">
         <span v-for="(tag, i) in tags" :key="tag + i"
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-xs font-medium">
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
             {{ tag }}
-            <button type="button" @click="remove(i)" class="hover:text-rose-600">×</button>
+            <button type="button" @click="remove(i)" class="hover:text-rose-600 dark:hover:text-rose-400">×</button>
         </span>
         <input v-model="buffer" type="text" :placeholder="placeholder"
-            class="flex-1 min-w-[120px] px-1 py-1 text-sm outline-none bg-transparent"
+            class="flex-1 min-w-[120px] px-1 py-1 text-sm outline-none bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
             @keydown.enter.prevent="commit"
             @keydown.comma.prevent="commit"
             @keydown.backspace="onBackspace" />

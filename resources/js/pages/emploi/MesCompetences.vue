@@ -3,35 +3,35 @@
         <div class="flex items-end justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tight">Mes compétences</h1>
-                <p class="text-slate-600 mt-1">Gérez vos compétences pour améliorer votre matching avec les projets.</p>
+                <p class="text-slate-600 dark:text-slate-300 mt-1">Gérez vos compétences pour améliorer votre matching avec les projets.</p>
             </div>
             <div class="flex gap-2">
-                <router-link to="/emploi" class="text-sm font-semibold text-amber-600 hover:underline">Offres d'emploi →</router-link>
-                <router-link to="/emploi/mes-candidatures" class="text-sm font-semibold text-sky-600 hover:underline">Mes candidatures →</router-link>
+                <router-link to="/emploi" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:underline">Offres d'emploi →</router-link>
+                <router-link to="/emploi/mes-candidatures" class="text-sm font-semibold text-sky-600 dark:text-sky-400 hover:underline">Mes candidatures →</router-link>
             </div>
         </div>
 
-        <div v-if="loading" class="text-slate-500 py-8">Chargement…</div>
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-8">Chargement…</div>
         <template v-else>
             <!-- Current skills -->
-            <div class="bg-white border border-slate-100 rounded-2xl p-6 mb-8">
+            <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold">Mes compétences ({{ mySkills.length }}/20)</h2>
-                    <span v-if="dirty" class="text-xs text-amber-600 font-semibold">Modifications non enregistrées</span>
+                    <span v-if="dirty" class="text-xs text-amber-600 dark:text-amber-400 font-semibold">Modifications non enregistrées</span>
                 </div>
 
-                <div v-if="mySkills.length === 0" class="text-center py-8 text-slate-500 bg-slate-50 rounded-xl">
+                <div v-if="mySkills.length === 0" class="text-center py-8 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 rounded-xl">
                     Aucune compétence ajoutée. Sélectionnez des compétences ci-dessous.
                 </div>
                 <div v-else class="space-y-3">
                     <div v-for="(s, i) in mySkills" :key="s.id"
-                        class="flex items-center gap-4 bg-slate-50 rounded-xl p-3">
+                        class="flex items-center gap-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3">
                         <div class="flex-1">
                             <div class="font-semibold text-sm">{{ s.name }}</div>
-                            <div class="text-[10px] text-slate-500 uppercase tracking-wider">{{ s.category }}</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ s.category }}</div>
                         </div>
                         <select v-model="s.level" @change="dirty = true"
-                            class="px-2 py-1 rounded-md border border-slate-200 text-xs font-medium">
+                            class="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-medium">
                             <option value="beginner">Débutant</option>
                             <option value="intermediate">Intermédiaire</option>
                             <option value="advanced">Avancé</option>
@@ -39,10 +39,10 @@
                         </select>
                         <div class="flex items-center gap-1">
                             <input v-model.number="s.years_experience" @input="dirty = true" type="number" min="0" max="50"
-                                class="w-14 px-2 py-1 rounded-md border border-slate-200 text-xs text-center" />
-                            <span class="text-xs text-slate-500">ans</span>
+                                class="w-14 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs text-center" />
+                            <span class="text-xs text-slate-500 dark:text-slate-400">ans</span>
                         </div>
-                        <button @click="removeSkill(i)" class="text-red-500 hover:text-red-700 text-sm font-bold">&times;</button>
+                        <button @click="removeSkill(i)" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-bold">&times;</button>
                     </div>
                 </div>
 
@@ -52,24 +52,24 @@
                         {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
                     </button>
                 </div>
-                <p v-if="saveSuccess" class="text-sm text-emerald-600 mt-2">Compétences enregistrées.</p>
-                <p v-if="saveError" class="text-sm text-rose-600 mt-2">{{ saveError }}</p>
+                <p v-if="saveSuccess" class="text-sm text-emerald-600 dark:text-emerald-400 mt-2">Compétences enregistrées.</p>
+                <p v-if="saveError" class="text-sm text-rose-600 dark:text-rose-400 mt-2">{{ saveError }}</p>
             </div>
 
             <!-- Add skills -->
-            <div class="bg-white border border-slate-100 rounded-2xl p-6">
+            <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                 <h2 class="text-lg font-bold mb-4">Ajouter des compétences</h2>
                 <input v-model="searchSkill" type="text" placeholder="Rechercher une compétence…"
-                    class="w-full px-3 py-2 rounded-md border border-slate-200 text-sm mb-4" />
+                    class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm mb-4" />
 
                 <div v-for="cat in filteredCategories" :key="cat" class="mb-4">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{{ cat }}</h3>
+                    <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{{ cat }}</h3>
                     <div class="flex flex-wrap gap-2">
                         <button v-for="sk in skillsByCategory(cat)" :key="sk.id"
                             @click="addSkill(sk)"
                             :disabled="isAdded(sk.id) || mySkills.length >= 20"
                             class="text-xs px-3 py-1.5 rounded-full border font-medium transition"
-                            :class="isAdded(sk.id) ? 'bg-amber-100 text-amber-700 border-amber-200 cursor-default' : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50'">
+                            :class="isAdded(sk.id) ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60 cursor-default' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'">
                             {{ isAdded(sk.id) ? '✓ ' : '+ ' }}{{ sk.name }}
                         </button>
                     </div>

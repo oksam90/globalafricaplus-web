@@ -3,36 +3,36 @@
         <div class="flex items-end justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tight">Analytics plateforme</h1>
-                <p class="text-slate-600 mt-1">Vue d'ensemble de l'activité Africa+.</p>
+                <p class="text-slate-600 dark:text-slate-300 mt-1">Vue d'ensemble de l'activité Africa+.</p>
             </div>
-            <router-link to="/dashboard" class="text-sm font-semibold text-red-600 hover:underline">
+            <router-link to="/dashboard" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline">
                 ← Dashboard admin
             </router-link>
         </div>
 
-        <div v-if="loading" class="text-slate-500 py-12 text-center">Chargement des analytics…</div>
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-12 text-center">Chargement des analytics…</div>
         <template v-else>
             <!-- Main KPIs -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-10">
                 <div v-for="kpi in mainKpis" :key="kpi.label"
-                    class="bg-white border border-slate-100 rounded-2xl p-5">
+                    class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
                     <div class="text-xl mb-1">{{ kpi.icon }}</div>
-                    <div class="text-3xl font-black tracking-tight" :class="kpi.color || 'text-slate-900'">{{ kpi.value }}</div>
-                    <div class="text-xs uppercase tracking-wider text-slate-500 mt-1">{{ kpi.label }}</div>
+                    <div class="text-3xl font-black tracking-tight" :class="kpi.color || 'text-slate-900 dark:text-slate-100'">{{ kpi.value }}</div>
+                    <div class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">{{ kpi.label }}</div>
                 </div>
             </div>
 
             <!-- Funding progress global -->
-            <div v-if="data.kpis.total_needed > 0" class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-2xl p-6 mb-10">
+            <div v-if="data.kpis.total_needed > 0" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/40 dark:to-orange-950/40 border border-red-100 dark:border-red-900/40 rounded-2xl p-6 mb-10">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-bold text-red-900">Progression globale du financement</h3>
-                    <span class="text-sm font-semibold text-red-700">{{ data.kpis.funding_rate }}%</span>
+                    <h3 class="font-bold text-red-900 dark:text-red-200">Progression globale du financement</h3>
+                    <span class="text-sm font-semibold text-red-700 dark:text-red-300">{{ data.kpis.funding_rate }}%</span>
                 </div>
-                <div class="h-3 bg-white rounded-full overflow-hidden">
+                <div class="h-3 bg-white dark:bg-slate-900 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-red-400 to-orange-500 rounded-full transition-all"
                         :style="{ width: Math.min(data.kpis.funding_rate, 100) + '%' }"></div>
                 </div>
-                <div class="flex justify-between text-xs text-red-700 mt-2">
+                <div class="flex justify-between text-xs text-red-700 dark:text-red-300 mt-2">
                     <span>Total levé : {{ fmtMoney(data.kpis.total_raised) }}</span>
                     <span>Total demandé : {{ fmtMoney(data.kpis.total_needed) }}</span>
                 </div>
@@ -40,13 +40,13 @@
 
             <div class="grid lg:grid-cols-2 gap-8 mb-10">
                 <!-- Users by role -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Utilisateurs par rôle</h3>
                     <div class="space-y-3">
                         <div v-for="r in data.users_by_role" :key="r.slug" class="flex items-center gap-3">
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-full w-28 text-center"
                                 :class="roleColorClass(r.slug)">{{ r.name }}</span>
-                            <div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="flex-1 h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div class="h-full rounded-full transition-all"
                                     :class="roleBarColor(r.slug)"
                                     :style="{ width: maxRoleCount > 0 ? (r.count / maxRoleCount * 100) + '%' : '0%' }"></div>
@@ -57,7 +57,7 @@
                 </div>
 
                 <!-- Projects by status -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Projets par statut</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div v-for="(count, status) in data.projects_by_status" :key="status"
@@ -71,63 +71,63 @@
 
             <div class="grid lg:grid-cols-2 gap-8 mb-10">
                 <!-- Projects by country -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Top 10 pays (projets publiés)</h3>
                     <div class="space-y-2">
                         <div v-for="c in data.projects_by_country" :key="c.country"
-                            class="flex items-center justify-between text-sm py-2 border-b border-slate-50 last:border-0">
+                            class="flex items-center justify-between text-sm py-2 border-b border-slate-50 dark:border-slate-700/60 last:border-0">
                             <div class="flex items-center gap-2">
                                 <span class="font-semibold">{{ c.country }}</span>
                             </div>
                             <div class="flex items-center gap-4">
-                                <span class="text-slate-500">{{ c.count }} projets</span>
-                                <span class="font-bold text-emerald-700">{{ fmtMoney(parseFloat(c.raised) || 0) }}</span>
+                                <span class="text-slate-500 dark:text-slate-400">{{ c.count }} projets</span>
+                                <span class="font-bold text-emerald-700 dark:text-emerald-400">{{ fmtMoney(parseFloat(c.raised) || 0) }}</span>
                             </div>
                         </div>
-                        <div v-if="!data.projects_by_country?.length" class="text-slate-400 text-center py-4">Aucune donnée.</div>
+                        <div v-if="!data.projects_by_country?.length" class="text-slate-400 dark:text-slate-500 text-center py-4">Aucune donnée.</div>
                     </div>
                 </div>
 
                 <!-- Projects by category -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Projets par secteur</h3>
                     <div class="space-y-2">
                         <div v-for="c in data.projects_by_category" :key="c.name"
-                            class="flex items-center justify-between text-sm py-2 border-b border-slate-50 last:border-0">
+                            class="flex items-center justify-between text-sm py-2 border-b border-slate-50 dark:border-slate-700/60 last:border-0">
                             <div class="flex items-center gap-2">
                                 <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: c.color }"></span>
                                 <span class="font-semibold">{{ c.name }}</span>
                             </div>
                             <div class="flex items-center gap-4">
-                                <span class="text-slate-500">{{ c.count }} projets</span>
-                                <span class="font-bold text-emerald-700">{{ fmtMoney(parseFloat(c.raised) || 0) }}</span>
+                                <span class="text-slate-500 dark:text-slate-400">{{ c.count }} projets</span>
+                                <span class="font-bold text-emerald-700 dark:text-emerald-400">{{ fmtMoney(parseFloat(c.raised) || 0) }}</span>
                             </div>
                         </div>
-                        <div v-if="!data.projects_by_category?.length" class="text-slate-400 text-center py-4">Aucune donnée.</div>
+                        <div v-if="!data.projects_by_category?.length" class="text-slate-400 dark:text-slate-500 text-center py-4">Aucune donnée.</div>
                     </div>
                 </div>
             </div>
 
             <div class="grid lg:grid-cols-2 gap-8 mb-10">
                 <!-- Registration trend -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Inscriptions (12 derniers mois)</h3>
                     <div v-if="data.registration_trend?.length" class="flex items-end gap-1 h-40">
                         <div v-for="m in data.registration_trend" :key="m.month"
                             class="flex-1 flex flex-col items-center justify-end gap-1">
-                            <span class="text-[10px] font-bold text-slate-700">{{ m.count }}</span>
+                            <span class="text-[10px] font-bold text-slate-700 dark:text-slate-200">{{ m.count }}</span>
                             <div class="w-full bg-red-400 rounded-t-sm transition-all min-h-[2px]"
                                 :style="{ height: maxRegistrations > 0 ? (m.count / maxRegistrations * 100) + '%' : '2px' }"></div>
-                            <span class="text-[9px] text-slate-400 -rotate-45 origin-top-left mt-1 whitespace-nowrap">
+                            <span class="text-[9px] text-slate-400 dark:text-slate-500 -rotate-45 origin-top-left mt-1 whitespace-nowrap">
                                 {{ formatMonth(m.month) }}
                             </span>
                         </div>
                     </div>
-                    <div v-else class="text-slate-400 text-center py-8">Pas encore de données.</div>
+                    <div v-else class="text-slate-400 dark:text-slate-500 text-center py-8">Pas encore de données.</div>
                 </div>
 
                 <!-- KYC distribution -->
-                <div class="bg-white border border-slate-100 rounded-2xl p-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6">
                     <h3 class="font-bold text-lg mb-4">Distribution KYC</h3>
                     <div class="space-y-4">
                         <div v-for="(count, level) in data.kyc_distribution" :key="level">
@@ -135,7 +135,7 @@
                                 <span class="font-medium capitalize">{{ KYC_LABELS[level] || level }}</span>
                                 <span class="font-bold">{{ count }}</span>
                             </div>
-                            <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-2.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                 <div class="h-full rounded-full transition-all"
                                     :class="kycBarColor(level)"
                                     :style="{ width: totalUsers > 0 ? (count / totalUsers * 100) + '%' : '0%' }"></div>
@@ -146,30 +146,30 @@
             </div>
 
             <!-- Quick actions -->
-            <div class="bg-red-50 border border-red-100 rounded-2xl p-6">
-                <h3 class="font-bold text-lg mb-4 text-red-900">Actions rapides</h3>
+            <div class="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/40 rounded-2xl p-6">
+                <h3 class="font-bold text-lg mb-4 text-red-900 dark:text-red-200">Actions rapides</h3>
                 <div class="grid md:grid-cols-3 gap-4">
                     <router-link to="/admin/users"
-                        class="bg-white rounded-xl p-4 border border-red-100 hover:border-red-300 transition text-center">
+                        class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-red-100 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-700 transition text-center">
                         <div class="text-2xl mb-2">👥</div>
                         <div class="font-semibold text-sm">Gestion utilisateurs</div>
-                        <div class="text-xs text-slate-500 mt-1">{{ data.kpis.total_users }} inscrits</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ data.kpis.total_users }} inscrits</div>
                     </router-link>
                     <router-link to="/admin/moderation"
-                        class="bg-white rounded-xl p-4 border border-red-100 hover:border-red-300 transition text-center relative">
+                        class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-red-100 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-700 transition text-center relative">
                         <span v-if="data.kpis.pending_projects > 0"
                             class="absolute top-2 right-2 flex h-5 w-5 items-center justify-center text-[10px] font-bold rounded-full bg-rose-500 text-white">
                             {{ data.kpis.pending_projects }}
                         </span>
                         <div class="text-2xl mb-2">🛡️</div>
                         <div class="font-semibold text-sm">Modération</div>
-                        <div class="text-xs text-slate-500 mt-1">{{ data.kpis.pending_projects }} en attente</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ data.kpis.pending_projects }} en attente</div>
                     </router-link>
                     <router-link to="/profil/admin"
-                        class="bg-white rounded-xl p-4 border border-red-100 hover:border-red-300 transition text-center">
+                        class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-red-100 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-700 transition text-center">
                         <div class="text-2xl mb-2">⚙️</div>
                         <div class="font-semibold text-sm">Mon profil admin</div>
-                        <div class="text-xs text-slate-500 mt-1">Configuration</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Configuration</div>
                     </router-link>
                 </div>
             </div>
@@ -188,14 +188,14 @@ const KYC_LABELS = { none: 'Aucun', basic: 'Basique', verified: 'Vérifié', cer
 const mainKpis = computed(() => {
     const k = data.value.kpis;
     return [
-        { label: 'Utilisateurs total', value: k.total_users || 0, icon: '👥', color: 'text-slate-900' },
-        { label: 'Inscrits (30j)', value: k.recent_signups || 0, icon: '📈', color: 'text-blue-600' },
-        { label: 'Projets publiés', value: k.published_projects || 0, icon: '✅', color: 'text-emerald-600' },
-        { label: 'En attente', value: k.pending_projects || 0, icon: '⏳', color: k.pending_projects > 0 ? 'text-rose-600' : 'text-slate-900' },
-        { label: 'Brouillons', value: k.draft_projects || 0, icon: '📝', color: 'text-slate-500' },
-        { label: 'Total levé', value: fmtMoney(k.total_raised || 0), icon: '💰', color: 'text-emerald-600' },
-        { label: 'Investissements', value: k.total_investments || 0, icon: '📊', color: 'text-blue-600' },
-        { label: 'Mentorats actifs', value: k.active_mentorships || 0, icon: '🎓', color: 'text-violet-600' },
+        { label: 'Utilisateurs total', value: k.total_users || 0, icon: '👥', color: 'text-slate-900 dark:text-slate-100' },
+        { label: 'Inscrits (30j)', value: k.recent_signups || 0, icon: '📈', color: 'text-blue-600 dark:text-blue-400' },
+        { label: 'Projets publiés', value: k.published_projects || 0, icon: '✅', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'En attente', value: k.pending_projects || 0, icon: '⏳', color: k.pending_projects > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-slate-100' },
+        { label: 'Brouillons', value: k.draft_projects || 0, icon: '📝', color: 'text-slate-500 dark:text-slate-400' },
+        { label: 'Total levé', value: fmtMoney(k.total_raised || 0), icon: '💰', color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Investissements', value: k.total_investments || 0, icon: '📊', color: 'text-blue-600 dark:text-blue-400' },
+        { label: 'Mentorats actifs', value: k.active_mentorships || 0, icon: '🎓', color: 'text-violet-600 dark:text-violet-400' },
     ];
 });
 
@@ -211,13 +211,13 @@ const totalUsers = computed(() => data.value.kpis.total_users || 1);
 
 function roleColorClass(slug) {
     return {
-        entrepreneur: 'bg-emerald-100 text-emerald-700',
-        investor: 'bg-blue-100 text-blue-700',
-        mentor: 'bg-violet-100 text-violet-700',
-        jobseeker: 'bg-amber-100 text-amber-700',
-        government: 'bg-sky-100 text-sky-700',
-        admin: 'bg-red-100 text-red-700',
-    }[slug] || 'bg-slate-100 text-slate-600';
+        entrepreneur: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+        investor: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+        mentor: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',
+        jobseeker: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+        government: 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300',
+        admin: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+    }[slug] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 }
 
 function roleBarColor(slug) {
@@ -233,11 +233,11 @@ function roleBarColor(slug) {
 
 function statusBgClass(s) {
     return {
-        published: 'bg-emerald-50 text-emerald-700',
-        pending: 'bg-amber-50 text-amber-700',
-        rejected: 'bg-red-50 text-red-700',
-        draft: 'bg-slate-50 text-slate-600',
-    }[s] || 'bg-slate-50 text-slate-600';
+        published: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
+        pending: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+        rejected: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+        draft: 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300',
+    }[s] || 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300';
 }
 
 function statusLabel(s) {
@@ -246,11 +246,11 @@ function statusLabel(s) {
 
 function kycBarColor(level) {
     return {
-        none: 'bg-slate-300',
+        none: 'bg-slate-300 dark:bg-slate-500',
         basic: 'bg-blue-400',
         verified: 'bg-emerald-500',
         certified: 'bg-violet-500',
-    }[level] || 'bg-slate-300';
+    }[level] || 'bg-slate-300 dark:bg-slate-500';
 }
 
 function fmtMoney(amount) {

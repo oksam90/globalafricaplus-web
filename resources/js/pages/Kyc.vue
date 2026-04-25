@@ -59,8 +59,93 @@
                 </button>
             </div>
 
-            <!-- Step navigation -->
-            <template v-else>
+            <!-- ═══ IDnorm hosted verification (actif en attente d'intégration API) ═══ -->
+            <div v-else class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 md:p-10">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-xs font-semibold uppercase tracking-wider">
+                        <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                        Vérification sécurisée via IDnorm
+                    </div>
+                    <h2 class="mt-4 text-2xl font-black text-slate-900 dark:text-slate-100">Vérifiez votre identité</h2>
+                    <p class="mt-2 text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto">
+                        Cliquez sur le bouton ci-dessous pour ouvrir le flux de vérification complet hébergé par notre
+                        partenaire IDnorm (eKYC, documents, biométrie, AML). Vous pouvez aussi scanner le QR code avec
+                        votre smartphone pour continuer sur mobile.
+                    </p>
+
+                    <!-- Prerequisites -->
+                    <ul class="mt-6 max-w-xl mx-auto text-left space-y-2.5 text-sm text-slate-700 dark:text-slate-200">
+                        <li class="flex items-start gap-3">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 flex items-center justify-center text-xs font-bold">1</span>
+                            <span>Munissez-vous de votre pièce d'identité officielle valide.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 flex items-center justify-center text-xs font-bold">2</span>
+                            <span>Il vous sera demandé de scanner les deux faces du document.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="shrink-0 w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 flex items-center justify-center text-xs font-bold">3</span>
+                            <span>Préparez-vous à prendre un selfie pour confirmer que vous êtes bien vous.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <!-- QR code -->
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm">
+                            <img :src="qrCodeUrl" :alt="`QR code vérification IDnorm ${idnormVerificationId}`"
+                                class="w-56 h-56 block" loading="lazy" />
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 text-center">
+                            Scannez avec votre smartphone pour démarrer la vérification sur mobile.
+                        </p>
+                    </div>
+
+                    <!-- CTA + infos -->
+                    <div class="space-y-4">
+                        <a :href="idnormVerificationUrl" target="_blank" rel="noopener noreferrer"
+                            class="group flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-base shadow-lg shadow-orange-500/30 transition-all hover:shadow-xl hover:-translate-y-0.5">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                            Vérifier mon identité
+                            <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </a>
+
+                        <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-start gap-2">
+                                <span class="text-emerald-600 dark:text-emerald-400 mt-0.5">✓</span>
+                                <span>Vérification d'identité biométrique (eKYC)</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-emerald-600 dark:text-emerald-400 mt-0.5">✓</span>
+                                <span>Authentification des documents officiels</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-emerald-600 dark:text-emerald-400 mt-0.5">✓</span>
+                                <span>Screening listes de sanctions &amp; PPE</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-emerald-600 dark:text-emerald-400 mt-0.5">✓</span>
+                                <span>Conforme UEMOA N° 02/2015/CM/UEMOA</span>
+                            </li>
+                        </ul>
+
+                        <p class="text-xs text-slate-500 dark:text-slate-400 italic pt-2 border-t border-slate-200 dark:border-slate-700">
+                            Réf. vérification IDnorm : <code class="text-slate-700 dark:text-slate-200">{{ idnormVerificationId }}</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ LEGACY : formulaire 4 étapes — désactivé en attente d'intégration API IDnorm ═══
+                 Le flux ci-dessous reste dans le code pour référence et sera réactivé une fois les
+                 endpoints API IDnorm intégrés côté backend. Retirer `v-if="false"` pour le réactiver.
+            -->
+            <template v-if="false">
                 <div class="flex items-center justify-center gap-2 mb-8">
                     <button v-for="s in 4" :key="s" @click="goToStep(s)"
                         class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
@@ -416,6 +501,22 @@ import { useRouter } from 'vue-router';
 
 const auth = useAuthStore();
 const router = useRouter();
+
+// ─────────────────────────────────────────────────────────────
+// IDnorm hosted verification (temporaire — en attente de l'API)
+// À remplacer par la création d'une session IDnorm côté backend
+// lorsque les credentials/endpoints seront disponibles.
+// ─────────────────────────────────────────────────────────────
+const idnormVerificationId = '994b9944-e4f3-4bf7-a26e-7c9391f598d6';
+// URL de vérification hébergée fournie par IDnorm (avec session token opaque).
+// À remplacer dynamiquement par la création d'une session IDnorm côté backend
+// une fois l'intégration API finalisée (endpoint à prévoir : POST /api/kyc/idnorm/session).
+const idnormVerificationUrl = 'https://verify.idnorm.com?session=QUFVQUFBSUFBQUFBQUFBQUFBQUFBQUFBQUFBaFNPVnBBQUFBQUNHTzZta0FBQUFBRkdWc2FYUmxNMmx1Wm05QVoyMWhhV3d1WTI5dEFBQUFBQUFBQUFBQUFBQUFBQUFBQUFka1pXWmhkV3gwQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBYU1ERkxVRVpOV0RZeldEUkZSVGROVkRoTFJUWkJNelV3U3pZQUFBQUFBQUFBQUFBQUVBR2RwNkhDZHVodHpCcy94OWpRVVBGRkF3QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQWhpYU5LS0VLS1VNREMyNlNJYXZUMEdSL2JiY2pXRmNDK3NIWFJjVjRyUDB1K1FuUC9rWkQwbEIyZzJneEhGMmwwdGpWamIzdWNwTUhnYzJoTXUwUWVRPT0';
+// QR code généré à la volée via qrserver.com (stopgap — à remplacer par
+// génération locale via la lib `qrcode` en prod pour éviter la dépendance externe).
+const qrCodeUrl = computed(() =>
+    `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(idnormVerificationUrl)}`
+);
 
 const loading = ref(true);
 const saving = ref(false);

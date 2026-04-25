@@ -192,6 +192,9 @@
                                     {{ yearlyToggle ? fmtPrice(plan.price_yearly) : fmtPrice(plan.price_monthly) }}
                                 </span>
                                 <span class="text-xs text-slate-500 dark:text-slate-400">{{ yearlyToggle ? '/an' : '/mois' }}</span>
+                                <div class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-1">
+                                    &asymp; {{ fmtXof(yearlyToggle ? plan.price_yearly : plan.price_monthly) }}
+                                </div>
                             </template>
                         </div>
                     </div>
@@ -358,6 +361,13 @@ let autoSlideTimer = null;
 
 function fmtPrice(price) {
     return parseFloat(price).toFixed(2).replace('.', ',') + ' \u20AC';
+}
+
+const EUR_TO_XOF = 655.957;
+const xofFmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 });
+function fmtXof(priceEur) {
+    const n = parseFloat(priceEur) || 0;
+    return xofFmt.format(Math.round(n * EUR_TO_XOF));
 }
 
 // ─── Banner carousel controls ─────────────────

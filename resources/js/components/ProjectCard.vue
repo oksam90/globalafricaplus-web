@@ -2,14 +2,14 @@
     <router-link :to="{ name: 'projects.show', params: { slug: project.slug } }"
         class="block bg-white dark:bg-slate-800 dark:bg-brand-black-50 rounded-2xl border border-brand-gold-200/50 dark:border-brand-gold-700/20 overflow-hidden hover:border-brand-gold-400 dark:hover:border-brand-gold-500/60 hover:shadow-md transition group">
         <div class="h-32 bg-gradient-to-br relative" :style="`background-image: linear-gradient(135deg, ${color}, #0f172a)`">
-            <span class="absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-md bg-white/90 text-slate-800 dark:text-slate-200">
+            <span class="absolute top-3 left-3 text-xs font-semibold px-2 py-1 rounded-md bg-white/95 dark:bg-slate-900/80 text-slate-800 dark:text-slate-100 backdrop-blur-sm shadow-sm">
                 {{ project.category?.name || 'Projet' }}
             </span>
-            <span class="absolute top-3 right-3 text-xs font-semibold px-2 py-1 rounded-md bg-black/30 text-white backdrop-blur">
+            <span class="absolute top-3 right-3 text-xs font-semibold px-2 py-1 rounded-md bg-black/40 text-white backdrop-blur">
                 {{ project.country }}
             </span>
             <span v-if="project.stage"
-                class="absolute bottom-3 left-3 text-[10px] font-bold uppercase px-2 py-1 rounded bg-white/90 text-slate-700 dark:text-slate-200">
+                class="absolute bottom-3 left-3 text-[10px] font-bold uppercase px-2 py-1 rounded bg-white/95 dark:bg-slate-900/80 text-slate-700 dark:text-slate-100 backdrop-blur-sm shadow-sm">
                 {{ stageLabel }}
             </span>
         </div>

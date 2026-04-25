@@ -49,10 +49,10 @@
                 <h2 class="text-2xl font-bold">Opportunités d'emploi</h2>
                 <div class="flex flex-wrap gap-3">
                     <input v-model="filters.search" @input="debouncedLoad" type="text" placeholder="Rechercher…"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm w-48" />
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm w-48" />
                     <input v-model="filters.country" @input="debouncedLoad" type="text" placeholder="Pays…"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm w-32" />
-                    <select v-model="filters.sort" @change="load()" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm w-32" />
+                    <select v-model="filters.sort" @change="load()" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm">
                         <option value="jobs">Plus de postes</option>
                         <option value="recent">Plus récents</option>
                         <option value="funding">Mieux financés</option>
@@ -98,7 +98,7 @@
             <div v-if="meta.last_page > 1" class="mt-8 flex justify-center gap-2">
                 <button v-for="n in meta.last_page" :key="n" @click="goToPage(n)"
                     class="px-3 py-1.5 rounded-md text-sm font-medium border"
-                    :class="n === meta.current_page ? 'bg-amber-600 border-amber-600 text-white' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'">
+                    :class="n === meta.current_page ? 'bg-amber-600 border-amber-600 text-white' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'">
                     {{ n }}
                 </button>
             </div>

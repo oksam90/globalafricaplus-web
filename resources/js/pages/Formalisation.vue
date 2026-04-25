@@ -18,7 +18,7 @@
                             Mon parcours de formalisation
                         </router-link>
                         <router-link to="/formalisation/business-plans"
-                            class="px-6 py-3 rounded-md border border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-50">
+                            class="px-6 py-3 rounded-md border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/30">
                             Templates Business Plan
                         </router-link>
                     </div>
@@ -84,7 +84,7 @@
                 <div class="space-y-4">
                     <div v-for="step in steps" :key="step.id"
                         class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl overflow-hidden">
-                        <div @click="toggleStep(step.id)" class="flex items-center gap-4 p-5 cursor-pointer hover:bg-slate-50">
+                        <div @click="toggleStep(step.id)" class="flex items-center gap-4 p-5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40">
                             <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold shrink-0">
                                 {{ step.order }}
                             </div>
@@ -98,7 +98,7 @@
                             </div>
                             <span class="text-slate-400 dark:text-slate-500">{{ openSteps.has(step.id) ? '▾' : '▸' }}</span>
                         </div>
-                        <div v-if="openSteps.has(step.id)" class="border-t border-slate-100 dark:border-slate-700 p-5 bg-slate-50/50">
+                        <div v-if="openSteps.has(step.id)" class="border-t border-slate-100 dark:border-slate-700 p-5 bg-slate-50/50 dark:bg-slate-900/40">
                             <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ step.description }}</p>
                             <div v-if="step.required_documents?.length" class="mt-4">
                                 <h5 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Documents requis</h5>

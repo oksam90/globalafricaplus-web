@@ -5,7 +5,7 @@
         <!-- Header -->
         <section class="bg-gradient-to-br from-violet-50 via-fuchsia-50 to-slate-50 dark:from-violet-950/40 dark:via-fuchsia-950/30 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <router-link to="/mentorat" class="text-sm text-violet-600 hover:underline mb-4 inline-block">
+                <router-link to="/mentorat" class="text-sm text-violet-600 dark:text-violet-400 hover:underline mb-4 inline-block">
                     ← Annuaire mentors
                 </router-link>
 
@@ -19,11 +19,11 @@
                         <div class="flex items-center gap-3 mb-1">
                             <h1 class="text-3xl font-black tracking-tight">{{ mentor.name }}</h1>
                             <span v-if="mentor.kyc_level === 'verified' || mentor.kyc_level === 'certified'"
-                                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
                                 ✓ Vérifié
                             </span>
                             <span v-if="mentor.is_diaspora"
-                                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300">
                                 Diaspora
                             </span>
                         </div>
@@ -35,7 +35,7 @@
                             <div v-if="mentor.avg_rating > 0" class="flex items-center gap-1.5">
                                 <div class="flex gap-0.5">
                                     <span v-for="i in 5" :key="i" class="text-lg"
-                                        :class="i <= Math.round(mentor.avg_rating) ? 'text-amber-400' : 'text-slate-200'">★</span>
+                                        :class="i <= Math.round(mentor.avg_rating) ? 'text-amber-400' : 'text-slate-200 dark:text-slate-600'">★</span>
                                 </div>
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ parseFloat(mentor.avg_rating).toFixed(1) }}</span>
                                 <span class="text-sm text-slate-500 dark:text-slate-400">({{ mentor.reviews_count }} avis)</span>
@@ -105,7 +105,7 @@
                                 class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-5">
                                 <div class="flex items-center justify-between mb-2">
                                     <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700">
+                                        <div class="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-xs font-bold text-violet-700 dark:text-violet-300">
                                             {{ r.reviewer?.name?.charAt(0) || '?' }}
                                         </div>
                                         <div>
@@ -115,13 +115,13 @@
                                     </div>
                                     <div class="flex gap-0.5">
                                         <span v-for="i in 5" :key="i" class="text-sm"
-                                            :class="i <= r.rating ? 'text-amber-400' : 'text-slate-200'">★</span>
+                                            :class="i <= r.rating ? 'text-amber-400' : 'text-slate-200 dark:text-slate-600'">★</span>
                                     </div>
                                 </div>
                                 <p v-if="r.comment" class="text-sm text-slate-700 dark:text-slate-200">{{ r.comment }}</p>
                                 <div v-if="r.tags?.length" class="flex flex-wrap gap-1 mt-2">
                                     <span v-for="t in r.tags" :key="t"
-                                        class="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium">
+                                        class="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 font-medium">
                                         {{ t }}
                                     </span>
                                 </div>
@@ -133,7 +133,7 @@
                 <!-- Sidebar -->
                 <div class="space-y-5">
                     <!-- Role profile info -->
-                    <div v-if="mentorProfile" class="bg-violet-50 rounded-2xl p-5">
+                    <div v-if="mentorProfile" class="bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-900/50 rounded-2xl p-5">
                         <h3 class="font-bold text-sm mb-3">Profil mentor</h3>
                         <div class="space-y-2 text-sm">
                             <div v-if="mentorProfile.data?.expertise">
@@ -173,24 +173,24 @@
         </section>
 
         <!-- Request modal -->
-        <div v-if="showRequestModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showRequestModal = false">
+        <div v-if="showRequestModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showRequestModal = false">
             <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-bold">Demander un mentorat à {{ mentor.name }}</h3>
-                    <button @click="showRequestModal = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 text-xl">&times;</button>
+                    <button @click="showRequestModal = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-xl">&times;</button>
                 </div>
 
                 <form @submit.prevent="submitRequest" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Sujet *</label>
                         <input v-model="requestForm.topic" type="text" required maxlength="200" placeholder="Ex: Stratégie de levée de fonds"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-violet-400 focus:outline-none text-sm" />
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none text-sm" />
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Compétence</label>
                         <select v-model="requestForm.skill_id"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                             <option :value="null">— Aucune en particulier —</option>
                             <option v-for="s in mentor.skills" :key="s.id" :value="s.id">{{ s.name }}</option>
                         </select>
@@ -200,20 +200,20 @@
                         <label class="block text-sm font-medium mb-1">Message</label>
                         <textarea v-model="requestForm.message" rows="3" maxlength="2000"
                             placeholder="Présentez-vous et expliquez votre besoin…"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-violet-400 focus:outline-none text-sm"></textarea>
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none text-sm"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Objectifs</label>
                         <textarea v-model="requestForm.goals" rows="2" maxlength="2000"
                             placeholder="Que souhaitez-vous accomplir ?"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-violet-400 focus:outline-none text-sm"></textarea>
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-violet-400 dark:focus:border-violet-500 focus:outline-none text-sm"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Durée souhaitée</label>
                         <select v-model.number="requestForm.duration_weeks"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                             <option :value="4">4 semaines</option>
                             <option :value="8">8 semaines</option>
                             <option :value="12">12 semaines (3 mois)</option>
@@ -221,8 +221,8 @@
                         </select>
                     </div>
 
-                    <p v-if="requestError" class="text-sm text-rose-600">{{ requestError }}</p>
-                    <p v-if="requestSuccess" class="text-sm text-emerald-600">{{ requestSuccess }}</p>
+                    <p v-if="requestError" class="text-sm text-rose-600 dark:text-rose-400">{{ requestError }}</p>
+                    <p v-if="requestSuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ requestSuccess }}</p>
 
                     <button type="submit" :disabled="requestLoading"
                         class="w-full py-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-semibold disabled:opacity-50">
@@ -265,7 +265,12 @@ const DAY_LABELS = { monday: 'Lundi', tuesday: 'Mardi', wednesday: 'Mercredi', t
 function dayLabel(d) { return DAY_LABELS[d] || d; }
 
 function levelClass(l) {
-    return { expert: 'bg-violet-100 text-violet-700', advanced: 'bg-blue-50 text-blue-700', intermediate: 'bg-emerald-50 text-emerald-700', beginner: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }[l] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
+    return {
+        expert: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',
+        advanced: 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+        intermediate: 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+        beginner: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
+    }[l] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 }
 
 function levelLabel(l) {

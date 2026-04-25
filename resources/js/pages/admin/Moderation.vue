@@ -3,18 +3,18 @@
         <div class="flex items-end justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-black tracking-tight">Modération des projets</h1>
-                <p class="text-slate-600 mt-1">Examinez et validez les projets soumis par les entrepreneurs.</p>
+                <p class="text-slate-600 dark:text-slate-300 mt-1">Examinez et validez les projets soumis par les entrepreneurs.</p>
             </div>
-            <router-link to="/dashboard" class="text-sm font-semibold text-red-600 hover:underline">
+            <router-link to="/dashboard" class="text-sm font-semibold text-red-600 dark:text-red-400 hover:underline">
                 ← Dashboard admin
             </router-link>
         </div>
 
         <!-- Tabs -->
-        <div class="flex gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
+        <div class="flex gap-1 mb-6 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 w-fit">
             <button v-for="t in tabs" :key="t.value" @click="switchTab(t.value)"
                 class="px-4 py-2 rounded-md text-sm font-medium transition relative"
-                :class="currentTab === t.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'">
+                :class="currentTab === t.value ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'">
                 {{ t.label }}
                 <span v-if="t.value === 'pending' && pendingCount > 0"
                     class="ml-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold rounded-full bg-rose-500 text-white">
@@ -26,7 +26,7 @@
         <!-- Sort -->
         <div class="flex gap-3 mb-6">
             <select v-model="sort" @change="load"
-                class="px-3 py-2 rounded-md border border-slate-200 text-sm">
+                class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm">
                 <option value="oldest">Plus anciens d'abord</option>
                 <option value="recent">Plus récents</option>
                 <option value="amount">Montant décroissant</option>
@@ -34,14 +34,14 @@
         </div>
 
         <!-- List -->
-        <div v-if="loading" class="text-slate-500 py-8">Chargement…</div>
-        <div v-else-if="projects.length === 0" class="text-center py-16 text-slate-500 bg-slate-50 rounded-2xl">
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-8">Chargement…</div>
+        <div v-else-if="projects.length === 0" class="text-center py-16 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-2xl">
             Aucun projet {{ currentTab === 'pending' ? 'en attente de modération' : 'dans cette catégorie' }}.
         </div>
         <div v-else class="space-y-4">
             <div v-for="p in projects" :key="p.id"
-                class="bg-white border rounded-2xl p-5 transition"
-                :class="p.status === 'pending' ? 'border-amber-200' : 'border-slate-100'">
+                class="bg-white dark:bg-slate-800 border rounded-2xl p-5 transition"
+                :class="p.status === 'pending' ? 'border-amber-200 dark:border-amber-800/60' : 'border-slate-100 dark:border-slate-700'">
                 <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
@@ -54,15 +54,15 @@
                             </span>
                         </div>
 
-                        <router-link :to="`/projets/${p.slug}`" class="text-lg font-bold hover:text-red-700 transition">
+                        <router-link :to="`/projets/${p.slug}`" class="text-lg font-bold hover:text-red-700 dark:hover:text-red-400 transition">
                             {{ p.title }}
                         </router-link>
 
-                        <p v-if="p.summary" class="text-sm text-slate-600 mt-1 line-clamp-2">{{ p.summary }}</p>
+                        <p v-if="p.summary" class="text-sm text-slate-600 dark:text-slate-300 mt-1 line-clamp-2">{{ p.summary }}</p>
 
-                        <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-500">
+                        <div class="flex flex-wrap gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
                             <span v-if="p.user">
-                                Par <strong class="text-slate-700">{{ p.user.name }}</strong>
+                                Par <strong class="text-slate-700 dark:text-slate-200">{{ p.user.name }}</strong>
                                 <span v-if="p.user.email" class="ml-1">({{ p.user.email }})</span>
                             </span>
                             <span>{{ p.country || '—' }}</span>
@@ -86,7 +86,7 @@
                         </template>
                         <template v-else-if="p.status === 'published'">
                             <button @click="moderate(p.id, 'unpublish')"
-                                class="px-3 py-1.5 text-sm font-semibold rounded-md border border-amber-300 text-amber-700 hover:bg-amber-50">
+                                class="px-3 py-1.5 text-sm font-semibold rounded-md border border-amber-300 dark:border-amber-800/60 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30">
                                 Dé-publier
                             </button>
                         </template>
@@ -97,7 +97,7 @@
                             </button>
                         </template>
                         <button @click="confirmDelete(p)"
-                            class="px-3 py-1.5 text-sm font-semibold rounded-md border border-red-200 text-red-600 hover:bg-red-50">
+                            class="px-3 py-1.5 text-sm font-semibold rounded-md border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
                             Supprimer
                         </button>
                     </div>
@@ -109,7 +109,7 @@
         <div v-if="meta.last_page > 1" class="mt-8 flex justify-center gap-2">
             <button v-for="n in meta.last_page" :key="n" @click="goToPage(n)"
                 class="px-3 py-1.5 rounded-md text-sm font-medium border"
-                :class="n === meta.current_page ? 'bg-red-600 border-red-600 text-white' : 'border-slate-200 hover:border-red-300'">
+                :class="n === meta.current_page ? 'bg-red-600 border-red-600 text-white' : 'border-slate-200 dark:border-slate-700 hover:border-red-300 dark:hover:border-red-700'">
                 {{ n }}
             </button>
         </div>
@@ -137,11 +137,11 @@ const tabs = [
 
 function statusClass(s) {
     return {
-        pending: 'bg-amber-100 text-amber-700',
-        published: 'bg-emerald-100 text-emerald-700',
-        rejected: 'bg-red-100 text-red-700',
-        draft: 'bg-slate-100 text-slate-600',
-    }[s] || 'bg-slate-100 text-slate-600';
+        pending: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+        published: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+        rejected: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+        draft: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
+    }[s] || 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300';
 }
 
 function statusLabel(s) {

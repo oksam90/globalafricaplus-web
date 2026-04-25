@@ -21,22 +21,22 @@
             <div class="grid md:grid-cols-4 gap-3">
                 <input v-model="filters.search" @input="debouncedLoad"
                     type="search" placeholder="Rechercher un projet…"
-                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-emerald-400 focus:outline-none text-sm md:col-span-2" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-400 focus:outline-none text-sm md:col-span-2" />
 
-                <select v-model="filters.category" @change="onCategoryChange" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                <select v-model="filters.category" @change="onCategoryChange" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                     <option value="">Tous secteurs</option>
                     <option v-for="c in categories" :key="c.id" :value="c.slug">{{ c.name }}</option>
                 </select>
 
-                <select v-model="filters.sub_category" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" :disabled="!subCategories.length">
+                <select v-model="filters.sub_category" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm" :disabled="!subCategories.length">
                     <option value="">Sous-secteur</option>
                     <option v-for="s in subCategories" :key="s.id" :value="s.slug">{{ s.name }}</option>
                 </select>
 
                 <input v-model="filters.country" @input="debouncedLoad" type="text" placeholder="Pays"
-                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-emerald-400 focus:outline-none text-sm" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-emerald-400 focus:outline-none text-sm" />
 
-                <select v-model="filters.stage" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                <select v-model="filters.stage" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                     <option value="">Tous stades</option>
                     <option value="idea">Idée</option>
                     <option value="mvp">MVP</option>
@@ -44,14 +44,14 @@
                     <option value="scaling">Croissance</option>
                 </select>
 
-                <select v-model="filters.sdg" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                <select v-model="filters.sdg" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                     <option value="">Tous ODD</option>
                     <option v-for="s in sdgs" :key="s.id" :value="s.number">
                         ODD {{ s.number }} — {{ s.name }}
                     </option>
                 </select>
 
-                <select v-model="filters.sort" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm">
+                <select v-model="filters.sort" @change="load" class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                     <option value="">Plus récents</option>
                     <option value="popular">Plus populaires</option>
                     <option value="trending">Tendance</option>
@@ -63,9 +63,9 @@
 
             <div class="grid md:grid-cols-4 gap-3 mt-3">
                 <input v-model.number="filters.amount_min" @input="debouncedLoad" type="number" min="0" placeholder="Montant min (€)"
-                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm" />
                 <input v-model.number="filters.amount_max" @input="debouncedLoad" type="number" min="0" placeholder="Montant max (€)"
-                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm" />
+                    class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm" />
                 <button @click="reset" class="text-sm text-slate-600 dark:text-slate-300 hover:text-emerald-700 md:col-span-2 text-right">
                     Réinitialiser les filtres
                 </button>

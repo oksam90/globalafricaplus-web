@@ -79,14 +79,16 @@
                 <div class="grid md:grid-cols-4 gap-3">
                     <input v-model="filters.search" @input="debouncedLoadCalls"
                         type="search" placeholder="Rechercher un appel…"
-                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 focus:border-sky-400 focus:outline-none text-sm md:col-span-2" />
-                    <select v-model="filters.status" @change="loadCalls">
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-sky-400 dark:focus:border-sky-500 focus:outline-none text-sm md:col-span-2" />
+                    <select v-model="filters.status" @change="loadCalls"
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                         <option value="">Tous statuts</option>
                         <option value="open">Ouverts</option>
                         <option value="closed">Clôturés</option>
                         <option value="awarded">Attribués</option>
                     </select>
-                    <select v-model="filters.sort" @change="loadCalls">
+                    <select v-model="filters.sort" @change="loadCalls"
+                        class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
                         <option value="recent">Plus récents</option>
                         <option value="deadline">Date limite</option>
                         <option value="budget">Budget décroissant</option>

@@ -7,13 +7,13 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Montant (€)</label>
                     <input v-model.number="form.amount" type="number" min="100" max="10000000" step="100"
-                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                        class="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         placeholder="10 000" required />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Type d'investissement</label>
                     <select v-model="form.investment_type"
-                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option value="equity">Prise de participation (equity)</option>
                         <option value="loan">Prêt (loan)</option>
                         <option value="donation">Don (donation)</option>
@@ -26,14 +26,14 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Pays de résidence</label>
                     <select v-model="form.origin_country"
-                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option v-for="c in residenceCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Pays de destination</label>
                     <select v-model="form.destination_country"
-                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option v-for="c in destinationCountries" :key="c" :value="c">{{ c }}</option>
                     </select>
                 </div>
@@ -43,7 +43,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Secteur cible</label>
                     <select v-model="form.target_sector"
-                        class="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
+                        class="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500">
                         <option value="">Tous secteurs</option>
                         <option v-for="s in sectors" :key="s" :value="s">{{ s }}</option>
                     </select>
@@ -68,17 +68,17 @@
                 <h4 class="font-bold text-lg mb-4">Résultats de la simulation</h4>
 
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-emerald-50 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-emerald-700">{{ result.impact.estimated_jobs }}</div>
-                        <div class="text-xs text-emerald-600 mt-1">Emplois créés</div>
+                    <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-900/50 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-emerald-700 dark:text-emerald-300">{{ result.impact.estimated_jobs }}</div>
+                        <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Emplois créés</div>
                     </div>
-                    <div class="bg-blue-50 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-blue-700">{{ result.impact.people_impacted }}</div>
-                        <div class="text-xs text-blue-600 mt-1">Personnes impactées</div>
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-900/50 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-blue-700 dark:text-blue-300">{{ result.impact.people_impacted }}</div>
+                        <div class="text-xs text-blue-600 dark:text-blue-400 mt-1">Personnes impactées</div>
                     </div>
-                    <div class="bg-amber-50 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-amber-700">{{ result.impact.sdg_score }}/100</div>
-                        <div class="text-xs text-amber-600 mt-1">Score ODD</div>
+                    <div class="bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-900/50 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-amber-700 dark:text-amber-300">{{ result.impact.sdg_score }}/100</div>
+                        <div class="text-xs text-amber-600 dark:text-amber-400 mt-1">Score ODD</div>
                     </div>
                 </div>
 
@@ -89,15 +89,15 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-600 dark:text-slate-300">Coût de transfert estimé ({{ result.impact.transfer_cost_pct }}%)</span>
-                        <span class="font-semibold text-red-600">-{{ fmt(result.impact.transfer_cost) }} €</span>
+                        <span class="font-semibold text-red-600 dark:text-red-400">-{{ fmt(result.impact.transfer_cost) }} €</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-600 dark:text-slate-300">Investissement net</span>
-                        <span class="font-bold text-emerald-700">{{ fmt(result.impact.net_investment) }} €</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400">{{ fmt(result.impact.net_investment) }} €</span>
                     </div>
                     <div v-if="result.impact.estimated_return > 0" class="flex justify-between text-sm pt-3 border-t border-slate-200 dark:border-slate-700">
                         <span class="text-slate-600 dark:text-slate-300">Rendement estimé ({{ result.impact.annual_return_pct }}%/an sur {{ (form.duration_months / 12).toFixed(1) }} ans)</span>
-                        <span class="font-bold text-emerald-700">+{{ fmt(result.impact.estimated_return) }} €</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400">+{{ fmt(result.impact.estimated_return) }} €</span>
                     </div>
                     <div v-else class="text-sm text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-700 italic">
                         Ce type d'investissement ({{ typeLabel }}) n'a pas de rendement financier, mais un impact social direct.

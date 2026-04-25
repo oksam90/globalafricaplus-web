@@ -3,15 +3,15 @@
         <!-- Header -->
         <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
-                <h1 class="text-3xl font-black tracking-tight">Bonjour, {{ auth.user?.name }} 👋</h1>
-                <p class="text-slate-600 mt-1">
+                <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Bonjour, {{ auth.user?.name }} 👋</h1>
+                <p class="text-slate-600 dark:text-slate-300 mt-1">
                     Vue active :
                     <span class="inline-flex items-center gap-1.5 ml-1 px-2 py-0.5 text-xs rounded-md font-semibold"
                           :style="{ backgroundColor: activeBg, color: activeFg }">
                         <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: activeFg }"></span>
                         {{ activeRoleLabel }}
                     </span>
-                    <span v-if="auth.roleObjects.length > 1" class="text-xs text-slate-400 ml-2">
+                    <span v-if="auth.roleObjects.length > 1" class="text-xs text-slate-400 dark:text-slate-500 ml-2">
                         ({{ auth.roleObjects.length }} rôles au total)
                     </span>
                 </p>
@@ -19,12 +19,12 @@
             <div class="flex gap-2">
                 <!-- Role switcher (if multi-role) -->
                 <select v-if="auth.roleObjects.length > 1" @change="switchRole($event.target.value)"
-                    class="text-sm px-3 py-1.5 rounded-md border border-slate-200 bg-white">
+                    class="text-sm px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100">
                     <option v-for="r in auth.roleObjects" :key="r.slug" :value="r.slug" :selected="r.slug === auth.activeRole">
                         {{ LABELS[r.slug] || r.name }}
                     </option>
                 </select>
-                <router-link to="/profil" class="text-sm font-semibold px-3 py-1.5 rounded-md border border-slate-200 hover:bg-slate-50">
+                <router-link to="/profil" class="text-sm font-semibold px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
                     Mes profils
                 </router-link>
                 <router-link to="/profil/ajouter-role" class="text-sm font-semibold px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -37,13 +37,13 @@
         <KycBanner />
 
         <!-- Subscription banner (free plan) -->
-        <div v-if="auth.isFreePlan" class="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-2xl p-5 mb-8 flex items-center gap-4">
+        <div v-if="auth.isFreePlan" class="bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-900/30 dark:to-indigo-900/30 border border-violet-200 dark:border-violet-500/40 rounded-2xl p-5 mb-8 flex items-center gap-4">
             <div class="text-3xl">🔒</div>
             <div class="flex-1">
-                <div class="font-semibold text-violet-900">
+                <div class="font-semibold text-violet-900 dark:text-violet-200">
                     Plan Gratuit — Fonctionnalités limitées
                 </div>
-                <p class="text-xs text-violet-700 mt-1">
+                <p class="text-xs text-violet-700 dark:text-violet-300 mt-1">
                     Publiez des projets, postulez aux offres, accédez au mentorat et bien plus en souscrivant à un pack.
                     <strong>Garantie satisfait ou remboursé 30 jours.</strong>
                 </p>
@@ -55,16 +55,16 @@
         </div>
 
         <!-- Completion banner -->
-        <div v-if="currentCompletion < 100" class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 flex items-center gap-4">
+        <div v-if="currentCompletion < 100" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-500/40 rounded-2xl p-5 mb-8 flex items-center gap-4">
             <div class="text-3xl">✨</div>
             <div class="flex-1">
-                <div class="font-semibold text-amber-900">
+                <div class="font-semibold text-amber-900 dark:text-amber-200">
                     Complétez votre profil {{ activeRoleLabel.toLowerCase() }} ({{ currentCompletion }}%)
                 </div>
-                <div class="h-1.5 bg-white rounded-full overflow-hidden mt-2 mb-1">
+                <div class="h-1.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2 mb-1">
                     <div class="h-full bg-amber-500 transition-all" :style="{ width: currentCompletion + '%' }"></div>
                 </div>
-                <p class="text-xs text-amber-800">Un profil complet est essentiel pour être matché par l'IA.</p>
+                <p class="text-xs text-amber-800 dark:text-amber-300">Un profil complet est essentiel pour être matché par l'IA.</p>
             </div>
             <router-link :to="`/profil/${auth.activeRole}`"
                 class="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shrink-0">
@@ -73,58 +73,58 @@
         </div>
 
         <!-- Loading state -->
-        <div v-if="loading" class="text-slate-500 py-12 text-center">Chargement du tableau de bord…</div>
+        <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-12 text-center">Chargement du tableau de bord…</div>
 
         <template v-else>
             <!-- KPIs row -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
                 <div v-for="kpi in kpis" :key="kpi.label"
-                    class="bg-white border rounded-2xl p-4 relative"
-                    :class="kpi.alert ? 'border-rose-200 bg-rose-50/50' : 'border-slate-100'">
+                    class="bg-white dark:bg-slate-800 border rounded-2xl p-4 relative"
+                    :class="kpi.alert ? 'border-rose-200 dark:border-rose-500/40 bg-rose-50/50 dark:bg-rose-900/20' : 'border-slate-100 dark:border-slate-700'">
                     <span v-if="kpi.alert" class="absolute top-3 right-3 flex h-2.5 w-2.5">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
                     </span>
                     <div class="text-xl mb-1">{{ kpi.icon }}</div>
-                    <div class="text-2xl font-black tracking-tight">{{ kpi.value }}</div>
-                    <div class="text-[11px] uppercase tracking-wider text-slate-500 mt-0.5">{{ kpi.label }}</div>
+                    <div class="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">{{ kpi.value }}</div>
+                    <div class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">{{ kpi.label }}</div>
                 </div>
             </div>
 
             <!-- Common info row -->
             <div class="grid md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-white border border-slate-100 rounded-2xl p-5">
-                    <div class="text-xs uppercase text-slate-500 tracking-wider">Niveau KYC</div>
-                    <div class="mt-1.5 text-xl font-bold capitalize">{{ kycLabel }}</div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
+                    <div class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Niveau KYC</div>
+                    <div class="mt-1.5 text-xl font-bold capitalize text-slate-900 dark:text-slate-100">{{ kycLabel }}</div>
                 </div>
-                <div class="bg-white border border-slate-100 rounded-2xl p-5">
-                    <div class="text-xs uppercase text-slate-500 tracking-wider">Pays</div>
-                    <div class="mt-1.5 text-xl font-bold">{{ common.country || '—' }}</div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
+                    <div class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Pays</div>
+                    <div class="mt-1.5 text-xl font-bold text-slate-900 dark:text-slate-100">{{ common.country || '—' }}</div>
                 </div>
-                <div class="bg-white border border-slate-100 rounded-2xl p-5">
-                    <div class="text-xs uppercase text-slate-500 tracking-wider">Diaspora</div>
-                    <div class="mt-1.5 text-xl font-bold">{{ common.is_diaspora ? 'Oui' : 'Non' }}</div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
+                    <div class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Diaspora</div>
+                    <div class="mt-1.5 text-xl font-bold text-slate-900 dark:text-slate-100">{{ common.is_diaspora ? 'Oui' : 'Non' }}</div>
                 </div>
-                <div class="bg-white border border-slate-100 rounded-2xl p-5">
-                    <div class="text-xs uppercase text-slate-500 tracking-wider">Membre depuis</div>
-                    <div class="mt-1.5 text-xl font-bold">{{ common.member_since || '—' }}</div>
+                <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5">
+                    <div class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Membre depuis</div>
+                    <div class="mt-1.5 text-xl font-bold text-slate-900 dark:text-slate-100">{{ common.member_since || '—' }}</div>
                 </div>
             </div>
 
             <!-- Current plan info -->
-            <div class="bg-white border border-slate-100 rounded-2xl p-5 mb-8 flex items-center justify-between">
+            <div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5 mb-8 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="text-xl">{{ auth.isFreePlan ? '🆓' : '⭐' }}</span>
                     <div>
-                        <div class="text-xs uppercase text-slate-500 tracking-wider">Mon abonnement</div>
-                        <div class="font-bold capitalize">Pack {{ planLabel }}</div>
+                        <div class="text-xs uppercase text-slate-500 dark:text-slate-400 tracking-wider">Mon abonnement</div>
+                        <div class="font-bold capitalize text-slate-900 dark:text-slate-100">Pack {{ planLabel }}</div>
                     </div>
                 </div>
                 <router-link v-if="auth.isFreePlan" to="/tarifs"
-                    class="text-sm font-semibold text-violet-600 hover:text-violet-700">
+                    class="text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300">
                     Passer à un pack payant →
                 </router-link>
-                <span v-else class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                <span v-else class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
                     Actif
                 </span>
             </div>
@@ -134,16 +134,16 @@
             <!-- ============================================ -->
             <template v-if="auth.activeRole === 'entrepreneur'">
                 <!-- Funding progress -->
-                <div v-if="roleData.total_needed > 0" class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 mb-8">
+                <div v-if="roleData.total_needed > 0" class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border border-emerald-100 dark:border-emerald-500/40 rounded-2xl p-6 mb-8">
                     <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-bold text-emerald-900">Progression du financement global</h3>
-                        <span class="text-sm font-semibold text-emerald-700">{{ roleData.funding_progress }}%</span>
+                        <h3 class="font-bold text-emerald-900 dark:text-emerald-200">Progression du financement global</h3>
+                        <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{{ roleData.funding_progress }}%</span>
                     </div>
-                    <div class="h-3 bg-white rounded-full overflow-hidden">
+                    <div class="h-3 bg-white dark:bg-slate-800 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all"
                             :style="{ width: Math.min(roleData.funding_progress, 100) + '%' }"></div>
                     </div>
-                    <div class="flex justify-between text-xs text-emerald-700 mt-2">
+                    <div class="flex justify-between text-xs text-emerald-700 dark:text-emerald-300 mt-2">
                         <span>Levé : {{ fmtMoney(roleData.total_raised) }}</span>
                         <span>Objectif : {{ fmtMoney(roleData.total_needed) }}</span>
                     </div>
@@ -151,10 +151,10 @@
 
                 <!-- Formalization banner (for informal entrepreneurs) -->
                 <div v-if="roleData.legal_status === 'informal' || (!roleData.legal_status && roleData.formalization)"
-                    class="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mb-8 flex items-center gap-4">
+                    class="bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/30 dark:to-emerald-900/30 border border-teal-200 dark:border-teal-500/40 rounded-2xl p-5 mb-8 flex items-center gap-4">
                     <div class="text-3xl">📜</div>
                     <div class="flex-1">
-                        <div class="font-semibold text-teal-900">
+                        <div class="font-semibold text-teal-900 dark:text-teal-200">
                             <template v-if="roleData.formalization">
                                 Formalisation : {{ roleData.formalization.completion }}% ({{ roleData.formalization.completed }} / {{ roleData.formalization.total_steps }} étapes)
                             </template>
@@ -162,8 +162,8 @@
                                 Formalisez votre entreprise pour accéder à plus d'opportunités
                             </template>
                         </div>
-                        <p class="text-xs text-teal-700 mt-1">Guide pas-à-pas adapté à votre pays, templates de business plan gratuits et accès au micro-crédit.</p>
-                        <div v-if="roleData.formalization" class="h-1.5 bg-white rounded-full overflow-hidden mt-2">
+                        <p class="text-xs text-teal-700 dark:text-teal-300 mt-1">Guide pas-à-pas adapté à votre pays, templates de business plan gratuits et accès au micro-crédit.</p>
+                        <div v-if="roleData.formalization" class="h-1.5 bg-white dark:bg-slate-800 rounded-full overflow-hidden mt-2">
                             <div class="h-full bg-teal-500 rounded-full transition-all" :style="{ width: roleData.formalization.completion + '%' }"></div>
                         </div>
                     </div>
@@ -175,7 +175,7 @@
 
                 <!-- Action cards -->
                 <div class="mb-4 flex items-baseline justify-between">
-                    <h2 class="text-xl font-bold">Actions rapides</h2>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard :title="auth.isFreePlan ? '🔒 Nouveau projet' : 'Nouveau projet'" icon="🚀"
@@ -198,19 +198,19 @@
 
                 <!-- Recent projects -->
                 <div v-if="roleData.recent_projects?.length">
-                    <h2 class="text-xl font-bold mb-4">Mes derniers projets</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Mes derniers projets</h2>
                     <div class="space-y-3">
                         <router-link v-for="p in roleData.recent_projects" :key="p.id"
                             :to="`/projets/${p.slug}`"
-                            class="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-4 hover:border-emerald-200 transition group">
+                            class="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 hover:border-emerald-200 dark:hover:border-emerald-500/60 transition group">
                             <div class="flex items-center gap-3">
                                 <span v-if="p.category" class="text-xs px-2 py-0.5 rounded-full font-semibold"
                                     :style="{ backgroundColor: p.category.color + '20', color: p.category.color }">
                                     {{ p.category.name }}
                                 </span>
-                                <span class="font-semibold group-hover:text-emerald-700">{{ p.title }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400">{{ p.title }}</span>
                             </div>
-                            <div class="flex items-center gap-4 text-sm text-slate-500">
+                            <div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
                                     :class="projectStatusClass(p.status)">{{ projectStatusLabel(p.status) }}</span>
                                 <span>{{ p.views_count || 0 }} vues</span>
@@ -222,21 +222,21 @@
 
                 <!-- Active mentorships -->
                 <div v-if="roleData.active_mentorships?.length" class="mt-8">
-                    <h2 class="text-xl font-bold mb-4">Mentorats en cours</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Mentorats en cours</h2>
                     <div class="grid md:grid-cols-3 gap-4">
                         <div v-for="m in roleData.active_mentorships" :key="m.id"
-                            class="bg-violet-50 border border-violet-100 rounded-xl p-4">
+                            class="bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-500/40 rounded-xl p-4">
                             <div class="flex items-center gap-2 mb-2">
-                                <div class="w-8 h-8 rounded-full bg-violet-200 flex items-center justify-center text-xs font-bold text-violet-700">
+                                <div class="w-8 h-8 rounded-full bg-violet-200 dark:bg-violet-800 flex items-center justify-center text-xs font-bold text-violet-700 dark:text-violet-200">
                                     {{ m.mentor?.name?.charAt(0) || '?' }}
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-sm">{{ m.mentor?.name }}</div>
-                                    <div class="text-[10px] text-slate-500">{{ m.mentor?.country }}</div>
+                                    <div class="font-semibold text-sm text-slate-900 dark:text-slate-100">{{ m.mentor?.name }}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">{{ m.mentor?.country }}</div>
                                 </div>
                             </div>
                             <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                :class="m.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'">
+                                :class="m.status === 'accepted' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'">
                                 {{ m.status === 'accepted' ? 'En cours' : 'En attente' }}
                             </span>
                         </div>
@@ -249,7 +249,7 @@
             <!-- ============================================ -->
             <template v-if="auth.activeRole === 'investor'">
                 <div class="mb-4 flex items-baseline justify-between">
-                    <h2 class="text-xl font-bold">Actions rapides</h2>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard title="Explorer les projets" icon="🔎" text="Découvrez des projets à fort potentiel." cta="Explorer" to="/projets" />
@@ -259,13 +259,13 @@
 
                 <!-- Recent investments -->
                 <div v-if="roleData.recent_investments?.length">
-                    <h2 class="text-xl font-bold mb-4">Derniers investissements</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Derniers investissements</h2>
                     <div class="space-y-3">
                         <div v-for="inv in roleData.recent_investments" :key="inv.id"
-                            class="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-4">
+                            class="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                             <div class="flex items-center gap-3">
                                 <router-link v-if="inv.project" :to="`/projets/${inv.project.slug}`"
-                                    class="font-semibold text-blue-700 hover:underline">
+                                    class="font-semibold text-blue-700 dark:text-blue-400 hover:underline">
                                     {{ inv.project.title }}
                                 </router-link>
                                 <span v-if="inv.project?.category" class="text-xs px-2 py-0.5 rounded-full font-semibold"
@@ -274,7 +274,7 @@
                                 </span>
                             </div>
                             <div class="flex items-center gap-4 text-sm">
-                                <span class="font-bold">{{ fmtMoney(inv.amount) }}</span>
+                                <span class="font-bold text-slate-900 dark:text-slate-100">{{ fmtMoney(inv.amount) }}</span>
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
                                     :class="invStatusClass(inv.status)">{{ invStatusLabel(inv.status) }}</span>
                             </div>
@@ -288,7 +288,7 @@
             <!-- ============================================ -->
             <template v-if="auth.activeRole === 'mentor'">
                 <div class="mb-4 flex items-baseline justify-between">
-                    <h2 class="text-xl font-bold">Actions rapides</h2>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard :title="auth.isFreePlan ? '🔒 Mes mentorats' : 'Mes mentorats'" icon="📨"
@@ -395,7 +395,7 @@
                 </div>
 
                 <div class="mb-4 flex items-baseline justify-between">
-                    <h2 class="text-xl font-bold">Actions rapides</h2>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard title="Offres d'emploi" icon="💼"
@@ -485,7 +485,7 @@
                 </div>
 
                 <div class="mb-4 flex items-baseline justify-between">
-                    <h2 class="text-xl font-bold">Actions rapides</h2>
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard :title="auth.isFreePlan ? '🔒 Mes appels à projets' : 'Mes appels à projets'" icon="🏛️"

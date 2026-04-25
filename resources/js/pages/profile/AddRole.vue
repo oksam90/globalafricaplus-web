@@ -1,11 +1,11 @@
 <template>
     <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <router-link to="/profil" class="text-sm text-emerald-700 hover:underline">← Mes profils</router-link>
+        <router-link to="/profil" class="text-sm text-emerald-700 dark:text-emerald-400 hover:underline">← Mes profils</router-link>
 
         <header class="mt-4 mb-8">
-            <h1 class="text-3xl font-black tracking-tight">Ajouter un rôle</h1>
-            <p class="text-slate-600 mt-1">
-                Vous pouvez cumuler plusieurs rôles sur Africa+ (entrepreneur + mentor par exemple).
+            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Ajouter un rôle</h1>
+            <p class="text-slate-600 dark:text-slate-300 mt-1">
+                Vous pouvez cumuler plusieurs rôles sur GlobalAfrica+ (entrepreneur + mentor par exemple).
             </p>
         </header>
 
@@ -13,21 +13,21 @@
             <button v-for="role in availableRoles" :key="role.slug"
                 :disabled="auth.hasRole(role.slug) || adding === role.slug"
                 @click="add(role.slug)"
-                class="text-left bg-white border border-slate-100 rounded-2xl p-5 hover:border-emerald-300 hover:shadow-sm transition disabled:opacity-50 disabled:hover:border-slate-100">
+                class="text-left bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-5 hover:border-emerald-300 dark:hover:border-emerald-500/60 hover:shadow-sm transition disabled:opacity-50 disabled:hover:border-slate-100 dark:disabled:hover:border-slate-700">
                 <div class="flex items-start justify-between">
                     <div class="text-3xl">{{ role.icon }}</div>
                     <span v-if="auth.hasRole(role.slug)"
-                        class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-100 text-slate-600">
+                        class="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                         Déjà attribué
                     </span>
                 </div>
-                <h3 class="font-bold text-lg mt-3">{{ role.label }}</h3>
-                <p class="text-sm text-slate-600 mt-1">{{ role.description }}</p>
-                <div v-if="adding === role.slug" class="mt-3 text-xs text-emerald-700 font-semibold">Ajout…</div>
+                <h3 class="font-bold text-lg mt-3 text-slate-900 dark:text-slate-100">{{ role.label }}</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">{{ role.description }}</p>
+                <div v-if="adding === role.slug" class="mt-3 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">Ajout…</div>
             </button>
         </div>
 
-        <p v-if="auth.error" class="text-sm text-rose-600 mt-4">{{ auth.error }}</p>
+        <p v-if="auth.error" class="text-sm text-rose-600 dark:text-rose-400 mt-4">{{ auth.error }}</p>
     </section>
 </template>
 

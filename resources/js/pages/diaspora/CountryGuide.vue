@@ -5,7 +5,7 @@
         <!-- Header -->
         <section class="bg-gradient-to-br from-rose-50 via-amber-50 to-slate-50 dark:from-rose-950/40 dark:via-amber-950/30 dark:to-slate-900 border-b border-slate-100 dark:border-slate-700">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <router-link to="/diaspora" class="text-sm text-rose-600 hover:underline mb-4 inline-block">
+                <router-link to="/diaspora" class="text-sm text-rose-600 dark:text-rose-400 hover:underline mb-4 inline-block">
                     ← Portail Diaspora
                 </router-link>
                 <div class="flex items-center gap-4 mb-6">
@@ -25,19 +25,19 @@
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">PIB</div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
-                        <div class="text-xl font-black text-emerald-700">{{ guide.gdp_growth }}%</div>
+                        <div class="text-xl font-black text-emerald-700 dark:text-emerald-400">{{ guide.gdp_growth }}%</div>
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Croissance</div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
-                        <div class="text-xl font-black text-blue-700">{{ guide.ease_of_business_score }}/100</div>
+                        <div class="text-xl font-black text-blue-700 dark:text-blue-400">{{ guide.ease_of_business_score }}/100</div>
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Doing Business</div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
-                        <div class="text-xl font-black text-amber-600">{{ guide.remittances_gdp }}%</div>
+                        <div class="text-xl font-black text-amber-600 dark:text-amber-400">{{ guide.remittances_gdp }}%</div>
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Remittances / PIB</div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-4 text-center border border-slate-100 dark:border-slate-700">
-                        <div class="text-xl font-black text-rose-600">{{ countryStats.projects_count }}</div>
+                        <div class="text-xl font-black text-rose-600 dark:text-rose-400">{{ countryStats.projects_count }}</div>
                         <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Projets Africa+</div>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                             <h2 class="text-xl font-bold mb-4">Secteurs clés</h2>
                             <div class="flex flex-wrap gap-2">
                                 <span v-for="s in (guide.key_sectors || [])" :key="s"
-                                    class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700">
+                                    class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
                                     {{ s }}
                                 </span>
                             </div>
@@ -100,7 +100,7 @@
                         <!-- Risks -->
                         <div v-if="guide.risks">
                             <h2 class="text-xl font-bold mb-3">Risques à considérer</h2>
-                            <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-red-50 rounded-xl p-5 border border-red-100">{{ guide.risks }}</div>
+                            <div class="prose prose-sm prose-slate dark:prose-invert max-w-none whitespace-pre-line bg-red-50 dark:bg-red-900/30 rounded-xl p-5 border border-red-100 dark:border-red-900/50 text-slate-700 dark:text-slate-200">{{ guide.risks }}</div>
                         </div>
                     </div>
 
@@ -110,7 +110,7 @@
                             <h3 class="font-bold text-sm mb-3">Agence d'investissement</h3>
                             <p class="text-sm text-slate-700 dark:text-slate-200 font-medium">{{ guide.investment_agency || 'Non renseignée' }}</p>
                             <a v-if="guide.investment_agency_url" :href="guide.investment_agency_url" target="_blank" rel="noopener"
-                                class="text-sm text-rose-600 hover:underline mt-1 inline-block">
+                                class="text-sm text-rose-600 dark:text-rose-400 hover:underline mt-1 inline-block">
                                 Visiter le site →
                             </a>
                         </div>
@@ -124,7 +124,7 @@
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-600 dark:text-slate-300">Montant levé</span>
-                                    <span class="font-semibold text-emerald-700">{{ fmtShort(countryStats.total_raised) }}</span>
+                                    <span class="font-semibold text-emerald-700 dark:text-emerald-400">{{ fmtShort(countryStats.total_raised) }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-600 dark:text-slate-300">Emplois visés</span>
@@ -146,15 +146,15 @@
                 <div class="max-w-3xl space-y-8">
                     <div v-if="guide.legal_framework">
                         <h2 class="text-xl font-bold mb-3">Cadre juridique</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">{{ guide.legal_framework }}</div>
+                        <div class="prose prose-sm prose-slate dark:prose-invert max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200">{{ guide.legal_framework }}</div>
                     </div>
                     <div v-if="guide.taxation">
                         <h2 class="text-xl font-bold mb-3">Fiscalité</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">{{ guide.taxation }}</div>
+                        <div class="prose prose-sm prose-slate dark:prose-invert max-w-none whitespace-pre-line bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700 text-slate-700 dark:text-slate-200">{{ guide.taxation }}</div>
                     </div>
                     <div v-if="guide.investment_incentives">
                         <h2 class="text-xl font-bold mb-3">Incitations à l'investissement</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-emerald-50 rounded-xl p-6 border border-emerald-100">{{ guide.investment_incentives }}</div>
+                        <div class="prose prose-sm prose-slate dark:prose-invert max-w-none whitespace-pre-line bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-6 border border-emerald-100 dark:border-emerald-900/50 text-slate-700 dark:text-slate-200">{{ guide.investment_incentives }}</div>
                     </div>
                 </div>
             </div>
@@ -164,7 +164,7 @@
                 <div class="max-w-3xl">
                     <div v-if="guide.diaspora_programs">
                         <h2 class="text-xl font-bold mb-3">Programmes diaspora</h2>
-                        <div class="prose prose-sm prose-slate max-w-none whitespace-pre-line bg-rose-50 rounded-xl p-6 border border-rose-100">{{ guide.diaspora_programs }}</div>
+                        <div class="prose prose-sm prose-slate dark:prose-invert max-w-none whitespace-pre-line bg-rose-50 dark:bg-rose-900/30 rounded-xl p-6 border border-rose-100 dark:border-rose-900/50 text-slate-700 dark:text-slate-200">{{ guide.diaspora_programs }}</div>
                     </div>
                     <div v-else class="text-slate-500 dark:text-slate-400 py-10 text-center">
                         Aucun programme diaspora documenté pour ce pays.
