@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local Claude Code settings (per-machine)
+.claude/settings.local.json
+
+# Internal specs (confidential)
+paydunya_spec.txt

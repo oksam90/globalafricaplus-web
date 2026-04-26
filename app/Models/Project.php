@@ -15,6 +15,7 @@ class Project extends Model
         'user_id', 'category_id', 'sub_category_id',
         'title', 'slug', 'summary', 'description',
         'country', 'city', 'amount_needed', 'amount_raised', 'currency',
+        'payout_phone', 'payout_provider', 'payout_country',
         'stage', 'status', 'jobs_target', 'views_count', 'followers_count',
         'cover_image', 'gallery', 'website', 'video_url', 'pitch_deck_url',
         'tags', 'deadline', 'published_at',
@@ -83,6 +84,11 @@ class Project extends Model
     public function investments(): HasMany
     {
         return $this->hasMany(Investment::class);
+    }
+
+    public function escrowMilestones(): HasMany
+    {
+        return $this->hasMany(EscrowMilestone::class)->orderBy('position');
     }
 
     public function updates(): HasMany

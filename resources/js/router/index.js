@@ -64,8 +64,25 @@ const routes = [
         meta: { requiresAuth: true },
     },
 
+    // Escrow inbox (investisseur)
+    {
+        path: '/escrow/mes-jalons',
+        name: 'escrow.mine',
+        component: () => import('../pages/escrow/MesJalons.vue'),
+        meta: { requiresAuth: true },
+    },
+
     // Tarifs
     { path: '/tarifs', name: 'tarifs', component: () => import('../pages/Tarifs.vue') },
+
+    // Formations (Sprint 5)
+    { path: '/formations', name: 'formations.index', component: () => import('../pages/formations/Index.vue') },
+    { path: '/formations/mes-formations', name: 'formations.mine', component: () => import('../pages/formations/MesFormations.vue'), meta: { requiresAuth: true } },
+    { path: '/formations/:slug', name: 'formations.show', component: () => import('../pages/formations/Show.vue'), props: true },
+
+    // Paiement (PayDunya return URLs)
+    { path: '/paiement/succes', name: 'payment.success', component: () => import('../pages/paiement/Succes.vue') },
+    { path: '/paiement/annule', name: 'payment.cancel', component: () => import('../pages/paiement/Annule.vue') },
 
     // Mentorat
     { path: '/mentorat', name: 'mentorat', component: () => import('../pages/Mentorat.vue') },
@@ -156,6 +173,11 @@ const routes = [
         component: () => import('../pages/admin/Analytics.vue'),
         meta: { requiresAuth: true },
     },
+
+    // Legal pages (CGU, Politique de confidentialité, DPA)
+    { path: '/cgu', name: 'legal.cgu', component: () => import('../pages/legal/Cgu.vue') },
+    { path: '/confidentialite', name: 'legal.privacy', component: () => import('../pages/legal/Confidentialite.vue') },
+    { path: '/dpa', name: 'legal.dpa', component: () => import('../pages/legal/Dpa.vue') },
 
     // Catch-all
     { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../pages/NotFound.vue') },

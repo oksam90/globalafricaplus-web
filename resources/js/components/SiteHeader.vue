@@ -133,6 +133,7 @@ const navLinks = [
     { to: '/secteurs',     label: 'Secteurs' },
     { to: '/diaspora',     label: 'Diaspora' },
     { to: '/mentorat',     label: 'Mentorat' },
+    { to: '/formations',   label: 'Formations' },
     { to: '/gouvernement', label: 'Gouvernement' },
     { to: '/tarifs',       label: 'Tarifs' },
 ];

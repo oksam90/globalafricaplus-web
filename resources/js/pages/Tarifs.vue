@@ -46,6 +46,7 @@
                     <span class="text-lg">💬</span>
                     <span>Support disponible <strong>24h/24, 7j/7</strong></span>
                 </div>
+                <ExchangeRateBadge />
             </div>
         </section>
 
@@ -76,7 +77,10 @@
                                         {{ yearly ? formatPrice(plan.price_yearly) : formatPrice(plan.price_monthly) }}
                                     </span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400">{{ yearly ? '/an' : '/mois' }}</span>
-                                    <div v-if="yearly" class="text-xs text-emerald-600 font-semibold mt-1">
+                                    <div class="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-1">
+                                        &asymp; {{ formatXof(yearly ? plan.price_yearly : plan.price_monthly) }}
+                                    </div>
+                                    <div v-if="yearly" class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
                                         soit {{ formatPrice(plan.price_yearly / 12) }}/mois
                                     </div>
                                 </template>
@@ -99,10 +103,16 @@
                             class="w-full py-3 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed">
                             Plan actuel par défaut
                         </button>
-                        <button v-else-if="currentPlan === plan.slug"
-                            class="w-full py-3 rounded-lg text-sm font-semibold bg-emerald-100 text-emerald-700 cursor-default">
-                            &#10003; Votre plan actuel
-                        </button>
+                        <template v-else-if="currentPlan === plan.slug">
+                            <button
+                                class="w-full py-3 rounded-lg text-sm font-semibold bg-emerald-100 text-emerald-700 cursor-default mb-2">
+                                &#10003; Votre plan actuel
+                            </button>
+                            <button v-if="isRefundable" @click="requestRefund" :disabled="refunding"
+                                class="w-full py-2 rounded-lg text-xs font-semibold border border-rose-200 dark:border-rose-700 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 disabled:opacity-60">
+                                {{ refunding ? 'Remboursement…' : '&#8634; Remboursement (garantie 30j)' }}
+                            </button>
+                        </template>
                         <button v-else @click="subscribeTo(plan)"
                             :disabled="subscribing"
                             class="w-full py-3 rounded-lg text-sm font-semibold transition-colors"
@@ -184,6 +194,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
+import ExchangeRateBadge from '../components/ExchangeRateBadge.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -192,6 +203,8 @@ const yearly = ref(false);
 const plans = ref([]);
 const loadingPlans = ref(true);
 const subscribing = ref(false);
+const refunding = ref(false);
+const isRefundable = ref(false);
 const openFaq = ref(-1);
 const toast = ref(null);
 
@@ -199,6 +212,13 @@ const currentPlan = computed(() => auth.planSlug);
 
 function formatPrice(price) {
     return parseFloat(price).toFixed(2).replace('.', ',') + ' €';
+}
+
+const EUR_TO_XOF = 655.957;
+const xofFormatter = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 });
+function formatXof(priceEur) {
+    const n = parseFloat(priceEur) || 0;
+    return xofFormatter.format(Math.round(n * EUR_TO_XOF));
 }
 
 const recommendations = [
@@ -230,6 +250,31 @@ async function loadPlans() {
     }
 }
 
+async function loadRefundEligibility() {
+    if (!auth.isAuthenticated) return;
+    try {
+        const { data } = await window.axios.get('/api/subscription/me');
+        isRefundable.value = !!data.is_refundable;
+    } catch {
+        isRefundable.value = false;
+    }
+}
+
+async function requestRefund() {
+    if (!confirm('Confirmer le remboursement de votre abonnement ? Vous perdrez l\'accès aux fonctionnalités payantes.')) return;
+    refunding.value = true;
+    try {
+        const { data } = await window.axios.post('/api/subscription/refund');
+        showToast(data.message || 'Remboursement effectué.', 'success');
+        isRefundable.value = false;
+        await auth.fetchUser();
+    } catch (e) {
+        showToast(e?.response?.data?.message || 'Erreur lors du remboursement.', 'error');
+    } finally {
+        refunding.value = false;
+    }
+}
+
 async function subscribeTo(plan) {
     if (!auth.isAuthenticated) {
         router.push({ name: 'login', query: { redirect: '/tarifs' } });
@@ -244,11 +289,24 @@ async function subscribeTo(plan) {
         const { data } = await window.axios.post('/api/subscription/subscribe', {
             plan_slug: plan.slug,
             billing_cycle: yearly.value ? 'yearly' : 'monthly',
-            payment_method: 'card',
+            country: auth.user?.country || 'SN',
         });
-        showToast(data.message || 'Abonnement activé !', 'success');
-        // Refresh user data to pick up new subscription
-        await auth.fetchUser();
+
+        // Free plan: activated instantly, no redirect needed.
+        if (data.status === 'activated') {
+            showToast(data.message || 'Abonnement activé !', 'success');
+            await auth.fetchUser();
+            return;
+        }
+
+        // Paid plan: redirect to PayDunya hosted invoice.
+        if (data.status === 'checkout_required' && data.checkout?.url) {
+            showToast('Redirection vers la page de paiement sécurisée...', 'success');
+            window.location.href = data.checkout.url;
+            return;
+        }
+
+        showToast(data.message || 'Réponse inattendue du serveur.', 'error');
     } catch (e) {
         showToast(e?.response?.data?.message || 'Erreur lors de la souscription.', 'error');
     } finally {
@@ -261,5 +319,8 @@ function showToast(message, type = 'success') {
     setTimeout(() => { toast.value = null; }, 4000);
 }
 
-onMounted(loadPlans);
+onMounted(() => {
+    loadPlans();
+    loadRefundEligibility();
+});
 </script>

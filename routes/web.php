@@ -14,10 +14,16 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GovernmentController;
 use App\Http\Controllers\Api\FormalizationController;
 use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\EscrowController;
+use App\Http\Controllers\Api\ExchangeRateController;
+use App\Http\Controllers\Api\InstallmentController;
+use App\Http\Controllers\Api\InvestmentController;
+use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\KycController;
 use App\Http\Controllers\Api\AdvertisingController;
 use App\Http\Controllers\Api\StatsController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 // API routes (session-based auth via web guard)
@@ -54,8 +60,24 @@ Route::prefix('api')->group(function () {
     // Subscription plans (public)
     Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
 
+    // Trainings catalog (public — Sprint 5)
+    Route::get('/trainings', [TrainingController::class, 'index']);
+    Route::get('/trainings/{slug}', [TrainingController::class, 'show']);
+
+    // Exchange rates (public — Sprint 5)
+    Route::get('/exchange-rates/xof-eur', [ExchangeRateController::class, 'xofEur']);
+    Route::get('/exchange-rates/{from}/{to}', [ExchangeRateController::class, 'show'])
+        ->whereAlpha('from')->whereAlpha('to');
+
     // KYC webhook (public — validated via signature)
     Route::post('/kyc/webhook', [KycController::class, 'webhook']);
+
+    // PayDunya IPN webhook (public — signature verified by middleware)
+    Route::post('/v1/webhooks/paydunya', [WebhookController::class, 'paydunya'])
+        ->middleware('paydunya.webhook');
+    // Alias without the /v1 prefix to match legacy docs
+    Route::post('/webhooks/paydunya', [WebhookController::class, 'paydunya'])
+        ->middleware('paydunya.webhook');
 
     // Advertising, Partners & Testimonials (public)
     Route::get('/advertising/banners', [AdvertisingController::class, 'banners']);
@@ -106,6 +128,32 @@ Route::prefix('api')->group(function () {
         Route::get('/subscription/my', [SubscriptionController::class, 'mySubscription']);
         Route::post('/subscription/subscribe', [SubscriptionController::class, 'subscribe']);
         Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel']);
+        Route::post('/subscription/refund', [SubscriptionController::class, 'refund']);
+        Route::post('/subscription/verify', [SubscriptionController::class, 'verify']);
+
+        // Trainings (Sprint 5)
+        Route::get('/trainings/mine', [TrainingController::class, 'mine']);
+        Route::post('/trainings/{slug}/purchase', [TrainingController::class, 'purchase']);
+        Route::post('/trainings/verify', [TrainingController::class, 'verify']);
+        Route::post('/trainings/purchases/{purchase}/refund', [TrainingController::class, 'refund']);
+
+        // Installments (Sprint 5)
+        Route::get('/installments/mine', [InstallmentController::class, 'mine']);
+        Route::post('/investments/{investment}/installments', [InstallmentController::class, 'createForInvestment']);
+        Route::post('/installments/{plan}/pay-next', [InstallmentController::class, 'payNext']);
+
+        // Investments
+        Route::get('/investments/mine', [InvestmentController::class, 'mine']);
+        Route::get('/investments/{investment}', [InvestmentController::class, 'show']);
+        Route::post('/investments', [InvestmentController::class, 'store']);
+        Route::post('/investments/verify', [InvestmentController::class, 'verify']);
+
+        // Escrow milestones (Sprint 4)
+        Route::get('/escrow/milestones/mine', [EscrowController::class, 'mine']);
+        Route::get('/escrow/projects/{project}/milestones', [EscrowController::class, 'projectMilestones']);
+        Route::post('/escrow/milestones/{milestone}/submit', [EscrowController::class, 'submit']);
+        Route::post('/escrow/milestones/{milestone}/approve', [EscrowController::class, 'approve']);
+        Route::post('/escrow/milestones/{milestone}/reject', [EscrowController::class, 'reject']);
 
         // KYC management
         Route::get('/kyc/status', [KycController::class, 'status']);

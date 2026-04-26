@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Subscription extends Model
 {
     protected $fillable = [
-        'user_id', 'plan_id', 'billing_cycle', 'status',
-        'starts_at', 'ends_at', 'trial_ends_at', 'cancelled_at',
+        'user_id', 'plan_id', 'plan_slug', 'billing_cycle', 'status',
+        'starts_at', 'ends_at', 'trial_ends_at', 'cancelled_at', 'refunded_at',
+        'amount', 'currency',
         'payment_method', 'payment_reference',
+        'payment_gateway', 'gateway_subscription_ref', 'gateway_metadata',
     ];
 
     protected $casts = [
@@ -18,6 +20,9 @@ class Subscription extends Model
         'ends_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'amount' => 'decimal:2',
+        'gateway_metadata' => 'array',
     ];
 
     public function user(): BelongsTo

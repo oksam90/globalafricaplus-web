@@ -183,6 +183,7 @@
                         :cta="auth.isFreePlan ? 'Voir les packs' : 'Créer'"
                         :to="auth.isFreePlan ? '/tarifs' : '/projets/nouveau'" />
                     <DashCard title="Mes projets" icon="📊" text="Suivez les vues, investissements et messages reçus." cta="Voir" to="/projets/mes-projets" />
+                    <DashCard title="Jalons & séquestre" icon="🔓" text="Soumettez les preuves de réalisation pour libérer les fonds." cta="Voir" to="/projets/mes-projets" />
                     <DashCard title="Hub Formalisation" icon="📜"
                         text="Guide pas-à-pas, business plan, micro-crédit."
                         cta="Accéder" to="/formalisation" />
@@ -253,8 +254,8 @@
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard title="Explorer les projets" icon="🔎" text="Découvrez des projets à fort potentiel." cta="Explorer" to="/projets" />
+                    <DashCard title="Mes jalons à valider" icon="✅" text="Validez les preuves soumises pour libérer le séquestre." cta="Voir" to="/escrow/mes-jalons" />
                     <DashCard title="Simulateur diaspora" icon="🧮" text="Estimez impact et rendement de vos investissements." cta="Lancer" to="/diaspora" />
-                    <DashCard title="Matching IA" icon="🤖" text="Recevez des suggestions personnalisées." cta="Bientôt" />
                 </div>
 
                 <!-- Recent investments -->

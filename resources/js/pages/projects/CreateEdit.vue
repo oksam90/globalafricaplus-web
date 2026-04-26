@@ -104,6 +104,40 @@
                 <input v-model="form.pitch_deck_url" type="url" placeholder="https://" class="input" />
             </Field>
 
+            <fieldset class="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/20 p-4 space-y-4">
+                <legend class="px-2 text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                    Compte de réception (séquestre)
+                </legend>
+                <p class="text-xs text-emerald-800/80 dark:text-emerald-300/80 -mt-2">
+                    Ces informations sont nécessaires pour recevoir le décaissement automatique des jalons validés par vos investisseurs (PayDunya Mobile Money).
+                </p>
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <Field label="Numéro Mobile Money" hint="Format international, ex. +221771234567">
+                        <input v-model="form.payout_phone" type="tel" placeholder="+221771234567" class="input" />
+                    </Field>
+                    <Field label="Opérateur">
+                        <select v-model="form.payout_provider" class="input">
+                            <option value="">—</option>
+                            <option value="orange-money-senegal">Orange Money (SN)</option>
+                            <option value="wave-senegal">Wave (SN)</option>
+                            <option value="free-money-senegal">Free Money (SN)</option>
+                            <option value="orange-money-ci">Orange Money (CI)</option>
+                            <option value="mtn-ci">MTN MoMo (CI)</option>
+                            <option value="moov-ci">Moov Money (CI)</option>
+                            <option value="orange-money-mali">Orange Money (ML)</option>
+                            <option value="moov-benin">Moov Money (BJ)</option>
+                            <option value="mtn-benin">MTN MoMo (BJ)</option>
+                            <option value="t-money-togo">T-Money (TG)</option>
+                            <option value="orange-money-burkina">Orange Money (BF)</option>
+                            <option value="moov-burkina">Moov Money (BF)</option>
+                        </select>
+                    </Field>
+                    <Field label="Pays du compte" hint="Code ISO à 2 lettres">
+                        <input v-model="form.payout_country" type="text" maxlength="2" placeholder="SN" class="input uppercase" />
+                    </Field>
+                </div>
+            </fieldset>
+
             <p v-if="error" class="text-sm text-rose-600">{{ error }}</p>
 
             <div class="flex flex-wrap gap-3 pt-2">
@@ -149,6 +183,7 @@ const form = reactive({
     tags: [],
     sdg_ids: [],
     website: '', video_url: '', pitch_deck_url: '',
+    payout_phone: '', payout_provider: '', payout_country: '',
     status: 'draft',
 });
 
@@ -190,6 +225,9 @@ async function loadProject() {
         website: p.website || '',
         video_url: p.video_url || '',
         pitch_deck_url: p.pitch_deck_url || '',
+        payout_phone: p.payout_phone || '',
+        payout_provider: p.payout_provider || '',
+        payout_country: p.payout_country || '',
         status: p.status,
     });
     onCategoryChange();
