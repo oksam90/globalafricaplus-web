@@ -168,6 +168,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SubscriptionSeeder::class);
         $this->call(KycSeeder::class);
         $this->call(AdvertisingSeeder::class);
+        $this->call(TrainingsSeeder::class);
 
         foreach ($demoProjects as $data) {
             Project::updateOrCreate(
