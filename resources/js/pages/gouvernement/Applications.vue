@@ -9,6 +9,32 @@
         </div>
 
         <div v-if="loading" class="text-slate-500 dark:text-slate-400 py-8">Chargement…</div>
+
+        <!-- API error banner — surfaces 403 (subscription/kyc) instead of silently
+             rendering an empty list. -->
+        <div v-else-if="loadError" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+                <div class="text-3xl">⚠️</div>
+                <div class="flex-1">
+                    <div class="font-bold text-amber-900 dark:text-amber-200">Accès aux candidatures restreint</div>
+                    <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">{{ loadError.message }}</p>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <router-link v-if="loadError.kind === 'subscription'" to="/tarifs"
+                            class="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold">
+                            Voir les packs
+                        </router-link>
+                        <router-link v-if="loadError.kind === 'kyc'" to="/kyc"
+                            class="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold">
+                            Compléter mon KYC
+                        </router-link>
+                        <button @click="load" class="px-4 py-2 rounded-md border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm font-semibold">
+                            Réessayer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div v-else-if="applications.length === 0" class="text-center py-16 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-2xl">
             Aucune candidature reçue pour cet appel.
         </div>
@@ -103,6 +129,7 @@ const meta = ref({});
 const loading = ref(true);
 const callTitle = ref('');
 const page = ref(1);
+const loadError = ref(null);
 
 function appStatusClass(s) {
     return {
@@ -124,6 +151,7 @@ function goToPage(n) { page.value = n; load(); }
 
 async function load() {
     loading.value = true;
+    loadError.value = null;
     try {
         const { data } = await window.axios.get(`/api/gouvernement/appels/${callId}/applications`, { params: { page: page.value } });
         applications.value = (data.data || []).map(a => ({
@@ -137,6 +165,19 @@ async function load() {
         // Get call title
         if (applications.value.length > 0 && applications.value[0].call) {
             callTitle.value = applications.value[0].call.title;
+        }
+    } catch (e) {
+        // Translate the API error into a user-actionable banner.
+        const status = e?.response?.status;
+        const body = e?.response?.data || {};
+        if (body.subscription_required) {
+            loadError.value = { kind: 'subscription', message: body.message || 'Cette fonctionnalité nécessite un abonnement payant.' };
+        } else if (body.error === 'kyc_insufficient' || body.error === 'kyc_expired') {
+            loadError.value = { kind: 'kyc', message: body.message || 'Vérification KYC requise.' };
+        } else if (body.error === 'aml_blocked') {
+            loadError.value = { kind: 'kyc', message: body.message || 'Compte bloqué pour conformité AML — contactez le support.' };
+        } else {
+            loadError.value = { kind: 'generic', message: body.message || `Erreur ${status || ''} lors du chargement des candidatures.` };
         }
     } finally {
         loading.value = false;
