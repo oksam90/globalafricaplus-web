@@ -98,6 +98,10 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const { data } = await window.axios.post('/api/auth/login', payload);
                 this.setUser(data.user);
+                // Audit fix 2026-05 — login response only carries `user`, so
+                // refetch /me to populate kyc + subscription. Without this,
+                // KycBanner flashes briefly until the next navigation.
+                await this.fetchUser();
                 return true;
             } catch (e) {
                 this.error = e?.response?.data?.message || 'Connexion impossible';
@@ -112,6 +116,8 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const { data } = await window.axios.post('/api/auth/register', payload);
                 this.setUser(data.user);
+                // Same hydration step as login.
+                await this.fetchUser();
                 return true;
             } catch (e) {
                 this.error =

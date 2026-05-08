@@ -1,5 +1,7 @@
 <template>
-    <div v-if="!auth.kyc?.is_verified" class="bg-gradient-to-r from-orange-50 via-amber-50 to-red-50 dark:from-orange-950/40 dark:via-amber-950/40 dark:to-red-950/40 border-2 border-orange-300 dark:border-orange-800/60 rounded-2xl p-6 mb-8">
+    <!-- Audit fix 2026-05 — render only after /me has resolved, otherwise the
+         banner flashes briefly during the post-login fetch. -->
+    <div v-if="auth.bootstrapped && !auth.kyc?.is_verified" class="bg-gradient-to-r from-orange-50 via-amber-50 to-red-50 dark:from-orange-950/40 dark:via-amber-950/40 dark:to-red-950/40 border-2 border-orange-300 dark:border-orange-800/60 rounded-2xl p-6 mb-8">
         <!-- Alert header -->
         <div class="flex items-start gap-4">
             <div class="shrink-0">
