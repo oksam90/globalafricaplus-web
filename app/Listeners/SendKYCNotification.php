@@ -9,22 +9,26 @@ use App\Models\User;
 use App\Notifications\AMLFlaggedNotification;
 use App\Notifications\KYCRejectedNotification;
 use App\Notifications\KYCVerifiedNotification;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 /**
  * Sprint 4 — single listener that fans out KYC-related events to the right
- * notification channel. Implements three handlers, registered via Laravel's
- * event auto-discovery.
+ * notification channel. Three handler methods, wired in AppServiceProvider.
  *
  * Channel routing:
  *   - KYCVerified / KYCRejected → notify the affected user (mail + db)
  *   - AMLFlagged                → notify all admins (mail + db)
+ *
+ * Audit fix 2026-05 — the listener no longer implements ShouldQueue.
+ * Reason: the database channel must write the row before the calling
+ * controller returns (so the bell badge updates immediately) and so the
+ * notification is durable even when no queue worker is running. The fan-out
+ * itself is cheap; the upstream sender (controller / job) is already
+ * fast-enough on the hot path.
  */
-class SendKYCNotification implements ShouldQueue
+class SendKYCNotification
 {
-    public string $queue = 'notifications';
 
     public function handleKYCVerified(KYCVerified $event): void
     {
