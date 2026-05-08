@@ -32,7 +32,9 @@ class VerifyPayDunyaWebhook
                 'gateway'         => 'paydunya',
                 'event_type'      => 'ipn.received',
                 'direction'       => 'inbound',
-                'payload'         => $request->all(),
+                // Audit fix 2026-05 — strip customer phone/email/signed URLs
+                // before persisting. See App\Support\PiiRedactor.
+                'payload'         => \App\Support\PiiRedactor::redactPaydunyaWebhook($request->all()),
                 'ip_address'      => $request->ip(),
                 'user_agent'      => substr((string) $request->userAgent(), 0, 500),
                 'signature'       => is_string($receivedHash) ? substr($receivedHash, 0, 255) : null,

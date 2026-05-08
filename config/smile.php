@@ -80,6 +80,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Webhook replay window (audit fix 2026-05)
+    |--------------------------------------------------------------------------
+    | The signature alone proves authenticity but not freshness — an attacker
+    | who captures a valid callback can replay it later. We reject any
+    | timestamp older than `replay_window_seconds` (default 300s = 5 min) and
+    | any timestamp dated more than `clock_skew_seconds` in the future
+    | (allows a small clock drift between Smile and our server).
+    */
+    'webhook' => [
+        'replay_window_seconds' => env('SMILE_WEBHOOK_REPLAY_WINDOW', 300),
+        'clock_skew_seconds'    => env('SMILE_WEBHOOK_CLOCK_SKEW', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | SDK identification (sent in every payload)
     |--------------------------------------------------------------------------
     */

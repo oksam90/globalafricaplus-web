@@ -24,9 +24,40 @@ class User extends Authenticatable
         'aml_status', 'aml_last_checked_at', 'selfie_registered',
     ];
 
+    /**
+     * Audit fix 2026-05 (§ 4.2.5) — defence in depth.
+     *
+     * The fillable list above keeps these columns mass-assignable, but we
+     * hide them by default during JSON serialization so a bare
+     * `->with('user')` cannot leak compliance / contact data when a user
+     * is loaded as a relation on another resource (project, investment,
+     * mentorship…). Endpoints that legitimately need these fields (the
+     * user's own /me payload, admin user view) call ->makeVisible([...])
+     * explicitly to opt in.
+     */
     protected $hidden = [
         'password',
         'remember_token',
+        // Contact PII
+        'phone',
+        // Account state — expose intentionally only on /me / admin views
+        'email_verified_at',
+        // Compliance / KYC internals
+        'aml_status',
+        'aml_last_checked_at',
+        'kyc_verification_id',
+        'selfie_registered',
+    ];
+
+    /**
+     * The set of normally-hidden attributes that the user's own view
+     * (MeController) and admin views are allowed to surface.
+     * Keeps the makeVisible() call sites short and consistent.
+     */
+    public const SELF_VISIBLE = [
+        'phone', 'email_verified_at',
+        'aml_status', 'aml_last_checked_at',
+        'kyc_verification_id', 'selfie_registered',
     ];
 
     protected $appends = ['active_role'];

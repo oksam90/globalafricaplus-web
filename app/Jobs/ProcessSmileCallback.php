@@ -86,7 +86,11 @@ class ProcessSmileCallback implements ShouldQueue
                 'actions'           => $actions ?: null,
                 'status'            => $newStatus,
                 'kyc_level_granted' => $tierGranted,
-                'callback_payload'  => $this->payload,
+                // Audit fix 2026-05 — strip ImageLinks (signed S3 URLs to the
+                // captured selfie + ID photo) and KYCReceipt PDF link before
+                // persistence; they're sensitive while fresh, useless once
+                // expired. The signature itself was already validated upstream.
+                'callback_payload'  => \App\Support\PiiRedactor::redactSmileCallback((array) $this->payload),
                 'completed_at'      => now(),
                 'expires_at'        => $newStatus === 'approved' ? now()->addMonths((int) config('smile.kyc_expiry_months', 24)) : null,
             ]);

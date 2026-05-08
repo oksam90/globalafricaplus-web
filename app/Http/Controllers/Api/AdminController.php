@@ -153,7 +153,10 @@ class AdminController extends Controller
     public function userShow(Request $request, int $id): JsonResponse
     {
         $user = User::with(['roles:id,slug,name', 'roleProfiles.role:id,slug,name'])
-            ->findOrFail($id);
+            ->findOrFail($id)
+            // Admin oversight needs the compliance + contact fields that
+            // are hidden by default for relation-loaded users.
+            ->makeVisible(User::SELF_VISIBLE);
 
         $projectsCount = Project::where('user_id', $id)->count();
         $publishedCount = Project::where('user_id', $id)->where('status', 'published')->count();
@@ -183,7 +186,7 @@ class AdminController extends Controller
         $user->update($data);
 
         return response()->json([
-            'user' => $user->load('roles:id,slug,name'),
+            'user' => $user->load('roles:id,slug,name')->makeVisible(User::SELF_VISIBLE),
             'message' => 'Utilisateur mis à jour.',
         ]);
     }
@@ -206,7 +209,7 @@ class AdminController extends Controller
         }
 
         return response()->json([
-            'user' => $user->fresh()->load('roles:id,slug,name'),
+            'user' => $user->fresh()->load('roles:id,slug,name')->makeVisible(User::SELF_VISIBLE),
             'action' => $action,
             'message' => $action === 'added' ? "Rôle « $slug » ajouté." : "Rôle « $slug » retiré.",
         ]);

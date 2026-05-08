@@ -35,6 +35,23 @@ class ReportSuspiciousActivity implements ShouldQueue
             // 1. Mock the CENTIF transmission via an audit-grade log entry.
             // PaymentLog has $timestamps = false, so we set created_at explicitly
             // to stay portable across DB engines (SQLite vs. MySQL useCurrent()).
+            // Audit fix 2026-05 — store a redacted copy locally. The real
+            // CENTIF transmission carries the full identity per LCB-FT
+            // requirements; what we keep on disk is the minimum needed to
+            // cross-reference back to users.id (resilient to DB leak).
+            $payload = \App\Support\PiiRedactor::redactSarPayload([
+                'user_id'             => $event->user->id,
+                'user_name'           => $event->user->name,
+                'user_email'          => $event->user->email,
+                'screening_id'        => $screening->id,
+                'risk_level'          => $screening->risk_level,
+                'sanctions_match'     => $screening->sanctions_match,
+                'pep_match'           => $screening->pep_match,
+                'adverse_media_match' => $screening->adverse_media_match,
+                'screened_at'         => $screening->screened_at?->toIso8601String(),
+                'mode'                => 'mock', // remove once real CENTIF API is wired
+            ]);
+
             PaymentLog::create([
                 'gateway'           => 'centif',
                 'event_type'        => 'compliance.suspicious_activity_report',
@@ -43,18 +60,7 @@ class ReportSuspiciousActivity implements ShouldQueue
                 'status_code'       => 202, // Accepted (mocked)
                 'signature_valid'   => true,
                 'created_at'        => now(),
-                'payload'           => [
-                    'user_id'             => $event->user->id,
-                    'user_name'           => $event->user->name,
-                    'user_email'          => $event->user->email,
-                    'screening_id'        => $screening->id,
-                    'risk_level'          => $screening->risk_level,
-                    'sanctions_match'     => $screening->sanctions_match,
-                    'pep_match'           => $screening->pep_match,
-                    'adverse_media_match' => $screening->adverse_media_match,
-                    'screened_at'         => $screening->screened_at?->toIso8601String(),
-                    'mode'                => 'mock', // remove once real CENTIF API is wired
-                ],
+                'payload'           => $payload,
             ]);
 
             // 2. Mark the screening as already reported to avoid duplicates.

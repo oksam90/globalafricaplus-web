@@ -179,13 +179,19 @@ Route::prefix('api')->group(function () {
 
         // ─── Smile Identity eKYC (Sprint 2 — legacy IDnorm endpoints removed in audit 2026-05) ─
         Route::prefix('v1/kyc')->name('kyc.')->group(function () {
-            Route::get('/status',    [SmileKYCController::class, 'status'])->name('status');
-            Route::get('/history',   [SmileKYCController::class, 'history'])->name('history');
-            Route::post('/basic',     [SmileKYCController::class, 'basic'])->name('basic');
-            Route::post('/biometric', [SmileKYCController::class, 'biometric'])->name('biometric');
-            Route::post('/document',  [SmileKYCController::class, 'document'])->name('document');
-            Route::post('/aml',       [SmileKYCController::class, 'aml'])->name('aml');
-            Route::post('/web-token', [SmileKYCController::class, 'webToken'])->name('web-token');
+            // Reads — generous bucket so the SPA bell + KYC dashboard stay snappy.
+            Route::middleware('throttle:kyc-reads')->group(function () {
+                Route::get('/status',    [SmileKYCController::class, 'status'])->name('status');
+                Route::get('/history',   [SmileKYCController::class, 'history'])->name('history');
+            });
+            // Submissions — each call hits paid Smile API + DB row, hard cap.
+            Route::middleware('throttle:kyc-submissions')->group(function () {
+                Route::post('/basic',     [SmileKYCController::class, 'basic'])->name('basic');
+                Route::post('/biometric', [SmileKYCController::class, 'biometric'])->name('biometric');
+                Route::post('/document',  [SmileKYCController::class, 'document'])->name('document');
+                Route::post('/aml',       [SmileKYCController::class, 'aml'])->name('aml');
+                Route::post('/web-token', [SmileKYCController::class, 'webToken'])->name('web-token');
+            });
         });
 
         // My projects (all statuses)
@@ -255,18 +261,24 @@ Route::prefix('api')->group(function () {
 
         // Admin-gated endpoints
         Route::middleware('role:admin')->prefix('admin')->group(function () {
-            Route::get('/analytics', [AdminController::class, 'analytics']);
-            Route::get('/users', [AdminController::class, 'users']);
-            Route::get('/users/{id}', [AdminController::class, 'userShow']);
-            Route::patch('/users/{id}', [AdminController::class, 'userUpdate']);
-            Route::post('/users/{id}/toggle-role', [AdminController::class, 'userToggleRole']);
-            Route::delete('/users/{id}', [AdminController::class, 'destroyUser']);
-            Route::delete('/mentors/{id}', [AdminController::class, 'destroyMentor']);
-            Route::get('/trainings', [AdminController::class, 'trainings']);
-            Route::delete('/trainings/{id}', [AdminController::class, 'destroyTraining']);
-            Route::get('/moderation', [AdminController::class, 'moderationQueue']);
-            Route::post('/moderation/{project}', [AdminController::class, 'moderateProject']);
-            Route::get('/config', [AdminController::class, 'platformConfig']);
+            // Reads — generous limit, anti-enumeration safety net.
+            Route::middleware('throttle:admin-read')->group(function () {
+                Route::get('/analytics',     [AdminController::class, 'analytics']);
+                Route::get('/users',         [AdminController::class, 'users']);
+                Route::get('/users/{id}',    [AdminController::class, 'userShow']);
+                Route::get('/trainings',     [AdminController::class, 'trainings']);
+                Route::get('/moderation',    [AdminController::class, 'moderationQueue']);
+                Route::get('/config',        [AdminController::class, 'platformConfig']);
+            });
+            // Mutations — tight bucket against runaway scripts / accidental loops.
+            Route::middleware('throttle:admin-write')->group(function () {
+                Route::patch('/users/{id}',                  [AdminController::class, 'userUpdate']);
+                Route::post('/users/{id}/toggle-role',       [AdminController::class, 'userToggleRole']);
+                Route::delete('/users/{id}',                 [AdminController::class, 'destroyUser']);
+                Route::delete('/mentors/{id}',               [AdminController::class, 'destroyMentor']);
+                Route::delete('/trainings/{id}',             [AdminController::class, 'destroyTraining']);
+                Route::post('/moderation/{project}',         [AdminController::class, 'moderateProject']);
+            });
         });
 
         // Entrepreneur-gated endpoints (require role + subscription + KYC)

@@ -44,7 +44,9 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return response()->json([
-            'user' => $user->load(['roles', 'roleProfiles.role']),
+            'user' => $user
+                ->load(['roles', 'roleProfiles.role'])
+                ->makeVisible(\App\Models\User::SELF_VISIBLE), // own session response
         ], 201);
     }
 
@@ -62,7 +64,9 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return response()->json([
-            'user' => Auth::user()->load('roles'),
+            'user' => Auth::user()
+                ->load('roles')
+                ->makeVisible(\App\Models\User::SELF_VISIBLE),
         ]);
     }
 
@@ -82,7 +86,8 @@ class AuthController extends Controller
             return response()->json(['user' => null]);
         }
 
-        $user->load(['roles', 'roleProfiles.role']);
+        $user->load(['roles', 'roleProfiles.role'])
+            ->makeVisible(\App\Models\User::SELF_VISIBLE);
 
         $latestSmile = $user->latestSmileVerification();
 

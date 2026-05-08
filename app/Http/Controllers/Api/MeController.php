@@ -15,7 +15,9 @@ class MeController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load(['roles', 'roleProfiles.role']);
+        $user = $request->user()
+            ->load(['roles', 'roleProfiles.role'])
+            ->makeVisible(\App\Models\User::SELF_VISIBLE); // own profile sees its full data
         return response()->json(['user' => $user]);
     }
 

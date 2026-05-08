@@ -88,7 +88,12 @@ class ProcessPayDunyaWebhook implements ShouldQueue
             'gateway'         => 'paydunya',
             'event_type'      => 'ipn.processed',
             'direction'       => 'inbound',
-            'payload'         => ['verified_status' => $status->status, 'gateway_status' => $status->raw],
+            // Audit fix 2026-05 — strip customer block + signed URLs from
+            // the gateway raw response before persistence.
+            'payload'         => [
+                'verified_status' => $status->status,
+                'gateway_status'  => \App\Support\PiiRedactor::redactPaydunyaStatus(is_array($status->raw) ? $status->raw : null),
+            ],
             'gateway_reference' => $token,
             'status_code'     => 200,
             'signature_valid' => true,
