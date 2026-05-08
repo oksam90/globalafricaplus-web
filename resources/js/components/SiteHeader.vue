@@ -21,6 +21,7 @@
 
                 <!-- Desktop auth actions -->
                 <template v-if="auth.isAuthenticated">
+                    <NotificationBell />
                     <router-link to="/dashboard"
                         class="hidden md:inline text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-brand-gold-600 dark:hover:text-brand-gold-400">
                         Dashboard
@@ -119,6 +120,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import RoleSwitcher from './RoleSwitcher.vue';
 import DarkModeToggle from './DarkModeToggle.vue';
+import NotificationBell from './NotificationBell.vue';
 
 const logoUrl = '/brand/logo-horizontal-dark.svg';
 const auth = useAuthStore();

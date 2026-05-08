@@ -88,10 +88,17 @@
                             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ u.country || '—' }}</td>
                             <td class="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">{{ formatDate(u.created_at) }}</td>
                             <td class="px-4 py-3 text-right">
-                                <button @click="openUserModal(u)"
-                                    class="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline">
-                                    Gérer
-                                </button>
+                                <div class="inline-flex items-center gap-3">
+                                    <button @click="openUserModal(u)"
+                                        class="text-xs font-semibold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:underline">
+                                        Gérer
+                                    </button>
+                                    <button @click="deleteUser(u)" :disabled="deletingId === u.id"
+                                        class="text-xs font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-900 dark:hover:text-rose-300 hover:underline disabled:opacity-50"
+                                        title="Supprimer définitivement">
+                                        {{ deletingId === u.id ? '…' : 'Supprimer' }}
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -178,6 +185,15 @@
                 </div>
             </div>
         </div>
+
+        <!-- Toast -->
+        <Teleport to="body">
+            <div v-if="toast"
+                class="fixed bottom-6 right-6 z-50 max-w-sm px-5 py-3 rounded-lg shadow-lg text-sm font-medium"
+                :class="toast.tone === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'">
+                {{ toast.message }}
+            </div>
+        </Teleport>
     </section>
 </template>
 
@@ -196,6 +212,8 @@ const editForm = reactive({});
 const editSaving = ref(false);
 const editError = ref('');
 const editSuccess = ref('');
+const deletingId = ref(null);
+const toast = ref(null);
 
 const availableRoles = ['entrepreneur', 'investor', 'mentor', 'jobseeker', 'government', 'admin'];
 
@@ -297,6 +315,33 @@ async function saveUser() {
     } finally {
         editSaving.value = false;
     }
+}
+
+async function deleteUser(u) {
+    const isAdmin = u.roles?.some(r => r.slug === 'admin');
+    const adminWarn = isAdmin
+        ? "\n\n⚠ Cet utilisateur est ADMINISTRATEUR. Cette suppression sera enregistrée."
+        : '';
+    if (!confirm(`Supprimer définitivement « ${u.name} » ?${adminWarn}\n\nLes projets, investissements et autres données associés seront également supprimés.`)) {
+        return;
+    }
+
+    deletingId.value = u.id;
+    try {
+        const params = isAdmin ? { confirm: true } : {};
+        await window.axios.delete(`/api/admin/users/${u.id}`, { params });
+        users.value = users.value.filter(x => x.id !== u.id);
+        showToast(`Utilisateur « ${u.name} » supprimé.`, 'success');
+    } catch (e) {
+        showToast(e?.response?.data?.message || 'Erreur lors de la suppression.', 'error');
+    } finally {
+        deletingId.value = null;
+    }
+}
+
+function showToast(message, tone = 'success') {
+    toast.value = { message, tone };
+    setTimeout(() => { toast.value = null; }, 4000);
 }
 
 async function toggleRole(userId, slug) {

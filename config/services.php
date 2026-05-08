@@ -35,12 +35,7 @@ return [
         ],
     ],
 
-    'idnorm' => [
-        'api_key' => env('IDNORM_API_KEY', 'dev_test_key'),
-        'api_secret' => env('IDNORM_API_SECRET', 'dev_test_secret'),
-        'base_url' => env('IDNORM_BASE_URL', 'https://api.idnorm.com/v1'),
-        'webhook_secret' => env('IDNORM_WEBHOOK_SECRET', 'dev_webhook_secret'),
-        'mode' => env('IDNORM_MODE', 'dev'),  // dev or production
-    ],
+    // NOTE: The previous `idnorm` block was removed in audit 2026-05.
+    // Smile Identity (config/smile.php) has fully replaced IDnorm since Sprint 4.
 
 ];

@@ -19,6 +19,9 @@ class User extends Authenticatable
         'country', 'city', 'avatar', 'bio',
         'kyc_level', 'is_diaspora', 'residence_country', 'preferred_language',
         'active_role_slug',
+        // Smile Identity (Sprint 1+2)
+        'kyc_verified_at', 'kyc_expires_at', 'kyc_verification_id',
+        'aml_status', 'aml_last_checked_at', 'selfie_registered',
     ];
 
     protected $hidden = [
@@ -31,9 +34,14 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_diaspora' => 'boolean',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'is_diaspora'          => 'boolean',
+            // Smile Identity
+            'kyc_verified_at'     => 'datetime',
+            'kyc_expires_at'      => 'datetime',
+            'aml_last_checked_at' => 'datetime',
+            'selfie_registered'   => 'boolean',
         ];
     }
 
@@ -74,35 +82,51 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
-    public function kycSessions(): HasMany
-    {
-        return $this->hasMany(KycSession::class);
-    }
-
     /**
-     * Get the latest KYC session.
-     */
-    public function latestKycSession(): ?KycSession
-    {
-        return $this->kycSessions()->latest()->first();
-    }
-
-    /**
-     * Check if user has a verified KYC.
+     * True once the user has reached the `verified` Smile tier or above and is
+     * within the 24-month validity window. Replaces the legacy IDnorm helper.
      */
     public function isKycVerified(): bool
     {
-        return $this->kyc_level === 'verified' || $this->kyc_level === 'certified';
+        if (!in_array($this->kyc_level, ['verified', 'certified'], true)) {
+            return false;
+        }
+        return $this->kyc_expires_at === null || $this->kyc_expires_at->isFuture();
     }
 
     /**
-     * Check if user has a pending KYC session.
+     * True while the most recent Smile submission is still mid-flight (pending
+     * or processing) — used by the dashboard to show "vérification en cours".
      */
     public function hasKycPending(): bool
     {
-        return $this->kycSessions()
-            ->whereIn('status', ['pending', 'in_progress', 'documents_submitted'])
+        return $this->kycVerifications()
+            ->whereIn('status', ['pending', 'processing'])
             ->exists();
+    }
+
+    // ── Smile Identity (Sprint 1+2) ──
+
+    public function kycVerifications(): HasMany
+    {
+        return $this->hasMany(KYCVerification::class);
+    }
+
+    public function amlScreenings(): HasMany
+    {
+        return $this->hasMany(AMLScreening::class);
+    }
+
+    /** Most recent Smile-driven KYC verification (any status). */
+    public function latestSmileVerification(): ?KYCVerification
+    {
+        return $this->kycVerifications()->latest('submitted_at')->first();
+    }
+
+    /** Most recent AML screening, regardless of risk_level. */
+    public function latestAmlScreening(): ?AMLScreening
+    {
+        return $this->amlScreenings()->latest('screened_at')->first();
     }
 
     /**

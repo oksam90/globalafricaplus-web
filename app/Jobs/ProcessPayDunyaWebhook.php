@@ -69,6 +69,17 @@ class ProcessPayDunyaWebhook implements ShouldQueue
             return;
         }
 
+        // Audit 2026-05 — idempotency guard: a PayDunya retry storm (up to 4×)
+        // must never re-activate a transaction that has already reached a
+        // terminal state, otherwise we'd credit investments / subscriptions twice.
+        if (in_array($transaction->status, ['completed', 'refunded', 'cancelled'], true)) {
+            Log::info('PayDunya webhook: transaction already finalised, skipping', [
+                'transaction_id' => $transaction->id,
+                'status'         => $transaction->status,
+            ]);
+            return;
+        }
+
         // Source-of-truth check with PayDunya API.
         $status = $gateway->verifyPayment($token);
 

@@ -20,7 +20,9 @@ use App\Http\Controllers\Api\InstallmentController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\SubscriptionController;
-use App\Http\Controllers\Api\KycController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\SmileKYCController;
+use App\Http\Controllers\Api\SmileWebhookController;
 use App\Http\Controllers\Api\AdvertisingController;
 use App\Http\Controllers\Api\StatsController;
 use App\Http\Controllers\Api\WebhookController;
@@ -69,8 +71,9 @@ Route::prefix('api')->group(function () {
     Route::get('/exchange-rates/{from}/{to}', [ExchangeRateController::class, 'show'])
         ->whereAlpha('from')->whereAlpha('to');
 
-    // KYC webhook (public — validated via signature)
-    Route::post('/kyc/webhook', [KycController::class, 'webhook']);
+    // Smile Identity webhook (Sprint 2 — signature verified by middleware)
+    Route::post('/v1/webhooks/smile-identity', [SmileWebhookController::class, 'handle'])
+        ->middleware('smile.webhook');
 
     // PayDunya IPN webhook (public — signature verified by middleware)
     Route::post('/v1/webhooks/paydunya', [WebhookController::class, 'paydunya'])
@@ -112,6 +115,13 @@ Route::prefix('api')->group(function () {
 
         // Dashboard (role-contextual)
         Route::get('/dashboard', [DashboardController::class, 'index']);
+
+        // Notifications (database channel — bell icon)
+        Route::get('/notifications',                    [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count',       [NotificationController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read',         [NotificationController::class, 'markRead']);
+        Route::post('/notifications/read-all',          [NotificationController::class, 'markAllRead']);
+        Route::delete('/notifications/{id}',            [NotificationController::class, 'destroy']);
 
         // Current user / multi-role management
         Route::get('/me', [MeController::class, 'show']);
@@ -155,14 +165,16 @@ Route::prefix('api')->group(function () {
         Route::post('/escrow/milestones/{milestone}/approve', [EscrowController::class, 'approve']);
         Route::post('/escrow/milestones/{milestone}/reject', [EscrowController::class, 'reject']);
 
-        // KYC management
-        Route::get('/kyc/status', [KycController::class, 'status']);
-        Route::get('/kyc/session', [KycController::class, 'sessionData']);
-        Route::post('/kyc/step1', [KycController::class, 'saveStep1']);
-        Route::post('/kyc/step2', [KycController::class, 'saveStep2']);
-        Route::post('/kyc/upload', [KycController::class, 'uploadDocument']);
-        Route::post('/kyc/step3', [KycController::class, 'saveStep3']);
-        Route::post('/kyc/submit', [KycController::class, 'submitForVerification']);
+        // ─── Smile Identity eKYC (Sprint 2 — legacy IDnorm endpoints removed in audit 2026-05) ─
+        Route::prefix('v1/kyc')->name('kyc.')->group(function () {
+            Route::get('/status',    [SmileKYCController::class, 'status'])->name('status');
+            Route::get('/history',   [SmileKYCController::class, 'history'])->name('history');
+            Route::post('/basic',     [SmileKYCController::class, 'basic'])->name('basic');
+            Route::post('/biometric', [SmileKYCController::class, 'biometric'])->name('biometric');
+            Route::post('/document',  [SmileKYCController::class, 'document'])->name('document');
+            Route::post('/aml',       [SmileKYCController::class, 'aml'])->name('aml');
+            Route::post('/web-token', [SmileKYCController::class, 'webToken'])->name('web-token');
+        });
 
         // My projects (all statuses)
         Route::get('/me/projects', [ProjectController::class, 'mine']);
@@ -212,7 +224,8 @@ Route::prefix('api')->group(function () {
         Route::get('/gouvernement/mes-candidatures', [GovernmentController::class, 'myApplications']);
 
         // Government-gated endpoints (require role + subscription + KYC)
-        Route::middleware(['role:government,admin', 'subscribed', 'kyc'])->prefix('gouvernement')->group(function () {
+        // Migrated from `kyc` (legacy IDnorm) to `kyc.smile:verified` — Sprint 4 Smile Identity.
+        Route::middleware(['role:government,admin', 'subscribed', 'kyc.smile:verified'])->prefix('gouvernement')->group(function () {
             Route::get('/mes-appels', [GovernmentController::class, 'myCalls']);
             Route::post('/appels', [GovernmentController::class, 'storeCall']);
             Route::patch('/appels/{id}', [GovernmentController::class, 'updateCall']);
@@ -235,13 +248,18 @@ Route::prefix('api')->group(function () {
             Route::get('/users/{id}', [AdminController::class, 'userShow']);
             Route::patch('/users/{id}', [AdminController::class, 'userUpdate']);
             Route::post('/users/{id}/toggle-role', [AdminController::class, 'userToggleRole']);
+            Route::delete('/users/{id}', [AdminController::class, 'destroyUser']);
+            Route::delete('/mentors/{id}', [AdminController::class, 'destroyMentor']);
+            Route::get('/trainings', [AdminController::class, 'trainings']);
+            Route::delete('/trainings/{id}', [AdminController::class, 'destroyTraining']);
             Route::get('/moderation', [AdminController::class, 'moderationQueue']);
             Route::post('/moderation/{project}', [AdminController::class, 'moderateProject']);
             Route::get('/config', [AdminController::class, 'platformConfig']);
         });
 
         // Entrepreneur-gated endpoints (require role + subscription + KYC)
-        Route::middleware(['role:entrepreneur,admin', 'subscribed', 'kyc'])->group(function () {
+        // Migrated from `kyc` (legacy IDnorm) to `kyc.smile:verified` — Sprint 4 Smile Identity.
+        Route::middleware(['role:entrepreneur,admin', 'subscribed', 'kyc.smile:verified'])->group(function () {
             Route::post('/projects', [ProjectController::class, 'store']);
             Route::patch('/projects/{project}', [ProjectController::class, 'update']);
             Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);

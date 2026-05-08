@@ -48,11 +48,11 @@
         <ul>
             <li><strong>Raison sociale</strong> : GlobalAfrica+</li>
             <li><strong>Siège social</strong> : Dakar, Sénégal</li>
-            <li><strong>Email DPO</strong> : <a href="mailto:dpo@globalafrica.plus">dpo@globalafrica.plus</a></li>
+            <li><strong>Email DPO</strong> : <a href="mailto:dpo@globalafricaplus.com">dpo@globalafricaplus.com</a></li>
         </ul>
         <p>
             Un Délégué à la Protection des Données (DPO) est désigné et joignable à l'adresse
-            <a href="mailto:dpo@globalafrica.plus">dpo@globalafrica.plus</a> pour toute question relative à la
+            <a href="mailto:dpo@globalafricaplus.com">dpo@globalafricaplus.com</a> pour toute question relative à la
             protection de vos données.
         </p>
 
@@ -277,7 +277,7 @@
         </table>
         <p>
             Pour exercer vos droits : section « Paramètres &gt; Vie privée », ou contactez
-            <a href="mailto:dpo@globalafrica.plus">dpo@globalafrica.plus</a>. Nous répondons dans un délai d'un
+            <a href="mailto:dpo@globalafricaplus.com">dpo@globalafricaplus.com</a>. Nous répondons dans un délai d'un
             mois (prolongeable de deux mois en cas de complexité, Art. 12.3 RGPD).
         </p>
         <p>
@@ -305,7 +305,7 @@
         <p>
             Les services s'adressent exclusivement aux personnes majeures (18 ans révolus ou âge légal local).
             Les données de mineurs découvertes seront supprimées et le compte clôturé. Signalez-nous tout
-            soupçon à <a href="mailto:dpo@globalafrica.plus">dpo@globalafrica.plus</a>.
+            soupçon à <a href="mailto:dpo@globalafricaplus.com">dpo@globalafricaplus.com</a>.
         </p>
 
         <h2>Article 15 — Données USSD et SMS</h2>
@@ -347,7 +347,7 @@
 
         <h2>Article 20 — Contact</h2>
         <ul>
-            <li>DPO : <a href="mailto:dpo@globalafrica.plus">dpo@globalafrica.plus</a></li>
+            <li>DPO : <a href="mailto:dpo@globalafricaplus.com">dpo@globalafricaplus.com</a></li>
             <li>Adresse : GlobalAfrica+, Dakar, Sénégal</li>
         </ul>
     </LegalLayout>

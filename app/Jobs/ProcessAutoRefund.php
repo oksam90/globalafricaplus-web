@@ -21,8 +21,11 @@ class ProcessAutoRefund implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
-    public int $timeout = 600; // a sweep over many investments may take a while
+    // Audit 2026-05 — financial sweep: 3 retries with backoff so a transient
+    // gateway / DB hiccup doesn't skip auto-refunds for a whole 24 h cycle.
+    public int $tries = 3;
+    public int $backoff = 120;
+    public int $timeout = 600;
 
     public function handle(EscrowService $escrow): void
     {

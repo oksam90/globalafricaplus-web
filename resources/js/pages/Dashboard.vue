@@ -568,6 +568,12 @@
                     <DashCard title="Analytics & Reporting" icon="📈"
                         text="Vue globale : utilisateurs, levées de fonds, tendances, KYC."
                         cta="Explorer" to="/admin/analytics" />
+                    <DashCard title="Mentors" icon="🎓"
+                        text="Annuaire des mentors — retirer le statut ou supprimer les comptes."
+                        cta="Gérer" to="/admin/mentors" />
+                    <DashCard title="Formations" icon="📚"
+                        text="Catalogue complet — supprimer ou auditer les formations publiées."
+                        cta="Gérer" to="/admin/formations" />
                     <DashCard title="Mon profil admin" icon="⚙️"
                         text="Configurez votre département, responsabilités et préférences."
                         cta="Éditer" to="/profil/admin" />

@@ -20,7 +20,9 @@ class ProcessInstallmentDue implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
+    // Audit 2026-05 — financial sweep needs retry resilience.
+    public int $tries = 3;
+    public int $backoff = 120;
     public int $timeout = 600;
 
     public function handle(InstallmentService $installments): void

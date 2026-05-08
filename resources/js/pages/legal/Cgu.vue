@@ -244,7 +244,7 @@
 
         <h2>Article 16 — Contact</h2>
         <ul>
-            <li>Email : <a href="mailto:contact@globalafrica.plus">contact@globalafrica.plus</a></li>
+            <li>Email : <a href="mailto:contact@globalafricaplus.com">contact@globalafricaplus.com</a></li>
             <li>Support : <a href="mailto:support@globalafrica.plus">support@globalafrica.plus</a></li>
             <li>Adresse : GlobalAfrica+, Dakar, Sénégal</li>
         </ul>

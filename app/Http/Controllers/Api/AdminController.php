@@ -7,10 +7,13 @@ use App\Models\Investment;
 use App\Models\Mentorship;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\Training;
+use App\Models\TrainingPurchase;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -206,6 +209,202 @@ class AdminController extends Controller
             'user' => $user->fresh()->load('roles:id,slug,name'),
             'action' => $action,
             'message' => $action === 'added' ? "Rôle « $slug » ajouté." : "Rôle « $slug » retiré.",
+        ]);
+    }
+
+    // ───────────────── Admin destructive actions ─────────────────
+
+    /**
+     * Hard-delete a user.
+     *
+     * Safeguards:
+     *   - cannot delete self
+     *   - cannot delete the last remaining admin
+     *   - deleting an admin requires the `confirm=true` flag
+     *   - any owned data (projects, investments) is **also** deleted via FK cascades
+     *     declared in their respective migrations
+     */
+    public function destroyUser(Request $request, int $id): JsonResponse
+    {
+        $admin  = $request->user();
+        $target = User::with('roles:id,slug')->findOrFail($id);
+
+        if ($admin->id === $target->id) {
+            return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 422);
+        }
+
+        $isAdmin = $target->roles->contains('slug', 'admin');
+        if ($isAdmin) {
+            $remainingAdmins = User::whereHas('roles', fn ($q) => $q->where('slug', 'admin'))
+                ->where('id', '!=', $target->id)
+                ->count();
+            if ($remainingAdmins < 1) {
+                return response()->json(['message' => 'Impossible de supprimer le dernier administrateur.'], 422);
+            }
+            if (!$request->boolean('confirm')) {
+                return response()->json([
+                    'message'         => "Confirmez la suppression d'un autre administrateur en passant `confirm: true`.",
+                    'requires_confirm' => true,
+                ], 422);
+            }
+        }
+
+        $name  = $target->name;
+        $email = $target->email;
+
+        // Audit 2026-05 — admin destructive actions need an immutable trail
+        // (RGPD Art. 30, LCB-FT Art. 35). We log before the delete so the
+        // snapshot survives even if the row is gone.
+        Log::warning('admin.destroy_user', [
+            'admin_id'   => $admin->id,
+            'admin_email' => $admin->email,
+            'target_id'  => $id,
+            'target_email' => $email,
+            'target_was_admin' => $isAdmin,
+            'ip'         => $request->ip(),
+        ]);
+
+        $target->delete();
+
+        return response()->json([
+            'message' => "Utilisateur « {$name} » supprimé.",
+            'id'      => $id,
+        ]);
+    }
+
+    /**
+     * "Demote a mentor" — strips the mentor role, cancels their pending /
+     * accepted mentorships. The user account itself stays alive.
+     *
+     * Pass `?delete_account=true` to also hard-delete the user (subject to the
+     * same safeguards as destroyUser).
+     */
+    public function destroyMentor(Request $request, int $id): JsonResponse
+    {
+        $target = User::with('roles:id,slug')->findOrFail($id);
+
+        if (!$target->roles->contains('slug', 'mentor')) {
+            return response()->json(['message' => "Cet utilisateur n'est pas mentor."], 422);
+        }
+
+        $cancelled = DB::transaction(function () use ($target) {
+            $cancelled = Mentorship::where('mentor_id', $target->id)
+                ->whereIn('status', ['pending', 'accepted'])
+                ->update(['status' => 'cancelled']);
+
+            // Detach the role; falls back to lone remaining role if any.
+            if ($target->roles()->count() > 1) {
+                $target->roles()->detach(Role::where('slug', 'mentor')->value('id'));
+                if ($target->active_role_slug === 'mentor') {
+                    $next = $target->roles()->first();
+                    $target->update(['active_role_slug' => $next?->slug]);
+                }
+            } else {
+                // mentor is their only role → fall back to a baseline role
+                $baseline = Role::firstOrCreate(['slug' => 'investor'], ['name' => 'Investisseur']);
+                $target->roles()->sync([$baseline->id]);
+                $target->update(['active_role_slug' => 'investor']);
+            }
+
+            return $cancelled;
+        });
+
+        // Audit 2026-05 — log before mutation visible.
+        Log::info('admin.destroy_mentor', [
+            'admin_id'              => $request->user()->id,
+            'target_id'             => $id,
+            'mentorships_cancelled' => $cancelled,
+            'delete_account'        => $request->boolean('delete_account'),
+        ]);
+
+        // Optional account hard-delete in the same call.
+        if ($request->boolean('delete_account')) {
+            return $this->destroyUser($request, $id);
+        }
+
+        return response()->json([
+            'message'              => "Statut mentor retiré pour « {$target->name} ».",
+            'mentorships_cancelled' => $cancelled,
+            'user'                 => $target->fresh(['roles:id,slug,name']),
+        ]);
+    }
+
+    // ───────────────── Trainings (admin) ─────────────────
+
+    /**
+     * List every training (published or not) with stats.
+     */
+    public function trainings(Request $request): JsonResponse
+    {
+        $query = Training::with('instructor:id,name,email')
+            ->withCount(['purchases as active_purchases_count' => fn ($q) => $q->where('status', 'active')])
+            ->withCount('purchases');
+
+        if ($search = $request->query('q')) {
+            $query->where('title', 'like', "%{$search}%");
+        }
+        if ($category = $request->query('category')) {
+            $query->where('category', $category);
+        }
+
+        $sort = $request->query('sort', 'recent');
+        $query = match ($sort) {
+            'popular'  => $query->orderByDesc('purchases_count'),
+            'price'    => $query->orderByDesc('price'),
+            default    => $query->orderByDesc('created_at'),
+        };
+
+        return response()->json($query->paginate(20));
+    }
+
+    /**
+     * Hard-delete a training.
+     *
+     * Safeguards:
+     *   - if there are ACTIVE (paid, non-refunded) purchases, refuse unless
+     *     `force=true` is passed; in that case mark the purchases as cancelled
+     *     and revoke access first.
+     */
+    public function destroyTraining(Request $request, int $id): JsonResponse
+    {
+        $training = Training::findOrFail($id);
+
+        $activeCount = TrainingPurchase::where('training_id', $training->id)
+            ->where('status', 'active')
+            ->count();
+
+        if ($activeCount > 0 && !$request->boolean('force')) {
+            return response()->json([
+                'message'                => "Cette formation a {$activeCount} apprenant(s) actif(s). Passez `force: true` pour confirmer.",
+                'active_purchases'      => $activeCount,
+                'requires_force'        => true,
+            ], 422);
+        }
+
+        // Audit 2026-05 — log before mutation.
+        Log::warning('admin.destroy_training', [
+            'admin_id'         => $request->user()->id,
+            'training_id'      => $training->id,
+            'title'            => $training->title,
+            'active_purchases' => $activeCount,
+            'forced'           => $request->boolean('force'),
+        ]);
+
+        DB::transaction(function () use ($training) {
+            // Revoke access for any still-active purchases.
+            TrainingPurchase::where('training_id', $training->id)
+                ->where('status', 'active')
+                ->update([
+                    'status'             => 'cancelled',
+                    'access_revoked_at' => now(),
+                ]);
+
+            $training->delete();
+        });
+
+        return response()->json([
+            'message' => "Formation « {$training->title} » supprimée.",
+            'id'      => $id,
         ]);
     }
 

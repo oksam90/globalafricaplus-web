@@ -84,7 +84,7 @@ class AuthController extends Controller
 
         $user->load(['roles', 'roleProfiles.role']);
 
-        $kycSession = $user->latestKycSession();
+        $latestSmile = $user->latestSmileVerification();
 
         return response()->json([
             'user' => $user,
@@ -94,11 +94,13 @@ class AuthController extends Controller
                 'is_refundable' => $user->activeSubscription()?->isRefundable() ?? false,
             ],
             'kyc' => [
-                'level' => $user->kyc_level ?? 'none',
-                'is_verified' => $user->isKycVerified(),
-                'has_pending' => $user->hasKycPending(),
-                'session_status' => $kycSession?->status,
-                'completion' => $kycSession?->completionPercent() ?? 0,
+                'level'           => $user->kyc_level ?? 'basic',
+                'is_verified'     => $user->isKycVerified(),
+                'has_pending'     => $user->hasKycPending(),
+                'expires_at'      => $user->kyc_expires_at,
+                'aml_status'      => $user->aml_status ?? 'clear',
+                'latest_status'   => $latestSmile?->status,
+                'latest_job_type' => $latestSmile?->job_type,
             ],
         ]);
     }

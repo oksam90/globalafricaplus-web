@@ -120,12 +120,23 @@ class EscrowService
      */
     public function releaseMilestone(EscrowMilestone $milestone): EscrowMilestone
     {
-        if ($milestone->status === 'released') {
-            return $milestone;
-        }
+        // Audit 2026-05 — close the race window when two ProcessEscrowRelease
+        // jobs land concurrently (queue retry + manual approval click). The
+        // SELECT … FOR UPDATE serialises eligibility checks per row.
+        $milestoneId = $milestone->id;
+        $milestone = DB::transaction(function () use ($milestoneId) {
+            $fresh = EscrowMilestone::lockForUpdate()->findOrFail($milestoneId);
+            if ($fresh->status === 'released') {
+                return null; // sentinel — already paid out by a sibling worker
+            }
+            if ($fresh->status !== 'approved') {
+                throw new RuntimeException("Le jalon doit être approuvé avant libération (statut : {$fresh->status}).");
+            }
+            return $fresh;
+        });
 
-        if ($milestone->status !== 'approved') {
-            throw new RuntimeException("Le jalon doit être approuvé avant libération (statut : {$milestone->status}).");
+        if ($milestone === null) {
+            return EscrowMilestone::findOrFail($milestoneId);
         }
 
         $project = $milestone->project;

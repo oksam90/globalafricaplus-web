@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\ExpireKYCVerification;
 use App\Jobs\ProcessAutoRefund;
 use App\Jobs\ProcessInstallmentDue;
 use Illuminate\Console\Scheduling\Schedule;
@@ -27,6 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ->name('installments:process-due')
             ->withoutOverlapping()
             ->onOneServer();
+
+        // Smile Identity Sprint 4 — daily sweep that expires 24-month-old KYC verifications.
+        $schedule->job(new ExpireKYCVerification())
+            ->dailyAt('02:30')
+            ->name('kyc:expire-verifications')
+            ->withoutOverlapping()
+            ->onOneServer();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         // Treat empty form strings as null so `nullable` rules work as expected
@@ -37,13 +45,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
             'subscribed' => \App\Http\Middleware\CheckSubscription::class,
             'kyc' => \App\Http\Middleware\CheckKyc::class,
+            'kyc.smile' => \App\Http\Middleware\RequireKYCLevel::class,
             'paydunya.webhook' => \App\Http\Middleware\VerifyPayDunyaWebhook::class,
+            'smile.webhook' => \App\Http\Middleware\VerifySmileSignature::class,
         ]);
 
-        // PayDunya webhook endpoint is server-to-server (no CSRF token).
+        // Webhook endpoints are server-to-server (no CSRF token).
         $middleware->validateCsrfTokens(except: [
             'api/v1/webhooks/paydunya',
             'api/webhooks/paydunya',
+            'api/v1/webhooks/smile-identity',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

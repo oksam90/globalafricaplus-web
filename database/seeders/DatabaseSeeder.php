@@ -166,7 +166,9 @@ class DatabaseSeeder extends Seeder
         $this->call(JobseekerSeeder::class);
         $this->call(FormalisationSeeder::class);
         $this->call(SubscriptionSeeder::class);
-        $this->call(KycSeeder::class);
+        // KycSeeder removed in audit 2026-05 — IDnorm flow obsolete, Smile demo
+        // data is seeded on demand via DemoEscrowSeeder + the artisan command
+        // `kyc:migrate-sessions` covers any historical legacy rows.
         $this->call(AdvertisingSeeder::class);
         $this->call(TrainingsSeeder::class);
 

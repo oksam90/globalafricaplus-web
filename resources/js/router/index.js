@@ -116,11 +116,11 @@ const routes = [
         meta: { requiresAuth: true },
     },
 
-    // KYC
+    // KYC — Smile Identity (Sprint 3 — legacy IDnorm wizard removed in audit 2026-05)
     {
         path: '/kyc',
         name: 'kyc',
-        component: () => import('../pages/Kyc.vue'),
+        component: () => import('../pages/KycSmile.vue'),
         meta: { requiresAuth: true },
     },
 
@@ -171,6 +171,18 @@ const routes = [
         path: '/admin/analytics',
         name: 'admin.analytics',
         component: () => import('../pages/admin/Analytics.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/mentors',
+        name: 'admin.mentors',
+        component: () => import('../pages/admin/Mentors.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/formations',
+        name: 'admin.trainings',
+        component: () => import('../pages/admin/Trainings.vue'),
         meta: { requiresAuth: true },
     },
 
