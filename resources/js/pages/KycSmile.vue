@@ -87,39 +87,43 @@
 
                 <form @submit.prevent="onSubmitBasic" class="grid sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Pays</label>
-                        <select v-model="basicForm.country" required
+                        <label for="kyc-country" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Pays</label>
+                        <select id="kyc-country" name="country" v-model="basicForm.country" required autocomplete="country"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm">
                             <option value="">— Choisir —</option>
                             <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.flag }} {{ c.name }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Type de document</label>
-                        <select v-model="basicForm.id_type" required
+                        <label for="kyc-id-type" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Type de document</label>
+                        <select id="kyc-id-type" name="id_type" v-model="basicForm.id_type" required
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm">
                             <option v-for="t in idTypesFor(basicForm.country)" :key="t.code" :value="t.code">{{ t.label }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Numéro du document</label>
-                        <input v-model="basicForm.id_number" required type="text" maxlength="64"
+                        <label for="kyc-id-number" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Numéro du document</label>
+                        <input id="kyc-id-number" name="id_number" v-model="basicForm.id_number" required type="text" maxlength="64"
+                            autocomplete="off"
                             placeholder="ex. 1234567890123"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Prénom</label>
-                        <input v-model="basicForm.first_name" required type="text" maxlength="100"
+                        <label for="kyc-first-name" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Prénom</label>
+                        <input id="kyc-first-name" name="given-name" v-model="basicForm.first_name" required type="text" maxlength="100"
+                            autocomplete="given-name"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nom</label>
-                        <input v-model="basicForm.last_name" required type="text" maxlength="100"
+                        <label for="kyc-last-name" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nom</label>
+                        <input id="kyc-last-name" name="family-name" v-model="basicForm.last_name" required type="text" maxlength="100"
+                            autocomplete="family-name"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Date de naissance</label>
-                        <input v-model="basicForm.dob" required type="date" :max="todayIso"
+                        <label for="kyc-dob" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Date de naissance</label>
+                        <input id="kyc-dob" name="bday" v-model="basicForm.dob" required type="date" :max="todayIso"
+                            autocomplete="bday"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
 
@@ -230,19 +234,21 @@
 
                 <form @submit.prevent="onSubmitAml" class="grid sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nom complet (tel qu'il apparaît sur le document)</label>
-                        <input v-model="amlForm.full_name" required type="text" minlength="3" maxlength="200"
+                        <label for="aml-full-name" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nom complet (tel qu'il apparaît sur le document)</label>
+                        <input id="aml-full-name" name="full_name" v-model="amlForm.full_name" required type="text" minlength="3" maxlength="200"
+                            autocomplete="name"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Année de naissance</label>
-                        <input v-model="amlForm.birth_year" required type="text" pattern="(19|20)\d{2}" maxlength="4"
+                        <label for="aml-birth-year" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Année de naissance</label>
+                        <input id="aml-birth-year" name="birth_year" v-model="amlForm.birth_year" required type="text" pattern="(19|20)\d{2}" maxlength="4"
+                            inputmode="numeric"
                             placeholder="1990"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nationalité(s) à screener</label>
-                        <select v-model="amlForm.countries" multiple required
+                        <label for="aml-countries" class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Nationalité(s) à screener</label>
+                        <select id="aml-countries" name="countries[]" v-model="amlForm.countries" multiple required
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm h-24">
                             <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.flag }} {{ c.name }}</option>
                         </select>

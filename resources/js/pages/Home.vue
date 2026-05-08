@@ -76,12 +76,14 @@
                     <!-- Background image overlay -->
                     <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent z-10"></div>
                     <img :src="b.image_url" :alt="b.title"
+                        @error="onImageError($event, 'banner')"
                         class="absolute inset-0 w-full h-full object-cover opacity-40" />
                     <!-- Content -->
                     <div class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                         <div class="max-w-2xl">
                             <div v-if="b.sponsor" class="flex items-center gap-2 mb-4">
                                 <img v-if="b.sponsor_logo" :src="b.sponsor_logo" :alt="b.sponsor"
+                                    @error="onImageError($event, 'logo')"
                                     class="h-8 w-auto bg-white/10 rounded px-2 py-1" />
                                 <span class="text-brand-gold-400 text-xs font-semibold uppercase tracking-wider">
                                     Sponsorisé par {{ b.sponsor }}
@@ -243,7 +245,9 @@
                         :href="p.website" target="_blank" rel="noopener"
                         class="shrink-0 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition duration-300"
                         :title="p.name">
-                        <img :src="p.logo_url" :alt="p.name" class="h-12 md:h-14 w-auto max-w-[140px] object-contain" />
+                        <img :src="p.logo_url" :alt="p.name"
+                            @error="onImageError($event, 'logo')"
+                            class="h-12 md:h-14 w-auto max-w-[140px] object-contain" />
                     </a>
                 </div>
             </div>
@@ -396,6 +400,23 @@ async function clickBanner(b) {
             window.location.href = b.cta_url;
         }
     }
+}
+
+/**
+ * Audit fix 2026-05 — gracefully replace seeder placeholder paths that 404
+ * (legacy /images/partners/*.png and /images/ads/*.jpg never existed in
+ * public/) with brand fallbacks. Hides the noisy 404 storm in the console.
+ */
+const FALLBACKS = {
+    banner: '/brand/logo-horizontal-dark.svg',
+    logo:   '/brand/icon-light.svg',
+};
+function onImageError(evt, kind = 'logo') {
+    const img = evt?.target;
+    if (!img || img.dataset.fallbackApplied === '1') return; // avoid loops
+    img.dataset.fallbackApplied = '1';
+    img.src = FALLBACKS[kind] ?? FALLBACKS.logo;
+    img.classList.add('opacity-30');
 }
 
 // ─── Testimonials computed ─────────────────────

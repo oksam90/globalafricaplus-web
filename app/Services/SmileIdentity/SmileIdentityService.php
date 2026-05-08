@@ -39,8 +39,29 @@ class SmileIdentityService
         $this->baseUrl   ??= (string) config('smile.base_url');
         $this->partnerId ??= (string) config('smile.partner_id');
 
-        if ($this->baseUrl === '' || $this->partnerId === '') {
-            throw new RuntimeException('Smile Identity is not configured (SMILE_PARTNER_ID / SMILE_API_KEY missing).');
+        // Audit fix 2026-05 — do NOT throw here. The DI container instantiates
+        // this service even for endpoints that don't actually call Smile (e.g.
+        // GET /v1/kyc/status). Throwing in the constructor used to surface as
+        // a generic 500 even on read-only endpoints. We now validate lazily
+        // when a method that actually hits the network is called.
+    }
+
+    /**
+     * Throws if SMILE_PARTNER_ID / SMILE_API_KEY (and base_url) are not set.
+     * Called from every method that performs an outbound HTTP call.
+     */
+    protected function ensureConfigured(): void
+    {
+        $missing = [];
+        if ($this->baseUrl === '')                            $missing[] = 'SMILE_ENVIRONMENT/base_url';
+        if ($this->partnerId === '')                          $missing[] = 'SMILE_PARTNER_ID';
+        if (((string) config('smile.api_key')) === '')        $missing[] = 'SMILE_API_KEY';
+
+        if ($missing) {
+            throw new RuntimeException(
+                'Smile Identity is not configured (missing: ' . implode(', ', $missing) . '). '
+                . 'Check .env on the VPS, then run `php artisan config:cache`.'
+            );
         }
     }
 
@@ -62,6 +83,7 @@ class SmileIdentityService
         string $idNumber,
         array  $personalInfo,
     ): array {
+        $this->ensureConfigured();
         $jobId = (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
@@ -165,6 +187,7 @@ class SmileIdentityService
         array  $countries,
         string $birthYear,
     ): array {
+        $this->ensureConfigured();
         $jobId = (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
@@ -196,6 +219,7 @@ class SmileIdentityService
      */
     public function generateWebToken(string $userId, string $product = 'biometric_kyc'): array
     {
+        $this->ensureConfigured();
         $jobId = (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
@@ -237,6 +261,7 @@ class SmileIdentityService
         ?string $documentB64 = null,
         string  $documentMime = 'image/jpeg',
     ): array {
+        $this->ensureConfigured();
         $jobId = (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
