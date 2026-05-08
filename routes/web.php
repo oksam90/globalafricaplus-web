@@ -147,23 +147,35 @@ Route::prefix('api')->group(function () {
         Route::post('/trainings/verify', [TrainingController::class, 'verify']);
         Route::post('/trainings/purchases/{purchase}/refund', [TrainingController::class, 'refund']);
 
-        // Installments (Sprint 5)
-        Route::get('/installments/mine', [InstallmentController::class, 'mine']);
-        Route::post('/investments/{investment}/installments', [InstallmentController::class, 'createForInvestment']);
-        Route::post('/installments/{plan}/pay-next', [InstallmentController::class, 'payNext']);
+        // ─── Read-only finance endpoints (auth only) ────────────────────
+        // Listing & verifying don't move money — KYC gating would only block
+        // legitimate users from auditing their own state. The verify endpoint
+        // is post-callback and idempotent.
+        Route::get('/installments/mine',                         [InstallmentController::class, 'mine']);
+        Route::get('/investments/mine',                          [InvestmentController::class, 'mine']);
+        Route::get('/investments/{investment}',                  [InvestmentController::class, 'show']);
+        Route::post('/investments/verify',                       [InvestmentController::class, 'verify']);
+        Route::get('/escrow/milestones/mine',                    [EscrowController::class, 'mine']);
+        Route::get('/escrow/projects/{project}/milestones',      [EscrowController::class, 'projectMilestones']);
 
-        // Investments
-        Route::get('/investments/mine', [InvestmentController::class, 'mine']);
-        Route::get('/investments/{investment}', [InvestmentController::class, 'show']);
-        Route::post('/investments', [InvestmentController::class, 'store']);
-        Route::post('/investments/verify', [InvestmentController::class, 'verify']);
+        // ─── Money-moving endpoints — Audit fix 2026-05 ──────────────────
+        // Per UEMOA Directive N° 02/2015/CM/UEMOA Art. 18, every transactional
+        // financial operation requires verified identity. We pair that with
+        // an active subscription per the platform's commercial model.
+        Route::middleware(['subscribed', 'kyc.smile:verified'])->group(function () {
+            Route::post('/investments',                              [InvestmentController::class, 'store']);
+            Route::post('/investments/{investment}/installments',    [InstallmentController::class, 'createForInvestment']);
+            Route::post('/installments/{plan}/pay-next',             [InstallmentController::class, 'payNext']);
+            Route::post('/escrow/milestones/{milestone}/submit',     [EscrowController::class, 'submit']);
+            Route::post('/escrow/milestones/{milestone}/reject',     [EscrowController::class, 'reject']);
+        });
 
-        // Escrow milestones (Sprint 4)
-        Route::get('/escrow/milestones/mine', [EscrowController::class, 'mine']);
-        Route::get('/escrow/projects/{project}/milestones', [EscrowController::class, 'projectMilestones']);
-        Route::post('/escrow/milestones/{milestone}/submit', [EscrowController::class, 'submit']);
-        Route::post('/escrow/milestones/{milestone}/approve', [EscrowController::class, 'approve']);
-        Route::post('/escrow/milestones/{milestone}/reject', [EscrowController::class, 'reject']);
+        // ─── Escrow funds release — `certified` tier ─────────────────────
+        // Approving a milestone triggers a real disbursement to the project
+        // owner. The spec (§ 8) calls explicitly for `kyc:certified` here.
+        Route::middleware(['subscribed', 'kyc.smile:certified'])->group(function () {
+            Route::post('/escrow/milestones/{milestone}/approve',    [EscrowController::class, 'approve']);
+        });
 
         // ─── Smile Identity eKYC (Sprint 2 — legacy IDnorm endpoints removed in audit 2026-05) ─
         Route::prefix('v1/kyc')->name('kyc.')->group(function () {

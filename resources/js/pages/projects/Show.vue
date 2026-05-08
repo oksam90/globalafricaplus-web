@@ -258,15 +258,40 @@
                         </div>
                     </div>
 
-                    <p v-if="investError" class="text-sm text-rose-600">{{ investError }}</p>
+                    <!-- Structured error: subscription / KYC / generic -->
+                    <div v-if="investError" class="rounded-lg border p-3 text-sm"
+                        :class="investError.kind === 'subscription'
+                            ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200'
+                            : investError.kind === 'kyc'
+                                ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800/60 text-orange-900 dark:text-orange-200'
+                                : 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/60 text-rose-900 dark:text-rose-200'">
+                        <div class="flex items-start gap-2">
+                            <span class="text-base shrink-0">
+                                {{ investError.kind === 'subscription' ? '💳' : investError.kind === 'kyc' ? '🪪' : '⚠️' }}
+                            </span>
+                            <div class="flex-1">
+                                <div>{{ investError.message }}</div>
+                                <div v-if="investError.kind" class="mt-2 flex gap-2">
+                                    <router-link v-if="investError.kind === 'subscription'" to="/tarifs"
+                                        class="text-xs font-bold underline">
+                                        Voir les packs →
+                                    </router-link>
+                                    <router-link v-if="investError.kind === 'kyc'" to="/kyc"
+                                        class="text-xs font-bold underline">
+                                        Compléter mon KYC →
+                                    </router-link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="flex gap-2 pt-2">
                         <button type="button" @click="showInvestModal = false"
                             class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">
                             Annuler
                         </button>
-                        <button type="submit" :disabled="investing"
-                            class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold">
+                        <button type="submit" :disabled="investing || isInvestBlocked"
+                            class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold">
                             {{ investing ? 'En cours…' : 'Payer' }}
                         </button>
                     </div>
@@ -292,6 +317,11 @@ const investing = ref(false);
 const investError = ref('');
 const investForm = reactive({ amount: 100, type: 'equity', installments: 3, frequency: 'monthly' });
 const splitPayment = ref(false);
+
+/** Disables the Payer submit when the user is pre-known to be ineligible. */
+const isInvestBlocked = computed(() =>
+    investError.value?.kind === 'subscription' || investError.value?.kind === 'kyc'
+);
 
 const installmentPreview = computed(() => {
     if (!splitPayment.value || !investForm.amount || !investForm.installments) return '';
@@ -321,17 +351,33 @@ function openInvestModal() {
         router.push({ name: 'login', query: { redirect: route.fullPath } });
         return;
     }
-    investError.value = '';
+
+    // Audit fix 2026-05 — pre-check on the client so the user is not
+    // surprised by a 403 after filling out the form. Server-side gating
+    // remains the source of truth.
+    investError.value = null;
     showInvestModal.value = true;
+
+    if (auth.isFreePlan) {
+        investError.value = {
+            kind: 'subscription',
+            message: 'Vous devez avoir un abonnement payant pour investir dans ce projet.',
+        };
+    } else if (!auth.isKycVerified) {
+        investError.value = {
+            kind: 'kyc',
+            message: 'Une vérification d\'identité (KYC) est obligatoire avant tout investissement.',
+        };
+    }
 }
 
 async function submitInvestment() {
     if (!project.value || !investForm.amount || investForm.amount <= 0) {
-        investError.value = 'Montant invalide.';
+        investError.value = { message: 'Montant invalide.' };
         return;
     }
     investing.value = true;
-    investError.value = '';
+    investError.value = null;
     try {
         const payload = {
             project_id: project.value.id,
@@ -349,9 +395,20 @@ async function submitInvestment() {
             window.location.href = data.checkout.url;
             return;
         }
-        investError.value = data.message || 'Réponse inattendue du serveur.';
+        investError.value = { message: data.message || 'Réponse inattendue du serveur.' };
     } catch (e) {
-        investError.value = e?.response?.data?.message || 'Erreur lors de l\'initiation du paiement.';
+        // Audit fix 2026-05 — surface structured 403 from the new
+        // subscribed + kyc.smile:verified middlewares with deep-link CTAs.
+        const body = e?.response?.data || {};
+        if (body.subscription_required) {
+            investError.value = { kind: 'subscription', message: body.message || 'Vous devez avoir un abonnement payant pour investir.' };
+        } else if (body.error === 'kyc_insufficient' || body.error === 'kyc_expired') {
+            investError.value = { kind: 'kyc', message: body.message || 'Une vérification KYC est requise pour investir.' };
+        } else if (body.error === 'aml_blocked') {
+            investError.value = { kind: 'kyc', message: body.message || 'Votre compte est bloqué pour conformité AML — contactez le support.' };
+        } else {
+            investError.value = { message: body.message || 'Erreur lors de l\'initiation du paiement.' };
+        }
     } finally {
         investing.value = false;
     }

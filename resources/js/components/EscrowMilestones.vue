@@ -1,5 +1,37 @@
 <template>
     <div class="space-y-4">
+        <!-- Global error banner — surfaces subscription / KYC blockers from middleware. -->
+        <div v-if="actionError" class="rounded-xl border p-4"
+            :class="actionError.kind === 'subscription'
+                ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800/60'
+                : actionError.kind === 'kyc'
+                    ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800/60'
+                    : 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800/60'">
+            <div class="flex items-start gap-3">
+                <span class="text-xl shrink-0">
+                    {{ actionError.kind === 'subscription' ? '💳' : actionError.kind === 'kyc' ? '🪪' : '⚠️' }}
+                </span>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold"
+                        :class="actionError.kind === 'subscription'
+                            ? 'text-amber-900 dark:text-amber-200'
+                            : actionError.kind === 'kyc'
+                                ? 'text-orange-900 dark:text-orange-200'
+                                : 'text-rose-900 dark:text-rose-200'">
+                        {{ actionError.message }}
+                    </p>
+                    <div v-if="actionError.kind" class="mt-2 flex gap-3 text-xs font-bold">
+                        <router-link v-if="actionError.kind === 'subscription'" to="/tarifs"
+                            class="underline text-amber-800 dark:text-amber-200">Voir les packs →</router-link>
+                        <router-link v-if="actionError.kind === 'kyc'" to="/kyc"
+                            class="underline text-orange-800 dark:text-orange-200">Compléter mon KYC →</router-link>
+                        <button @click="actionError = null"
+                            class="underline opacity-70">Masquer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div v-if="loading" class="text-sm text-slate-500 dark:text-slate-400">Chargement des jalons…</div>
 
         <div v-else-if="!milestones.length"
@@ -109,7 +141,7 @@
                         <button type="button" @click="evidenceForm.urls.push('')"
                             class="text-sm text-emerald-700 dark:text-emerald-400 hover:underline">+ Ajouter un lien</button>
 
-                        <p v-if="actionError" class="text-sm text-rose-600">{{ actionError }}</p>
+                        <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
 
                         <div class="flex gap-2 pt-2">
                             <button type="button" @click="submitting = null"
@@ -138,7 +170,7 @@
                             placeholder="Pourquoi refusez-vous ce jalon ?"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:border-rose-400 focus:outline-none"></textarea>
 
-                        <p v-if="actionError" class="text-sm text-rose-600">{{ actionError }}</p>
+                        <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
 
                         <div class="flex gap-2 pt-2">
                             <button type="button" @click="rejecting = null"
@@ -233,6 +265,25 @@ function openReject(m) {
     rejectReason.value = '';
 }
 
+/**
+ * Audit fix 2026-05 — translate API errors (notably 403 from
+ * subscribed + kyc.smile:verified|certified middlewares) into
+ * structured banner data with deep-link CTAs.
+ */
+function parseError(e, fallback) {
+    const body = e?.response?.data || {};
+    if (body.subscription_required) {
+        return { kind: 'subscription', message: body.message || 'Cette action nécessite un abonnement payant.' };
+    }
+    if (body.error === 'kyc_insufficient' || body.error === 'kyc_expired') {
+        return { kind: 'kyc', message: body.message || 'Vérification KYC requise.' };
+    }
+    if (body.error === 'aml_blocked') {
+        return { kind: 'kyc', message: body.message || 'Compte bloqué — contactez le support.' };
+    }
+    return { message: body.message || fallback };
+}
+
 async function doSubmit() {
     if (!submitting.value) return;
     acting.value = submitting.value.id;
@@ -246,7 +297,7 @@ async function doSubmit() {
         submitting.value = null;
         await load();
     } catch (e) {
-        actionError.value = e?.response?.data?.message || "Échec de la soumission.";
+        actionError.value = parseError(e, 'Échec de la soumission.');
     } finally {
         acting.value = null;
     }
@@ -260,8 +311,7 @@ async function approve(m) {
         await window.axios.post(`/api/escrow/milestones/${m.id}/approve`);
         await load();
     } catch (e) {
-        actionError.value = e?.response?.data?.message || "Échec de la validation.";
-        alert(actionError.value);
+        actionError.value = parseError(e, 'Échec de la validation.');
     } finally {
         acting.value = null;
     }
@@ -276,7 +326,7 @@ async function doReject() {
         rejecting.value = null;
         await load();
     } catch (e) {
-        actionError.value = e?.response?.data?.message || "Échec du refus.";
+        actionError.value = parseError(e, 'Échec du refus.');
     } finally {
         acting.value = null;
     }
