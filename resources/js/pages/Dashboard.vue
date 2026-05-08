@@ -315,18 +315,18 @@
                     </h2>
                     <div class="space-y-3">
                         <div v-for="m in roleData.pending_requests" :key="m.id"
-                            class="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl p-4">
+                            class="flex items-center justify-between bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800/60 rounded-xl p-4">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center text-sm font-bold text-amber-700">
+                                <div class="w-9 h-9 rounded-full bg-amber-200 dark:bg-amber-800/60 flex items-center justify-center text-sm font-bold text-amber-700 dark:text-amber-300">
                                     {{ m.mentee?.name?.charAt(0) || '?' }}
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-sm">{{ m.mentee?.name }}</div>
-                                    <div class="text-xs text-slate-500">{{ m.mentee?.country }} · {{ m.skill?.name || 'Général' }}</div>
+                                    <div class="font-semibold text-sm text-amber-900 dark:text-amber-200">{{ m.mentee?.name }}</div>
+                                    <div class="text-xs text-amber-700 dark:text-amber-400">{{ m.mentee?.country }} · {{ m.skill?.name || 'Général' }}</div>
                                 </div>
                             </div>
                             <router-link to="/mentorat/mes-mentorats"
-                                class="text-sm font-semibold text-amber-700 hover:text-amber-800">
+                                class="text-sm font-semibold text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200">
                                 Répondre →
                             </router-link>
                         </div>
@@ -335,20 +335,20 @@
 
                 <!-- Active mentorships -->
                 <div v-if="roleData.active_mentorships?.length">
-                    <h2 class="text-xl font-bold mb-4">Mentorats actifs</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Mentorats actifs</h2>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div v-for="m in roleData.active_mentorships" :key="m.id"
-                            class="bg-white border border-slate-100 rounded-xl p-4">
+                            class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
                             <div class="flex items-center gap-3 mb-2">
-                                <div class="w-9 h-9 rounded-full bg-violet-100 flex items-center justify-center text-sm font-bold text-violet-700">
+                                <div class="w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-sm font-bold text-violet-700 dark:text-violet-300">
                                     {{ m.mentee?.name?.charAt(0) || '?' }}
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-sm">{{ m.mentee?.name }}</div>
-                                    <div class="text-xs text-slate-500">{{ m.mentee?.country }}</div>
+                                    <div class="font-semibold text-sm text-slate-900 dark:text-slate-100">{{ m.mentee?.name }}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ m.mentee?.country }}</div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3 text-xs text-slate-500">
+                            <div class="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                                 <span v-if="m.skill">🏷️ {{ m.skill.name }}</span>
                                 <span>💬 {{ m.sessions_count || 0 }} session(s)</span>
                             </div>
@@ -363,13 +363,13 @@
             <template v-if="auth.activeRole === 'jobseeker'">
                 <!-- Alert: accepted applications -->
                 <div v-if="roleData.accepted_applications > 0"
-                    class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 mb-8 flex items-center gap-4">
+                    class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-5 mb-8 flex items-center gap-4">
                     <div class="text-3xl">🎉</div>
                     <div class="flex-1">
-                        <div class="font-semibold text-emerald-900">
+                        <div class="font-semibold text-emerald-900 dark:text-emerald-200">
                             {{ roleData.accepted_applications }} candidature(s) acceptée(s) !
                         </div>
-                        <p class="text-xs text-emerald-700 mt-1">Des entrepreneurs ont retenu votre profil.</p>
+                        <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">Des entrepreneurs ont retenu votre profil.</p>
                     </div>
                     <router-link to="/emploi/mes-candidatures"
                         class="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shrink-0">
@@ -425,17 +425,17 @@
 
                 <!-- Recent applications -->
                 <div v-if="roleData.recent_applications?.length">
-                    <h2 class="text-xl font-bold mb-4">Mes dernières candidatures</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Mes dernières candidatures</h2>
                     <div class="space-y-3">
                         <router-link v-for="a in roleData.recent_applications" :key="a.id"
                             to="/emploi/mes-candidatures"
-                            class="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-4 hover:border-amber-200 transition group">
+                            class="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 hover:border-amber-200 dark:hover:border-amber-700/60 transition group">
                             <div class="flex items-center gap-3">
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
                                     :class="appStatusClass(a.status)">{{ appStatusLabel(a.status) }}</span>
-                                <span class="font-semibold group-hover:text-amber-700">{{ a.project?.title }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-amber-700 dark:group-hover:text-amber-400">{{ a.project?.title }}</span>
                             </div>
-                            <div class="flex items-center gap-4 text-sm text-slate-500">
+                            <div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                 <span v-if="a.project?.category" class="text-xs"
                                     :style="{ color: a.project.category.color }">{{ a.project.category.name }}</span>
                                 <span class="text-xs">{{ a.role_applied }}</span>
@@ -489,21 +489,21 @@
 
                 <!-- Extra KPIs row -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-sky-50 border border-sky-100 rounded-2xl p-4 text-center">
-                        <div class="text-2xl font-black text-sky-700">{{ fmtMoney(roleData.total_budget || 0) }}</div>
-                        <div class="text-[11px] uppercase tracking-wider text-sky-600 mt-1">Budget total alloué</div>
+                    <div class="bg-sky-50 dark:bg-sky-900/30 border border-sky-100 dark:border-sky-800/60 rounded-2xl p-4 text-center">
+                        <div class="text-2xl font-black text-sky-700 dark:text-sky-300">{{ fmtMoney(roleData.total_budget || 0) }}</div>
+                        <div class="text-[11px] uppercase tracking-wider text-sky-600 dark:text-sky-400 mt-1">Budget total alloué</div>
                     </div>
-                    <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
-                        <div class="text-2xl font-black text-emerald-700">{{ roleData.jobs_in_country || 0 }}</div>
-                        <div class="text-[11px] uppercase tracking-wider text-emerald-600 mt-1">Emplois visés (pays)</div>
+                    <div class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/60 rounded-2xl p-4 text-center">
+                        <div class="text-2xl font-black text-emerald-700 dark:text-emerald-300">{{ roleData.jobs_in_country || 0 }}</div>
+                        <div class="text-[11px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mt-1">Emplois visés (pays)</div>
                     </div>
-                    <div class="bg-violet-50 border border-violet-100 rounded-2xl p-4 text-center">
-                        <div class="text-2xl font-black text-violet-700">{{ roleData.awarded_calls || 0 }}</div>
-                        <div class="text-[11px] uppercase tracking-wider text-violet-600 mt-1">Appels attribués</div>
+                    <div class="bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/60 rounded-2xl p-4 text-center">
+                        <div class="text-2xl font-black text-violet-700 dark:text-violet-300">{{ roleData.awarded_calls || 0 }}</div>
+                        <div class="text-[11px] uppercase tracking-wider text-violet-600 dark:text-violet-400 mt-1">Appels attribués</div>
                     </div>
-                    <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
-                        <div class="text-2xl font-black text-slate-700">{{ roleData.my_zones_count || 0 }}</div>
-                        <div class="text-[11px] uppercase tracking-wider text-slate-500 mt-1">Zones ZES</div>
+                    <div class="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 text-center">
+                        <div class="text-2xl font-black text-slate-700 dark:text-slate-200">{{ roleData.my_zones_count || 0 }}</div>
+                        <div class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-1">Zones ZES</div>
                     </div>
                 </div>
 
@@ -536,17 +536,17 @@
 
                 <!-- Recent calls -->
                 <div v-if="roleData.recent_calls?.length">
-                    <h2 class="text-xl font-bold mb-4">Mes derniers appels</h2>
+                    <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Mes derniers appels</h2>
                     <div class="space-y-3">
                         <router-link v-for="c in roleData.recent_calls" :key="c.id"
                             :to="{ name: 'gouvernement.call', params: { slug: c.slug } }"
-                            class="flex items-center justify-between bg-white border border-slate-100 rounded-xl p-4 hover:border-sky-200 transition group">
+                            class="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 hover:border-sky-200 dark:hover:border-sky-700/60 transition group">
                             <div class="flex items-center gap-3">
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
                                     :class="govStatusClass(c.status)">{{ govStatusLabel(c.status) }}</span>
-                                <span class="font-semibold group-hover:text-sky-700">{{ c.title }}</span>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-sky-700 dark:group-hover:text-sky-400">{{ c.title }}</span>
                             </div>
-                            <div class="flex items-center gap-4 text-sm text-slate-500">
+                            <div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                 <span v-if="c.sector" class="text-xs">{{ c.sector }}</span>
                                 <span v-if="c.budget">{{ fmtMoney(c.budget) }} {{ c.currency }}</span>
                                 <span>{{ c.applications_count || 0 }} candidatures</span>
