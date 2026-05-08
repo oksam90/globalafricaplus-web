@@ -451,18 +451,40 @@
             <template v-if="auth.activeRole === 'government'">
                 <!-- Alert: pending applications -->
                 <div v-if="roleData.pending_reviews?.length"
-                    class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-8 flex items-center gap-4">
-                    <div class="text-3xl">📨</div>
-                    <div class="flex-1">
-                        <div class="font-semibold text-amber-900">
-                            {{ roleData.pending_reviews.length }} candidature(s) en attente de revue
+                    class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/60 rounded-2xl p-5 mb-8">
+                    <div class="flex items-center gap-4">
+                        <div class="text-3xl">📨</div>
+                        <div class="flex-1">
+                            <div class="font-semibold text-amber-900 dark:text-amber-200">
+                                {{ roleData.pending_reviews.length }} candidature(s) en attente de revue
+                            </div>
+                            <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">Des entrepreneurs ont candidaté à vos appels.</p>
                         </div>
-                        <p class="text-xs text-amber-700 mt-1">Des entrepreneurs ont candidaté à vos appels.</p>
+                        <router-link :to="pendingReviewLink"
+                            class="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shrink-0">
+                            Voir les candidatures
+                        </router-link>
                     </div>
-                    <router-link to="/gouvernement/mes-appels"
-                        class="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shrink-0">
-                        Voir les candidatures
-                    </router-link>
+                    <!-- Inline preview of pending apps so the user can act in one click -->
+                    <ul class="mt-4 divide-y divide-amber-100 dark:divide-amber-800/40">
+                        <li v-for="app in roleData.pending_reviews.slice(0, 5)" :key="app.id"
+                            class="py-2 flex items-center gap-3 text-sm">
+                            <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-xs font-bold text-amber-800 dark:text-amber-200">
+                                {{ app.user?.name?.charAt(0)?.toUpperCase() || '?' }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="truncate font-semibold text-amber-900 dark:text-amber-200">{{ app.user?.name || 'Candidat' }}</div>
+                                <div class="text-xs text-amber-700 dark:text-amber-400 truncate">
+                                    Pour <strong>{{ app.call?.title || 'appel' }}</strong>
+                                </div>
+                            </div>
+                            <router-link v-if="app.call?.id"
+                                :to="`/gouvernement/appels/${app.call.id}/candidatures`"
+                                class="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline shrink-0">
+                                Examiner →
+                            </router-link>
+                        </li>
+                    </ul>
                 </div>
 
                 <!-- Extra KPIs row -->
@@ -601,6 +623,20 @@ const loading = ref(true);
 const common = ref({});
 const roleData = ref({});
 const kpis = ref([]);
+
+/**
+ * Smart deep-link for the "Voir les candidatures" alert: if every pending
+ * review belongs to the same call, jump straight to that call's review
+ * screen — otherwise fall back to the calls list.
+ */
+const pendingReviewLink = computed(() => {
+    const reviews = roleData.value?.pending_reviews ?? [];
+    if (!reviews.length) return '/gouvernement/mes-appels';
+    const distinctCallIds = [...new Set(reviews.map(r => r.call?.id).filter(Boolean))];
+    return distinctCallIds.length === 1
+        ? `/gouvernement/appels/${distinctCallIds[0]}/candidatures`
+        : '/gouvernement/mes-appels';
+});
 
 const LABELS = {
     entrepreneur: 'Entrepreneur', investor: 'Investisseur', mentor: 'Mentor',
