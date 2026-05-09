@@ -22,6 +22,8 @@ class User extends Authenticatable
         // Smile Identity (Sprint 1+2)
         'kyc_verified_at', 'kyc_expires_at', 'kyc_verification_id',
         'aml_status', 'aml_last_checked_at', 'selfie_registered',
+        // OAuth (2026-05-09)
+        'google_id', 'oauth_provider', 'email_verified_at',
     ];
 
     /**

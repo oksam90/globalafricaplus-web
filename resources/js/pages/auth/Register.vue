@@ -76,6 +76,27 @@
                 {{ auth.loading ? 'Création…' : 'Créer mon compte' }}
             </button>
 
+            <!-- Divider -->
+            <div class="flex items-center gap-3 my-1">
+                <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                <span class="text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">ou</span>
+                <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+            </div>
+
+            <!-- Google OAuth — sign up via Google in one click. The default
+                 role on first OAuth login is "investor"; the user can pick
+                 their actual role afterwards in the dashboard. -->
+            <a href="/auth/google/redirect"
+                class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm font-semibold">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M21.6 12.227c0-.71-.064-1.391-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.995 3.018v2.51h3.227c1.886-1.737 2.986-4.295 2.986-7.351z"/>
+                    <path fill="#34A853" d="M12 22c2.7 0 4.964-.895 6.618-2.422l-3.227-2.51c-.895.6-2.04.954-3.391.954-2.605 0-4.81-1.76-5.595-4.123H3.073v2.59A9.997 9.997 0 0 0 12 22z"/>
+                    <path fill="#FBBC05" d="M6.405 13.9a6.018 6.018 0 0 1 0-3.8V7.51H3.073a9.997 9.997 0 0 0 0 8.98l3.332-2.59z"/>
+                    <path fill="#EA4335" d="M12 5.977c1.469 0 2.787.504 3.823 1.495l2.866-2.866C16.96 2.99 14.7 2 12 2A9.997 9.997 0 0 0 3.073 7.51l3.332 2.59C7.19 7.737 9.395 5.977 12 5.977z"/>
+                </svg>
+                S'inscrire avec Google
+            </a>
+
             <p class="text-sm text-center text-slate-600 dark:text-slate-400">
                 Déjà inscrit ?
                 <router-link to="/connexion"

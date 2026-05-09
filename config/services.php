@@ -38,4 +38,17 @@ return [
     // NOTE: The previous `idnorm` block was removed in audit 2026-05.
     // Smile Identity (config/smile.php) has fully replaced IDnorm since Sprint 4.
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google OAuth (Socialite, 2026-05)
+    |--------------------------------------------------------------------------
+    | Requires GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET in .env. The redirect
+    | URL must match the one declared in the Google Cloud Console OAuth client.
+    */
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_CALLBACK_URL', '/auth/google/callback'),
+    ],
+
 ];

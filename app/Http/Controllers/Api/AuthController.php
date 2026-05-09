@@ -6,10 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -108,6 +112,90 @@ class AuthController extends Controller
                 'latest_job_type' => $latestSmile?->job_type,
             ],
         ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Google OAuth (Socialite, 2026-05-09)
+    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Kick the OAuth dance — Socialite redirects to Google's consent screen.
+     * Mounted on the `web` group so the session can carry the CSRF state
+     * Socialite stores between redirect and callback.
+     */
+    public function googleRedirect(): RedirectResponse
+    {
+        return Socialite::driver('google')
+            ->scopes(['openid', 'profile', 'email'])
+            ->redirect();
+    }
+
+    /**
+     * Google calls us back with an authorization code; we exchange it for
+     * a profile, then either log in / link / create a local account.
+     *
+     * Matching strategy:
+     *   1. by google_id  → existing OAuth-linked user, log in.
+     *   2. by email      → existing password user, attach google_id.
+     *   3. otherwise     → fresh sign-up with random password, mark email verified.
+     */
+    public function googleCallback(Request $request): RedirectResponse
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable $e) {
+            Log::warning('Google OAuth callback failed', ['error' => $e->getMessage()]);
+            return redirect('/connexion?oauth=failed');
+        }
+
+        $googleId = $googleUser->getId();
+        $email    = $googleUser->getEmail();
+
+        if (!$googleId || !$email) {
+            return redirect('/connexion?oauth=missing_profile_data');
+        }
+
+        // 1) Already linked.
+        $user = User::where('google_id', $googleId)->first();
+
+        // 2) Same email, link the Google account in.
+        if (!$user) {
+            $user = User::where('email', $email)->first();
+            if ($user) {
+                $user->update([
+                    'google_id'      => $googleId,
+                    'oauth_provider' => 'google',
+                    'avatar'         => $user->avatar ?: $googleUser->getAvatar(),
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ]);
+            }
+        }
+
+        // 3) Brand-new user.
+        if (!$user) {
+            $user = User::create([
+                'name'              => $googleUser->getName() ?: explode('@', $email)[0],
+                'email'             => $email,
+                'password'          => Hash::make(Str::random(40)), // never used
+                'google_id'         => $googleId,
+                'oauth_provider'    => 'google',
+                'avatar'            => $googleUser->getAvatar(),
+                'email_verified_at' => now(),
+                'kyc_level'         => 'basic',
+            ]);
+
+            // Default role: investor (most permissive without privileges).
+            $defaultRole = Role::firstOrCreate(['slug' => 'investor'], ['name' => 'Investisseur']);
+            $user->roles()->syncWithoutDetaching([$defaultRole->id]);
+            $user->update(['active_role_slug' => 'investor']);
+        }
+
+        Auth::login($user, remember: true);
+        $request->session()->regenerate();
+
+        // Land the SPA on the dashboard. The query flag lets the frontend
+        // surface a one-shot welcome toast.
+        return redirect('/dashboard?oauth=google');
     }
 }
 

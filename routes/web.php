@@ -293,5 +293,13 @@ Route::prefix('api')->group(function () {
     });
 });
 
-// SPA catch-all — Vue Router handles routes client-side
-Route::get('/{any?}', fn () => view('app'))->where('any', '^(?!api).*$');
+// ─── Google OAuth (Socialite, 2026-05-09) ────────────────────────────
+// Declared OUTSIDE the /api prefix so the SPA catch-all below skips them.
+// Both routes need session access for state/CSRF + login regenerate.
+Route::get('/auth/google/redirect', [AuthController::class, 'googleRedirect'])->name('oauth.google.redirect');
+Route::get('/auth/google/callback', [AuthController::class, 'googleCallback'])->name('oauth.google.callback');
+
+// SPA catch-all — Vue Router handles routes client-side. The negative
+// look-ahead now also excludes /auth/google/* so OAuth handlers above are
+// reached instead of falling through to the SPA shell.
+Route::get('/{any?}', fn () => view('app'))->where('any', '^(?!api|auth/google).*$');
