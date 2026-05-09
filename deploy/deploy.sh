@@ -51,6 +51,12 @@ if ! grep -q "^APP_KEY=base64:" "${SHARED_PATH}/.env"; then
 fi
 
 # ─── 5. Cache Laravel ──────────────────────────────────
+# Refresh package discovery first — a release that added a new composer
+# package (e.g. socialite) may carry providers not yet in
+# bootstrap/cache/packages.php. Without this, config:cache below freezes
+# the stale list and routes that depend on the new package 500 in prod.
+rm -f bootstrap/cache/packages.php bootstrap/cache/services.php
+php artisan package:discover --ansi
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
