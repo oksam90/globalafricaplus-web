@@ -178,9 +178,15 @@
                             Recommandé
                         </span>
                         <h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">📄 Vérification par document</h3>
-                        <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
-                            OCR de votre CNI/passeport + comparaison selfie ↔ photo du document.
+                        <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                            OCR de votre CNI, passeport ou permis de conduire + comparaison selfie ↔ photo du document.
                         </p>
+                        <ul class="text-xs text-slate-600 dark:text-slate-400 space-y-0.5 mb-4 pl-1">
+                            <li>✓ Carte Nationale d'Identité (CNI)</li>
+                            <li>✓ Passeport</li>
+                            <li>✓ Permis de conduire</li>
+                            <li class="text-[11px] italic text-slate-500 dark:text-slate-500 mt-1">Le document doit comporter votre photo et être en cours de validité.</li>
+                        </ul>
                         <button @click="launchSdk('doc_verification')" :disabled="sdkLaunching"
                             class="w-full px-4 py-2.5 rounded-lg font-semibold disabled:opacity-60 text-white"
                             :class="!biometricAvailable
