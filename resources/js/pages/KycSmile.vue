@@ -142,13 +142,22 @@
             <!-- ─── STEP 2 — Documents (Smile Web SDK) ─────────────────── -->
             <section v-show="currentStep === 2" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
                 <h2 class="text-xl font-black text-slate-900 dark:text-slate-100 mb-1">Étape 2 — Documents &amp; biométrie</h2>
-                <p class="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                <p class="text-sm text-slate-600 dark:text-slate-300 mb-2">
                     Capturez votre selfie et votre document via le widget sécurisé Smile Identity.
                     Liveness check et anti-spoofing intégrés.
                 </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">
+                    🌍 Pays détecté : <strong>{{ countryName(basicForm.country) }}</strong>.
+                    <span v-if="!biometricAvailable">
+                        La vérification biométrique n'est pas disponible dans ce pays (l'autorité ne partage pas les photos via API) —
+                        utilisez la vérification par document.
+                    </span>
+                </p>
 
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                <div class="grid gap-4" :class="biometricAvailable ? 'sm:grid-cols-2' : 'sm:max-w-md sm:mx-auto'">
+                    <!-- Biometric: shown only where Smile actually supports it. -->
+                    <div v-if="biometricAvailable"
+                        class="rounded-xl border border-slate-200 dark:border-slate-700 p-5">
                         <h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">📷 Vérification biométrique</h3>
                         <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
                             Selfie + comparaison faciale avec la photo de l'autorité gouvernementale.
@@ -158,13 +167,25 @@
                             {{ sdkLaunching ? 'Chargement…' : 'Lancer le widget' }}
                         </button>
                     </div>
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+
+                    <div v-if="documentAvailable"
+                        class="rounded-xl border p-5 relative"
+                        :class="!biometricAvailable
+                            ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-900/10'
+                            : 'border-slate-200 dark:border-slate-700'">
+                        <span v-if="!biometricAvailable"
+                            class="absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600 text-white">
+                            Recommandé
+                        </span>
                         <h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">📄 Vérification par document</h3>
                         <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
                             OCR de votre CNI/passeport + comparaison selfie ↔ photo du document.
                         </p>
                         <button @click="launchSdk('doc_verification')" :disabled="sdkLaunching"
-                            class="w-full px-4 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold">
+                            class="w-full px-4 py-2.5 rounded-lg font-semibold disabled:opacity-60 text-white"
+                            :class="!biometricAvailable
+                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                : 'bg-slate-900 hover:bg-slate-800'">
                             {{ sdkLaunching ? 'Chargement…' : 'Lancer le widget' }}
                         </button>
                     </div>
@@ -311,6 +332,17 @@ const status = computed(() => kyc.status.value);
 const kycVerified = computed(() => tierRank(status.value?.kyc_level) >= 1 && !status.value?.is_expired);
 const todayIso = new Date().toISOString().slice(0, 10);
 
+/**
+ * Audit fix 2026-05 — only render the Smile widget for products supported
+ * by the user's country. Without this, clicking "Biometric KYC" for a
+ * Senegalese user surfaces a confusing `Smile Identity error [2205]`.
+ */
+const biometricAvailable = computed(() => supportsBiometric(basicForm.country));
+const documentAvailable  = computed(() => supportsDocument(basicForm.country));
+function countryName(code) {
+    return countries.find(c => c.code === code)?.name || code;
+}
+
 const steps = [
     { id: 1, label: 'Identité' },
     { id: 2, label: 'Documents' },
@@ -343,6 +375,42 @@ const ID_TYPES_BY_COUNTRY = {
     DEFAULT: [{ code: 'PASSPORT', label: 'Passeport' }],
 };
 function idTypesFor(code) { return ID_TYPES_BY_COUNTRY[code] ?? ID_TYPES_BY_COUNTRY.DEFAULT; }
+
+/**
+ * Smile Identity Web SDK products available per country.
+ *
+ * Confirmed by Smile Support ticket #1757 (2026-05): Biometric KYC compares
+ * the selfie to a photo the ID authority holds on file. That photo is NOT
+ * exposed via API in most UEMOA countries (Senegal, Côte d'Ivoire, Mali…),
+ * so `/v1/token` with product=biometric_kyc returns error 2205. Doc
+ * Verification (user uploads a photo of their ID + selfie) is the
+ * recommended product for those markets.
+ *
+ * Source: https://docs.usesmileid.com/supported-id-types/for-individuals-kyc/using-document-image/regions/africa
+ */
+const SMILE_PRODUCTS_BY_COUNTRY = {
+    SN: ['doc_verification'],                       // No biometric on Senegal
+    CI: ['doc_verification'],
+    ML: ['doc_verification'],
+    BF: ['doc_verification'],
+    BJ: ['doc_verification'],
+    TG: ['doc_verification'],
+    NE: ['doc_verification'],
+    NG: ['biometric_kyc', 'doc_verification'],      // NIN + BVN authorities expose photos
+    GH: ['biometric_kyc', 'doc_verification'],      // Ghana Card / Voter ID expose photos
+    KE: ['biometric_kyc', 'doc_verification'],      // National ID authority exposes photos
+    FR: ['doc_verification'],                       // Diaspora: passport flow only
+    DEFAULT: ['doc_verification'],
+};
+function productsFor(code) {
+    return SMILE_PRODUCTS_BY_COUNTRY[code] ?? SMILE_PRODUCTS_BY_COUNTRY.DEFAULT;
+}
+function supportsBiometric(code) {
+    return productsFor(code).includes('biometric_kyc');
+}
+function supportsDocument(code) {
+    return productsFor(code).includes('doc_verification');
+}
 
 const basicForm = reactive({
     country: auth.user?.country?.toUpperCase() ?? 'SN',
