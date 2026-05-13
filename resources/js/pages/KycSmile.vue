@@ -199,6 +199,21 @@
 
                 <p v-if="sdkError" class="mt-4 text-sm text-rose-600">{{ sdkError }}</p>
 
+                <!-- REST fallback — opt-in path when /v1/token returns 2205, or
+                     simply preferred by the user. Bypasses the Hosted Web SDK
+                     entirely and uploads selfie + document straight to /upload. -->
+                <div class="mt-6">
+                    <button v-if="!showRestFallback" @click="showRestFallback = true" type="button"
+                        class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
+                        ⚙ Le widget ne s'ouvre pas ? Utiliser le mode REST direct →
+                    </button>
+                    <DocVerificationCapture v-else
+                        :default-country="basicForm.country"
+                        :default-id-type="basicForm.id_type"
+                        @submitted="onRestSubmitted"
+                        class="mt-3" />
+                </div>
+
                 <div class="mt-6 flex justify-between">
                     <button @click="currentStep = 1" class="text-sm text-slate-600 dark:text-slate-300 hover:underline">← Retour</button>
                     <button @click="currentStep = 3" class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">Continuer →</button>
@@ -323,6 +338,7 @@ import { useAuthStore } from '../stores/auth';
 import { useKycApi } from '../composables/useKycApi';
 import { useSmileWebSdk } from '../composables/useSmileWebSdk';
 import { describeResultCode, describeRiskLevel, tierRank } from '../utils/smileResultCodes';
+import DocVerificationCapture from '../components/DocVerificationCapture.vue';
 
 const auth = useAuthStore();
 const kyc = useKycApi();
@@ -332,6 +348,10 @@ const currentStep = ref(1);
 const lastResult = ref(null);
 const sdkLaunching = ref(false);
 const sdkError = ref('');
+// When /v1/token returns 2205 (or any other failure), surface the REST
+// fallback so the user can still finish KYC via /upload — see
+// components/DocVerificationCapture.vue.
+const showRestFallback = ref(false);
 const amlResult = ref(null);
 
 const status = computed(() => kyc.status.value);
@@ -491,10 +511,27 @@ async function launchSdk(product) {
             },
         });
     } catch (e) {
-        sdkError.value = e?.response?.data?.message || e?.message || 'Échec du chargement du widget.';
+        const msg = e?.response?.data?.message || e?.message || 'Échec du chargement du widget.';
+        sdkError.value = msg;
+        // Smile error code 2205 ("You are not authorized to do that") on
+        // /v1/token means the sandbox can't use the Hosted Web SDK. Auto-
+        // surface the REST fallback so the user can still finish KYC.
+        if (/\b2205\b/.test(msg) || /not authorized/i.test(msg)) {
+            showRestFallback.value = true;
+        }
     } finally {
         sdkLaunching.value = false;
     }
+}
+
+function onRestSubmitted(resp) {
+    lastResult.value = {
+        tone: 'info',
+        title: 'Vérification soumise',
+        message: resp?.message || 'Résultat attendu via callback dans quelques secondes.',
+    };
+    kyc.fetchStatus();
+    currentStep.value = 3;
 }
 
 async function onSubmitAml() {
