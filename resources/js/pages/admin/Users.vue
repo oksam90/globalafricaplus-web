@@ -153,6 +153,43 @@
                         Membre de la diaspora
                     </label>
 
+                    <!-- KYC override warning — only visible when the admin is about to
+                         raise the tier without a Smile-driven verification. -->
+                    <div v-if="kycOverrideUpgrading"
+                        class="rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/30 p-3 text-sm">
+                        <div class="flex items-start gap-2">
+                            <span class="text-base shrink-0">⚠️</span>
+                            <div class="flex-1">
+                                <p class="font-semibold text-amber-900 dark:text-amber-200">
+                                    Override KYC manuel
+                                </p>
+                                <p class="text-xs text-amber-800 dark:text-amber-300 mt-1">
+                                    Vous allez activer le niveau KYC <strong>{{ kycLabel(editForm.kyc_level) }}</strong>
+                                    pour cet utilisateur sans passer par Smile Identity.
+                                    Une ligne d'audit sera enregistrée dans <code>kyc_verifications</code>
+                                    avec votre identifiant. À utiliser uniquement le temps que le sandbox
+                                    Smile (ticket #1757) soit débloqué.
+                                </p>
+                                <label class="block text-xs font-semibold text-amber-900 dark:text-amber-200 mt-2 mb-1">
+                                    Motif (optionnel mais recommandé)
+                                </label>
+                                <textarea v-model="editForm.kyc_override_reason" rows="2"
+                                    placeholder="Ex. utilisateur test interne / KYC validé manuellement par RC le 14/05/2026 / …"
+                                    class="w-full px-2 py-1.5 rounded-md border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-xs"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else-if="kycOverrideDowngrading"
+                        class="rounded-lg border border-rose-200 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-900/30 p-3 text-sm">
+                        <p class="font-semibold text-rose-900 dark:text-rose-200">
+                            ⚠ Vous allez révoquer l'accès financier de cet utilisateur
+                        </p>
+                        <p class="text-xs text-rose-800 dark:text-rose-300 mt-1">
+                            kyc_verified_at et kyc_expires_at seront effacés. Les middlewares
+                            kyc.smile:verified renverront 403 dès le prochain appel.
+                        </p>
+                    </div>
+
                     <!-- Roles management -->
                     <div>
                         <label class="block text-sm font-medium mb-2">Rôles</label>
@@ -198,7 +235,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 const users = ref([]);
 const meta = ref({});
@@ -209,6 +246,22 @@ const filters = reactive({ search: '', role: '', kyc_level: '', sort: 'recent' }
 
 const editUser = ref(null);
 const editForm = reactive({});
+const initialKycLevel = ref('none');
+
+// Detect the two override paths the admin can take from the modal.
+const TIER_RANK = { none: 0, basic: 1, verified: 2, certified: 3 };
+const kycOverrideUpgrading = computed(() =>
+    (TIER_RANK[editForm.kyc_level] ?? 0) > (TIER_RANK[initialKycLevel.value] ?? 0)
+    && (TIER_RANK[editForm.kyc_level] ?? 0) >= TIER_RANK.verified
+);
+const kycOverrideDowngrading = computed(() =>
+    (TIER_RANK[initialKycLevel.value] ?? 0) >= TIER_RANK.verified
+    && (TIER_RANK[editForm.kyc_level] ?? 0) < TIER_RANK.verified
+);
+
+function kycLabel(level) {
+    return { none: 'Aucun', basic: 'Basique', verified: 'Vérifié', certified: 'Certifié' }[level] || level;
+}
 const editSaving = ref(false);
 const editError = ref('');
 const editSuccess = ref('');
@@ -294,12 +347,25 @@ function openUserModal(u) {
         city: u.city,
         kyc_level: u.kyc_level || 'none',
         is_diaspora: !!u.is_diaspora,
+        kyc_override_reason: '',
     });
+    // Snapshot the KYC level the modal opened with so we can detect manual
+    // override (upgrade or downgrade) at save time.
+    initialKycLevel.value = u.kyc_level || 'none';
     editError.value = '';
     editSuccess.value = '';
 }
 
 async function saveUser() {
+    // Confirmation barrier for the KYC override path — defends against an
+    // accidental click that would grant financial access without Smile.
+    if (kycOverrideUpgrading.value) {
+        const msg = `Activer le niveau KYC « ${kycLabel(editForm.kyc_level)} » pour ${editUser.value.name} sans passer par Smile Identity ?\n\nUne ligne d'audit sera créée dans kyc_verifications. Cette action est tracée.`;
+        if (!confirm(msg)) return;
+    } else if (kycOverrideDowngrading.value) {
+        if (!confirm(`Révoquer l'accès KYC financier de ${editUser.value.name} ?\n\nIl ne pourra plus investir / approuver d'escrow jusqu'à nouvelle vérification.`)) return;
+    }
+
     editSaving.value = true;
     editError.value = '';
     editSuccess.value = '';
@@ -310,6 +376,8 @@ async function saveUser() {
         const idx = users.value.findIndex(u => u.id === editUser.value.id);
         if (idx !== -1) Object.assign(users.value[idx], data.user);
         editUser.value = data.user;
+        initialKycLevel.value = data.user?.kyc_level || 'none';
+        editForm.kyc_override_reason = '';
     } catch (e) {
         editError.value = e?.response?.data?.message || Object.values(e?.response?.data?.errors || {})[0]?.[0] || 'Erreur.';
     } finally {

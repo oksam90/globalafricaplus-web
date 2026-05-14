@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Investment;
+use App\Models\KYCVerification;
 use App\Models\Mentorship;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\Training;
 use App\Models\TrainingPurchase;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,13 +183,89 @@ class AdminController extends Controller
             'city' => ['sometimes', 'nullable', 'string', 'max:60'],
             'kyc_level' => ['sometimes', 'in:none,basic,verified,certified'],
             'is_diaspora' => ['sometimes', 'boolean'],
+            'kyc_override_reason' => ['sometimes', 'nullable', 'string', 'max:500'],
         ]);
 
-        $user->update($data);
+        $reason = $data['kyc_override_reason'] ?? null;
+        unset($data['kyc_override_reason']); // not a user column
+
+        // Audit-fix 2026-05 — TEMPORARY admin KYC override while Smile sandbox
+        // gate (ticket #1757) is unresolved. When the admin promotes a user
+        // to verified/certified through this endpoint we cascade the dates
+        // that the Smile flow normally writes (kyc_verified_at,
+        // kyc_expires_at) AND record an immutable KYCVerification row so the
+        // override is traceable post-hoc. Downgrading to basic/none clears
+        // the dates so the kyc.smile:verified middleware refuses the user.
+        $tierIsRising = array_key_exists('kyc_level', $data)
+            && in_array($data['kyc_level'], ['verified', 'certified'], true)
+            && $user->kyc_level !== $data['kyc_level'];
+
+        $tierIsDropping = array_key_exists('kyc_level', $data)
+            && in_array($data['kyc_level'], ['none', 'basic'], true)
+            && in_array($user->kyc_level, ['verified', 'certified'], true);
+
+        DB::transaction(function () use (&$data, $user, $tierIsRising, $tierIsDropping, $request, $reason) {
+            if ($tierIsRising) {
+                $partnerJobId = 'admin-override:' . $user->id . ':' . Str::uuid();
+                $verification = KYCVerification::create([
+                    'user_id'           => $user->id,
+                    'smile_job_id'      => null,
+                    'partner_job_id'    => $partnerJobId,
+                    'job_type'          => 'basic_kyc', // closest existing enum value
+                    'country'           => substr(strtoupper((string) ($user->country ?? 'SN')), 0, 2),
+                    'id_type'           => 'NATIONAL_ID',
+                    'id_number_hash'    => hash_hmac('sha256', $partnerJobId, (string) config('app.key')),
+                    'result_code'       => 'ADMOVR',
+                    'result_text'       => sprintf('Manual admin override by user #%d', $request->user()->id),
+                    'kyc_level_granted' => $data['kyc_level'],
+                    'status'            => 'approved',
+                    'callback_payload'  => [
+                        'override'          => true,
+                        'admin_id'          => $request->user()->id,
+                        'admin_email'       => $request->user()->email,
+                        'target_user_id'    => $user->id,
+                        'reason'            => $reason,
+                        'note'              => 'Temporary: Smile sandbox /v1/token + /v1/upload still returning 2205 — see ticket #1757.',
+                        'created_at'        => now()->toIso8601String(),
+                    ],
+                    'expires_at'   => now()->addMonths((int) config('smile.kyc_expiry_months', 24)),
+                    'submitted_at' => now(),
+                    'completed_at' => now(),
+                ]);
+
+                $data['kyc_verified_at']     = now();
+                $data['kyc_expires_at']      = now()->addMonths((int) config('smile.kyc_expiry_months', 24));
+                $data['kyc_verification_id'] = $verification->id;
+            } elseif ($tierIsDropping) {
+                $data['kyc_verified_at']     = null;
+                $data['kyc_expires_at']      = null;
+                $data['kyc_verification_id'] = null;
+            }
+
+            $user->update($data);
+        });
+
+        if ($tierIsRising || $tierIsDropping) {
+            Log::warning('admin.kyc_override', [
+                'admin_id'    => $request->user()->id,
+                'admin_email' => $request->user()->email,
+                'target_id'   => $user->id,
+                'target_email' => $user->email,
+                'from_level'  => $user->getOriginal('kyc_level'),
+                'to_level'    => $data['kyc_level'] ?? null,
+                'reason'      => $reason,
+                'ip'          => $request->ip(),
+            ]);
+        }
 
         return response()->json([
-            'user' => $user->load('roles:id,slug,name')->makeVisible(User::SELF_VISIBLE),
-            'message' => 'Utilisateur mis à jour.',
+            'user' => $user->fresh()->load('roles:id,slug,name')->makeVisible(User::SELF_VISIBLE),
+            'message' => $tierIsRising
+                ? 'Utilisateur mis à jour — KYC validé manuellement (override admin).'
+                : ($tierIsDropping
+                    ? 'Utilisateur mis à jour — KYC dégradé, accès financier révoqué.'
+                    : 'Utilisateur mis à jour.'),
+            'kyc_override' => $tierIsRising || $tierIsDropping,
         ]);
     }
 
