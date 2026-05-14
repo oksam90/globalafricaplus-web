@@ -19,6 +19,18 @@ final class SmileSignature
     /**
      * Generate a fresh (timestamp, signature) pair to attach to an outbound request.
      *
+     * Smile Identity recomputes the HMAC on their side using the timestamp
+     * string we send, then compares to our signature. They expect the
+     * .NET-style format below — UTC, exactly 3-digit milliseconds, literal Z:
+     *
+     *   yyyy-MM-dd'T'HH:mm:ss.fffK     →  2026-05-14T00:19:00.123Z
+     *
+     * Carbon::toISOString() returns 6-digit microseconds (.123456Z), which
+     * Smile's parser re-serialises to 3-digit millis before recomputing the
+     * HMAC, breaking signature equality and surfacing as error 2205
+     * ("You are not authorized to do that"). Confirmed with Smile support
+     * ticket #1757 on 2026-05-13.
+     *
      * @return array{timestamp: string, signature: string}
      */
     public static function generate(?Carbon $now = null): array
@@ -28,9 +40,9 @@ final class SmileSignature
             throw new RuntimeException('SMILE_API_KEY is not configured.');
         }
 
-        // Smile Identity expects a fully-qualified ISO8601 string. Carbon's
-        // toISOString() returns UTC with milliseconds + Z, which the API accepts.
-        $timestamp = ($now ?? Carbon::now())->toISOString();
+        $timestamp = ($now ?? Carbon::now())
+            ->utc()
+            ->format('Y-m-d\TH:i:s.v\Z');
 
         $signature = base64_encode(hash_hmac('sha256', $timestamp, $apiKey, true));
 

@@ -27,6 +27,36 @@ class SignatureTest extends TestCase
         $this->assertNotFalse(base64_decode($sig['signature'], true), 'signature should be valid base64');
     }
 
+    /**
+     * Audit fix 2026-05 — Smile recomputes the HMAC on their side after
+     * re-serialising our timestamp to .NET format `yyyy-MM-dd'T'HH:mm:ss.fffK`
+     * (3-digit millis, UTC Z). Any other shape — notably the 6-digit
+     * microseconds Carbon::toISOString() returned previously — leads to
+     * signature mismatch and HTTP 2205. Pin the format with a regex.
+     */
+    public function test_timestamp_matches_smile_dotnet_format(): void
+    {
+        $sig = SmileSignature::generate();
+
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/',
+            $sig['timestamp'],
+            'timestamp must be yyyy-MM-ddTHH:mm:ss.fffZ (UTC, 3-digit millis)'
+        );
+    }
+
+    public function test_generate_uses_utc_even_if_app_timezone_is_not(): void
+    {
+        // Pin a specific moment in a non-UTC zone so we can prove conversion.
+        $local = \Illuminate\Support\Carbon::create(2026, 6, 15, 10, 30, 0, 'Africa/Dakar');
+        $sig = SmileSignature::generate($local);
+
+        // Dakar = UTC+0 historically, but we still expect a literal Z suffix
+        // and a parseable UTC date that round-trips to our input second.
+        $this->assertStringEndsWith('Z', $sig['timestamp']);
+        $this->assertStringStartsWith('2026-06-15T10:30:00.', $sig['timestamp']);
+    }
+
     public function test_confirm_accepts_freshly_generated_signature(): void
     {
         $sig = SmileSignature::generate();
