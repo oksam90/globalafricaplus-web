@@ -234,7 +234,21 @@ class SmileIdentityService
         ];
 
         $response = $this->http()->post($this->baseUrl . '/token', $payload);
-        $body     = $this->jsonOrThrow($response);
+
+        // Audit 2026-05 — surface the full body on failure so we can ship
+        // it to Smile support when 2205 ("not authorized") keeps coming back
+        // despite their assurance the sandbox is unrestricted.
+        if ($response->failed()) {
+            Log::warning('Smile /v1/token call failed', [
+                'http_status'      => $response->status(),
+                'response_body'    => $response->json() ?: $response->body(),
+                'request_partner'  => $this->partnerId,
+                'request_product'  => $product,
+                'request_job_id'   => $jobId,
+                'request_callback' => $payload['callback_url'],
+            ]);
+        }
+        $body = $this->jsonOrThrow($response);
 
         return [
             'token'  => $body['token'] ?? null,
@@ -284,7 +298,24 @@ class SmileIdentityService
         ];
 
         $prepResponse = $this->http()->post($this->baseUrl . '/upload', $prepPayload);
-        $prep         = $this->jsonOrThrow($prepResponse);
+
+        // Audit 2026-05 — capture the exact wire response so we can present
+        // it to Smile support: identical 2205 on /upload + /v1/token strongly
+        // suggests an account-level product gate, not a request format bug.
+        if ($prepResponse->failed()) {
+            Log::warning('Smile /v1/upload prep call failed', [
+                'http_status'        => $prepResponse->status(),
+                'response_body'      => $prepResponse->json() ?: $prepResponse->body(),
+                'request_partner'    => $this->partnerId,
+                'request_job_type'   => $jobType,
+                'request_job_id'     => $jobId,
+                'request_country'    => strtoupper($country),
+                'request_id_type'    => $idType,
+                'request_callback'   => $prepPayload['callback_url'],
+                'request_source_sdk' => $prepPayload['source_sdk'],
+            ]);
+        }
+        $prep = $this->jsonOrThrow($prepResponse);
 
         $uploadUrl   = $prep['upload_url']   ?? null;
         $smileJobId  = $prep['smile_job_id'] ?? null;
