@@ -405,7 +405,17 @@ class SmileIdentityService
                 (int) config('smile.http.retry', 2),
                 (int) config('smile.http.retry_sleep', 500),
                 throw: false,
-            );
+            )
+            // Audit fix 2026-05-17 — Hostinger VPSes get an IPv6 address
+            // (`2a02:4780:…`) that takes routing precedence. Smile's
+            // partner IP allowlist appears to be IPv4-only (the support's
+            // working sandbox jobs all came from IPv4 sources), so calls
+            // from our VPS over IPv6 surface as 2205 "not authorized".
+            // Forcing CURL to resolve IPv4-only routes all outbound Smile
+            // traffic via our IPv4 public IP, which Smile recognises.
+            ->withOptions([
+                'curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4],
+            ]);
     }
 
     /**

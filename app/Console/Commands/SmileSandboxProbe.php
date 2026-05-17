@@ -102,6 +102,20 @@ class SmileSandboxProbe extends Command
 
     // ─────────────────────────────────────────────────────────────────────
 
+    /**
+     * Mirrors SmileIdentityService::http() so the probe and prod use the
+     * exact same network options — notably the IPv4-only resolution that
+     * works around Smile's IP allowlist (audit 2026-05-17).
+     */
+    protected function http(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::acceptJson()
+            ->asJson()
+            ->withOptions([
+                'curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4],
+            ]);
+    }
+
     protected function probeIdVerification(): array
     {
         $sig = SmileSignature::generate();
@@ -130,7 +144,7 @@ class SmileSandboxProbe extends Command
         ];
         return [
             'payload'  => $payload,
-            'response' => Http::acceptJson()->asJson()->post($this->base . '/id_verification', $payload),
+            'response' => $this->http()->post($this->base . '/id_verification', $payload),
         ];
     }
 
@@ -153,7 +167,7 @@ class SmileSandboxProbe extends Command
         ];
         return [
             'payload'  => $payload,
-            'response' => Http::acceptJson()->asJson()->post($this->base . '/token', $payload),
+            'response' => $this->http()->post($this->base . '/token', $payload),
         ];
     }
 
@@ -178,7 +192,7 @@ class SmileSandboxProbe extends Command
         ];
         return [
             'payload'  => $payload,
-            'response' => Http::acceptJson()->asJson()->post($this->base . '/upload', $payload),
+            'response' => $this->http()->post($this->base . '/upload', $payload),
         ];
     }
 
