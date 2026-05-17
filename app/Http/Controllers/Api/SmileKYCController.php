@@ -53,6 +53,7 @@ class SmileKYCController extends Controller
                     'dob'          => $data['dob'],
                     'phone_number' => $user->phone,
                 ],
+                partnerJobId: $partnerJobId,
             ),
         );
     }
@@ -67,12 +68,13 @@ class SmileKYCController extends Controller
             jobType:   'biometric_kyc',
             request:   $request,
             data:      $data,
-            submitter: fn () => $this->smile->submitBiometricKYC(
+            submitter: fn (string $partnerJobId) => $this->smile->submitBiometricKYC(
                 userId:       (string) $user->id,
                 country:      $data['country'],
                 idType:       $data['id_type'],
                 idNumber:     $data['id_number'],
                 selfieBase64: $data['selfie'],
+                partnerJobId: $partnerJobId,
             ),
         );
     }
@@ -87,13 +89,14 @@ class SmileKYCController extends Controller
             jobType:   'document_verification',
             request:   $request,
             data:      $data,
-            submitter: fn () => $this->smile->submitDocumentVerification(
+            submitter: fn (string $partnerJobId) => $this->smile->submitDocumentVerification(
                 userId:         (string) $user->id,
                 country:        $data['country'],
                 idType:         $data['id_type'],
                 idNumber:       $data['id_number'],
                 selfieBase64:   $data['selfie'],
                 documentBase64: $data['id_document_front'],
+                partnerJobId:   $partnerJobId,
             ),
         );
     }

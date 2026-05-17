@@ -77,14 +77,17 @@ class SmileIdentityService
      * @return array{smile_job_id:?string,job_id:string,status:string,raw:array}
      */
     public function submitBasicKYC(
-        string $userId,
-        string $country,
-        string $idType,
-        string $idNumber,
-        array  $personalInfo,
+        string  $userId,
+        string  $country,
+        string  $idType,
+        string  $idNumber,
+        array   $personalInfo,
+        ?string $partnerJobId = null,
     ): array {
         $this->ensureConfigured();
-        $jobId = (string) Str::uuid();
+        // See submitImageJob comment — use caller-provided UUID so the
+        // KYCVerification row's partner_job_id matches Smile's job_id.
+        $jobId = $partnerJobId ?? (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
         $payload = $this->envelope($sig, $userId, $jobId, self::JOB_BASIC_KYC, [
@@ -118,22 +121,24 @@ class SmileIdentityService
      * @return array{smile_job_id:string,job_id:string,status:string,raw:array}
      */
     public function submitBiometricKYC(
-        string $userId,
-        string $country,
-        string $idType,
-        string $idNumber,
-        string $selfieBase64,
-        string $selfieMime = 'image/jpeg',
+        string  $userId,
+        string  $country,
+        string  $idType,
+        string  $idNumber,
+        string  $selfieBase64,
+        string  $selfieMime = 'image/jpeg',
+        ?string $partnerJobId = null,
     ): array {
         return $this->submitImageJob(
-            jobType:    self::JOB_BIOMETRIC_KYC,
-            userId:     $userId,
-            country:    $country,
-            idType:     $idType,
-            idNumber:   $idNumber,
-            selfieB64:  $selfieBase64,
-            selfieMime: $selfieMime,
-            documentB64: null,
+            jobType:      self::JOB_BIOMETRIC_KYC,
+            userId:       $userId,
+            country:      $country,
+            idType:       $idType,
+            idNumber:     $idNumber,
+            selfieB64:    $selfieBase64,
+            selfieMime:   $selfieMime,
+            documentB64:  null,
+            partnerJobId: $partnerJobId,
         );
     }
 
@@ -148,25 +153,27 @@ class SmileIdentityService
      * @return array{smile_job_id:string,job_id:string,status:string,raw:array}
      */
     public function submitDocumentVerification(
-        string $userId,
-        string $country,
-        string $idType,
-        string $idNumber,
-        string $selfieBase64,
-        string $documentBase64,
-        string $selfieMime   = 'image/jpeg',
-        string $documentMime = 'image/jpeg',
+        string  $userId,
+        string  $country,
+        string  $idType,
+        string  $idNumber,
+        string  $selfieBase64,
+        string  $documentBase64,
+        string  $selfieMime   = 'image/jpeg',
+        string  $documentMime = 'image/jpeg',
+        ?string $partnerJobId = null,
     ): array {
         return $this->submitImageJob(
-            jobType:     self::JOB_DOCUMENT_VERIFICATION,
-            userId:      $userId,
-            country:     $country,
-            idType:      $idType,
-            idNumber:    $idNumber,
-            selfieB64:   $selfieBase64,
-            selfieMime:  $selfieMime,
-            documentB64: $documentBase64,
+            jobType:      self::JOB_DOCUMENT_VERIFICATION,
+            userId:       $userId,
+            country:      $country,
+            idType:       $idType,
+            idNumber:     $idNumber,
+            selfieB64:    $selfieBase64,
+            selfieMime:   $selfieMime,
+            documentB64:  $documentBase64,
             documentMime: $documentMime,
+            partnerJobId: $partnerJobId,
         );
     }
 
@@ -282,9 +289,14 @@ class SmileIdentityService
         string  $selfieMime  = 'image/jpeg',
         ?string $documentB64 = null,
         string  $documentMime = 'image/jpeg',
+        ?string $partnerJobId = null,
     ): array {
         $this->ensureConfigured();
-        $jobId = (string) Str::uuid();
+        // Audit fix 2026-05-17 — when the caller (SmileKYCController) already
+        // created a KYCVerification row with its own UUID `partner_job_id`,
+        // use it as Smile's job_id so the inbound callback can be matched
+        // back to our DB row. Otherwise we fall back to a fresh UUID.
+        $jobId = $partnerJobId ?? (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
         // ── Step 1 — prep upload (returns S3 upload_url + smile_job_id) ──

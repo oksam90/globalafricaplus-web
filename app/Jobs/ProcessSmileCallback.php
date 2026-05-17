@@ -49,12 +49,31 @@ class ProcessSmileCallback implements ShouldQueue
         $actions      = (array)  ($this->payload['Actions'] ?? []);
         $jobType      = (int)    ($params['job_type'] ?? 0);
 
-        if ($partnerJobId === '') {
-            Log::warning('Smile callback: no PartnerParams.job_id, dropping.', ['payload' => $this->payload]);
+        if ($partnerJobId === '' && $smileJobId === '') {
+            Log::warning('Smile callback: no job identifiers, dropping.', ['payload' => $this->payload]);
             return;
         }
 
-        $verification = KYCVerification::where('partner_job_id', $partnerJobId)->first();
+        // Primary lookup: by partner_job_id (the UUID we threaded through to
+        // Smile so the callback round-trips it back). Safety net: by
+        // smile_job_id — handles legacy rows from before the audit fix
+        // 2026-05-17 where partner_job_id (our UUID) and Smile's internal
+        // job_id had drifted apart.
+        $verification = $partnerJobId !== ''
+            ? KYCVerification::where('partner_job_id', $partnerJobId)->first()
+            : null;
+
+        if (!$verification && $smileJobId !== '') {
+            $verification = KYCVerification::where('smile_job_id', $smileJobId)->first();
+            if ($verification) {
+                Log::info('Smile callback: matched by smile_job_id fallback', [
+                    'smile_job_id'         => $smileJobId,
+                    'expected_partner_job_id' => $partnerJobId,
+                    'actual_partner_job_id'   => $verification->partner_job_id,
+                ]);
+            }
+        }
+
         if (!$verification) {
             Log::warning('Smile callback: KYCVerification not found', [
                 'partner_job_id' => $partnerJobId,
