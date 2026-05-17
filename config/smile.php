@@ -98,9 +98,16 @@ return [
     | SDK identification (sent in every payload)
     |--------------------------------------------------------------------------
     */
+    /*
+    | Smile-side telemetry: each successful job in the sandbox portal that
+    | partner_id 8599 ever ran was tagged `Rest Api - 2.0.0` (see jobs
+    | 1000000001 / 1000000003 in the May 2026 support test). Mirror that
+    | exact value or Smile may flag the request as coming from an
+    | unsupported SDK version and reject with 2205.
+    */
     'sdk' => [
         'name'    => 'rest_api',
-        'version' => '1.0.0',
+        'version' => '2.0.0',
     ],
 
 ];

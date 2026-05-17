@@ -116,11 +116,15 @@ class SmileSandboxProbe extends Command
                 'job_id'   => (string) Str::uuid(),
                 'job_type' => 5,
             ],
-            'country'      => 'SN',
-            'id_type'      => 'NATIONAL_ID',
+            // Per Smile portal job 1000000001 (May 2026, support test on
+            // partner_id 8599): NG + BVN + 00000000000 returns 200 + result
+            // "ID Number Validated: Yes". Use it as the positive control so
+            // we can isolate auth (works) from country gating (separate).
+            'country'      => 'NG',
+            'id_type'      => 'BVN',
             'id_number'    => '00000000000', // sandbox: trailing 0 = approved
-            'first_name'   => 'Aminata',
-            'last_name'    => 'Diop',
+            'first_name'   => 'Test',
+            'last_name'    => 'Smileid',
             'dob'          => '1990-05-15',
             'callback_url' => (string) config('smile.callback_url'),
         ];
@@ -133,14 +137,19 @@ class SmileSandboxProbe extends Command
     protected function probeToken(string $product): array
     {
         $sig = SmileSignature::generate();
+        // Same envelope as SmileIdentityService::generateWebToken (post-fix):
+        // includes source_sdk + source_sdk_version that mirror the
+        // successful sandbox jobs visible in the portal.
         $payload = [
-            'user_id'      => 'probe-' . Str::random(6),
-            'job_id'       => (string) Str::uuid(),
-            'product'      => $product,
-            'partner_id'   => $this->partner,
-            'timestamp'    => $sig['timestamp'],
-            'signature'    => $sig['signature'],
-            'callback_url' => (string) config('smile.callback_url'),
+            'user_id'            => 'probe-' . Str::random(6),
+            'job_id'             => (string) Str::uuid(),
+            'product'            => $product,
+            'partner_id'         => $this->partner,
+            'timestamp'          => $sig['timestamp'],
+            'signature'          => $sig['signature'],
+            'source_sdk'         => config('smile.sdk.name'),
+            'source_sdk_version' => config('smile.sdk.version'),
+            'callback_url'       => (string) config('smile.callback_url'),
         ];
         return [
             'payload'  => $payload,

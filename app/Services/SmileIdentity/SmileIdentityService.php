@@ -223,14 +223,22 @@ class SmileIdentityService
         $jobId = (string) Str::uuid();
         $sig   = SmileSignature::generate();
 
+        // Audit 2026-05 — Smile's working sandbox jobs (Hosted Web - 11,
+        // Rest Api - 2.0.0) include source_sdk + source_sdk_version. Their
+        // absence on /v1/token appears to surface as 2205 even when every
+        // other field is correct. Mirror the envelope we already build for
+        // /v1/upload / /v1/id_verification to be on the same side as their
+        // accepted payloads.
         $payload = [
-            'user_id'      => $userId,
-            'job_id'       => $jobId,
-            'product'      => $product,
-            'partner_id'   => $this->partnerId,
-            'timestamp'    => $sig['timestamp'],
-            'signature'    => $sig['signature'],
-            'callback_url' => (string) config('smile.callback_url'),
+            'user_id'            => $userId,
+            'job_id'             => $jobId,
+            'product'            => $product,
+            'partner_id'         => $this->partnerId,
+            'timestamp'          => $sig['timestamp'],
+            'signature'          => $sig['signature'],
+            'source_sdk'         => config('smile.sdk.name'),
+            'source_sdk_version' => config('smile.sdk.version'),
+            'callback_url'       => (string) config('smile.callback_url'),
         ];
 
         $response = $this->http()->post($this->baseUrl . '/token', $payload);
