@@ -35,16 +35,34 @@ final class SmileSignature
      */
     public static function generate(?Carbon $now = null): array
     {
-        $apiKey = (string) config('smile.api_key');
+        $apiKey    = (string) config('smile.api_key');
+        $partnerId = (string) config('smile.partner_id');
+
         if ($apiKey === '') {
             throw new RuntimeException('SMILE_API_KEY is not configured.');
+        }
+        if ($partnerId === '') {
+            throw new RuntimeException('SMILE_PARTNER_ID is not configured.');
         }
 
         $timestamp = ($now ?? Carbon::now())
             ->utc()
             ->format('Y-m-d\TH:i:s.v\Z');
 
-        $signature = base64_encode(hash_hmac('sha256', $timestamp, $apiKey, true));
+        // Audit fix 2026-05-17 — the HMAC message is NOT the timestamp alone.
+        // The official Smile Identity PHP SDK (smile-identity/smile-identity-core
+        // v4.0.3, lib/Signature.php) computes:
+        //
+        //     message   = timestamp . partner_id . "sid_request"
+        //     signature = base64( hmac_sha256(message, api_key) )
+        //
+        // Our previous code signed only the timestamp, which is why every call
+        // returned HTTP 400 + code 2205 ("not authorized") despite the API key,
+        // partner_id, IPv4 origin and SDK version being correct. Three weeks of
+        // back-and-forth with support (ticket #1757) and the actual culprit was
+        // here all along.
+        $message   = $timestamp . $partnerId . 'sid_request';
+        $signature = base64_encode(hash_hmac('sha256', $message, $apiKey, true));
 
         return [
             'timestamp' => $timestamp,
@@ -58,12 +76,16 @@ final class SmileSignature
      */
     public static function confirm(string $timestamp, string $signature): bool
     {
-        $apiKey = (string) config('smile.api_key');
-        if ($apiKey === '' || $timestamp === '' || $signature === '') {
+        $apiKey    = (string) config('smile.api_key');
+        $partnerId = (string) config('smile.partner_id');
+        if ($apiKey === '' || $partnerId === '' || $timestamp === '' || $signature === '') {
             return false;
         }
 
-        $expected = base64_encode(hash_hmac('sha256', $timestamp, $apiKey, true));
+        // Symmetric to generate(): same `timestamp . partner_id . "sid_request"`
+        // message. Smile's outbound webhook signature uses this exact formula.
+        $message  = $timestamp . $partnerId . 'sid_request';
+        $expected = base64_encode(hash_hmac('sha256', $message, $apiKey, true));
 
         return hash_equals($expected, $signature);
     }

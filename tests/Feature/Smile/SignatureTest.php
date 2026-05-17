@@ -13,7 +13,10 @@ class SignatureTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['smile.api_key' => 'fixed-test-key-for-signing']);
+        config([
+            'smile.api_key'    => 'fixed-test-key-for-signing',
+            'smile.partner_id' => '8599', // needed by generate() since 2026-05-17 fix
+        ]);
     }
 
     public function test_generate_returns_timestamp_and_base64_signature(): void
@@ -86,5 +89,54 @@ class SignatureTest extends TestCase
     {
         config(['smile.api_key' => '']);
         $this->assertFalse(SmileSignature::confirm('2026-01-01T00:00:00Z', 'whatever'));
+    }
+
+    /**
+     * Audit fix 2026-05-17 — pin the exact HMAC message format from the
+     * official Smile Identity PHP SDK (smile-identity/smile-identity-core
+     * v4.0.3, lib/Signature.php):
+     *
+     *     message = timestamp . partner_id . "sid_request"
+     *
+     * If anyone "simplifies" the message back to just $timestamp this
+     * test goes red — that change broke prod for three weeks before we
+     * tracked it down. Don't undo it.
+     */
+    public function test_signature_message_matches_official_sdk_formula(): void
+    {
+        config([
+            'smile.api_key'    => 'my-test-key',
+            'smile.partner_id' => '8599',
+        ]);
+
+        $now = \Illuminate\Support\Carbon::create(2026, 5, 17, 20, 57, 0, 'UTC');
+        $sig = SmileSignature::generate($now);
+
+        // Recompute independently using the canonical SDK formula and ensure
+        // the two match. Any change to generate() that deviates fails here.
+        $expectedMessage   = $sig['timestamp'] . '8599' . 'sid_request';
+        $expectedSignature = base64_encode(hash_hmac('sha256', $expectedMessage, 'my-test-key', true));
+
+        $this->assertSame($expectedSignature, $sig['signature']);
+    }
+
+    /**
+     * If partner_id changes, the signature must change (different message).
+     * Defends against the regression where partner_id was silently dropped
+     * from the HMAC payload.
+     */
+    public function test_signature_depends_on_partner_id(): void
+    {
+        config(['smile.api_key' => 'k']);
+        $now = \Illuminate\Support\Carbon::create(2026, 5, 17, 20, 57, 0, 'UTC');
+
+        config(['smile.partner_id' => 'A']);
+        $sigA = SmileSignature::generate($now);
+
+        config(['smile.partner_id' => 'B']);
+        $sigB = SmileSignature::generate($now);
+
+        $this->assertSame($sigA['timestamp'], $sigB['timestamp']);
+        $this->assertNotSame($sigA['signature'], $sigB['signature']);
     }
 }
