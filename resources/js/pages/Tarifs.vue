@@ -72,6 +72,13 @@
                                     <span class="text-4xl font-black text-slate-900 dark:text-slate-100">0 €</span>
                                     <span class="text-sm text-slate-500 dark:text-slate-400">/toujours</span>
                                 </template>
+                                <template v-else-if="plan.slug === 'enterprise'">
+                                    <!-- Enterprise: no public price — contact for a quote -->
+                                    <span class="text-3xl font-black text-slate-900 dark:text-slate-100">Sur mesure</span>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        Devis personnalisé selon vos besoins
+                                    </div>
+                                </template>
                                 <template v-else>
                                     <span class="text-4xl font-black text-slate-900 dark:text-slate-100">
                                         {{ yearly ? formatPrice(plan.price_yearly) : formatPrice(plan.price_monthly) }}
@@ -180,6 +187,78 @@
             </div>
         </section>
 
+        <!-- Enterprise contact modal -->
+        <Teleport to="body">
+            <div v-if="contactOpen"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+                @click.self="closeContactModal">
+                <div class="w-full max-w-lg my-8 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+                    <div class="flex items-start justify-between mb-1">
+                        <h3 class="text-xl font-black text-slate-900 dark:text-slate-100">Nous contacter</h3>
+                        <button type="button" @click="closeContactModal"
+                            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-5">
+                        Pack <strong>Enterprise</strong> — un membre de l'équipe vous recontacte sous 24h avec un devis personnalisé.
+                    </p>
+
+                    <form @submit.prevent="submitContact" class="space-y-3">
+                        <div>
+                            <label for="contact-name" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Nom</label>
+                            <input id="contact-name" v-model="contactForm.name" type="text" required minlength="2" maxlength="100"
+                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
+                        </div>
+
+                        <div>
+                            <label for="contact-email" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Email</label>
+                            <input id="contact-email" v-model="contactForm.email" type="email" required maxlength="150"
+                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
+                        </div>
+
+                        <div>
+                            <label for="contact-phone" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Numéro de téléphone</label>
+                            <input id="contact-phone" v-model="contactForm.phone" type="tel" required minlength="6" maxlength="30"
+                                placeholder="+221 77 123 45 67"
+                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
+                        </div>
+
+                        <div>
+                            <label for="contact-subject" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Objet</label>
+                            <input id="contact-subject" v-model="contactForm.subject" type="text" required minlength="3" maxlength="150"
+                                placeholder="Demande de devis Enterprise"
+                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm" />
+                        </div>
+
+                        <div>
+                            <label for="contact-message" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Message</label>
+                            <textarea id="contact-message" v-model="contactForm.message" required minlength="10" maxlength="5000" rows="5"
+                                placeholder="Présentez brièvement votre organisation, le volume d'utilisateurs attendu et vos cas d'usage prioritaires…"
+                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 text-sm"></textarea>
+                            <div class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 text-right">
+                                {{ contactForm.message.length }} / 5000
+                            </div>
+                        </div>
+
+                        <div v-if="contactError"
+                            class="rounded-md bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/60 p-3 text-sm text-rose-800 dark:text-rose-200">
+                            {{ contactError }}
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <button type="button" @click="closeContactModal"
+                                class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                                Annuler
+                            </button>
+                            <button type="submit" :disabled="contactSubmitting"
+                                class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm">
+                                {{ contactSubmitting ? 'Envoi…' : 'Envoyer le message' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </Teleport>
+
         <!-- Success/Error toast -->
         <Teleport to="body">
             <div v-if="toast" class="fixed bottom-6 right-6 z-50 max-w-sm px-5 py-3 rounded-lg shadow-lg text-sm font-medium"
@@ -191,7 +270,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import ExchangeRateBadge from '../components/ExchangeRateBadge.vue';
@@ -207,6 +286,18 @@ const refunding = ref(false);
 const isRefundable = ref(false);
 const openFaq = ref(-1);
 const toast = ref(null);
+
+// Enterprise "Nous contacter" modal state.
+const contactOpen       = ref(false);
+const contactSubmitting = ref(false);
+const contactError      = ref('');
+const contactForm = reactive({
+    name:    '',
+    email:   '',
+    phone:   '',
+    subject: 'Demande de devis Enterprise',
+    message: '',
+});
 
 const currentPlan = computed(() => auth.planSlug);
 
@@ -276,12 +367,14 @@ async function requestRefund() {
 }
 
 async function subscribeTo(plan) {
-    if (!auth.isAuthenticated) {
-        router.push({ name: 'login', query: { redirect: '/tarifs' } });
+    // Enterprise has no public price — the CTA opens the contact modal
+    // (no auth required: prospects don't always have an account yet).
+    if (plan.slug === 'enterprise') {
+        openContactModal(plan);
         return;
     }
-    if (plan.slug === 'enterprise') {
-        showToast('Contactez-nous à enterprise@africaplus.com pour un devis personnalisé.', 'success');
+    if (!auth.isAuthenticated) {
+        router.push({ name: 'login', query: { redirect: '/tarifs' } });
         return;
     }
     subscribing.value = true;
@@ -317,6 +410,56 @@ async function subscribeTo(plan) {
 function showToast(message, type = 'success') {
     toast.value = { message, type };
     setTimeout(() => { toast.value = null; }, 4000);
+}
+
+// ─── Enterprise contact modal ────────────────────────────────────────────
+
+function openContactModal() {
+    // Pre-fill the form with what we already know about the user so they
+    // don't have to retype it.
+    contactForm.name    = auth.user?.name  ?? '';
+    contactForm.email   = auth.user?.email ?? '';
+    contactForm.phone   = auth.user?.phone ?? '';
+    contactForm.subject = 'Demande de devis Enterprise';
+    contactForm.message = '';
+    contactError.value  = '';
+    contactOpen.value   = true;
+}
+
+function closeContactModal() {
+    if (contactSubmitting.value) return; // don't allow closing mid-submit
+    contactOpen.value = false;
+}
+
+async function submitContact() {
+    contactError.value = '';
+    contactSubmitting.value = true;
+    try {
+        const { data } = await window.axios.post('/api/contact', {
+            name:    contactForm.name.trim(),
+            email:   contactForm.email.trim(),
+            phone:   contactForm.phone.trim(),
+            subject: contactForm.subject.trim(),
+            message: contactForm.message.trim(),
+        });
+        contactOpen.value = false;
+        showToast(data.message || 'Votre message a bien été envoyé.', 'success');
+    } catch (e) {
+        const status = e?.response?.status;
+        const body   = e?.response?.data || {};
+        if (status === 422) {
+            contactError.value = Object.values(body.errors || {})[0]?.[0]
+                || body.message
+                || 'Vérifiez les champs du formulaire.';
+        } else if (status === 429) {
+            contactError.value = 'Trop de tentatives. Réessayez dans une heure ou écrivez directement à contact@globalafricaplus.com.';
+        } else {
+            contactError.value = body.message
+                || 'Une erreur est survenue. Réessayez ou écrivez à contact@globalafricaplus.com.';
+        }
+    } finally {
+        contactSubmitting.value = false;
+    }
 }
 
 onMounted(() => {

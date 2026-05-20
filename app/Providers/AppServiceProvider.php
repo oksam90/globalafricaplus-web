@@ -80,5 +80,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin-read', static fn (Request $request) =>
             Limit::perMinute(120)->by($byUserOrIp($request))
         );
+
+        // Contact form on /tarifs (Enterprise "Nous contacter").
+        // Bucketed by IP since the endpoint is public; a low-frequency
+        // bucket is enough to break spam-bot loops without blocking
+        // legitimate prospects.
+        RateLimiter::for('contact-form', static fn (Request $request) =>
+            Limit::perHour(5)->by((string) $request->ip())
+        );
     }
 }

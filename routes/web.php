@@ -71,6 +71,10 @@ Route::prefix('api')->group(function () {
     Route::get('/exchange-rates/{from}/{to}', [ExchangeRateController::class, 'show'])
         ->whereAlpha('from')->whereAlpha('to');
 
+    // Enterprise contact form (public, rate-limited)
+    Route::post('/contact', [\App\Http\Controllers\Api\ContactController::class, 'send'])
+        ->middleware('throttle:contact-form');
+
     // Smile Identity webhook (Sprint 2 — signature verified by middleware)
     Route::post('/v1/webhooks/smile-identity', [SmileWebhookController::class, 'handle'])
         ->middleware('smile.webhook');
