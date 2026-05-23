@@ -51,7 +51,11 @@ class ProcessPayDunyaWebhook implements ShouldQueue
         $token      = $invoice['token'] ?? null;
 
         if (!$token) {
-            Log::warning('PayDunya webhook payload missing invoice.token', ['payload' => $this->payload]);
+            // Audit fix 2026-05 — redact the raw payload before it lands in
+            // laravel.log; customer block + signed receipt URLs are stripped.
+            Log::warning('PayDunya webhook payload missing invoice.token', [
+                'payload' => \App\Support\PiiRedactor::redactPaydunyaWebhook($this->payload),
+            ]);
             return;
         }
 

@@ -108,16 +108,9 @@
         </div>
 
         <!-- Edit / create modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-5 sticky top-0 bg-white dark:bg-slate-800 -mt-2 pt-2 pb-3 border-b border-slate-100 dark:border-slate-700 z-10">
-                    <h3 class="text-lg font-bold">
-                        {{ form.id ? 'Modifier l\'appel à projets' : 'Nouvel appel à projets' }}
-                    </h3>
-                    <button @click="showModal = false" class="text-slate-400 dark:text-slate-500 text-xl">&times;</button>
-                </div>
-
-                <form @submit.prevent="save" class="space-y-5">
+        <Modal v-model="showModal" size="3xl"
+            :title="form.id ? 'Modifier l\'appel à projets' : 'Nouvel appel à projets'">
+            <form id="call-form" @submit.prevent="save" class="space-y-5">
                     <fieldset class="space-y-3">
                         <legend class="text-sm font-bold text-slate-700 dark:text-slate-200">Identité de l'appel</legend>
                         <div>
@@ -207,21 +200,20 @@
                         </div>
                     </fieldset>
 
-                    <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+                <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+            </form>
 
-                    <div class="flex gap-3 pt-2 sticky bottom-0 bg-white dark:bg-slate-800 pb-2 pt-3 border-t border-slate-100 dark:border-slate-700">
-                        <button type="submit" :disabled="saving"
-                            class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
-                            {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
-                        </button>
-                        <button type="button" @click="showModal = false"
-                            class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="call-form" :disabled="saving"
+                    class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
+                </button>
+            </template>
+        </Modal>
 
         <!-- Toast -->
         <Teleport to="body">
@@ -236,6 +228,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import Modal from '../../components/Modal.vue';
 
 const items = ref([]);
 const meta = ref({});

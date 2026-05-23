@@ -89,6 +89,9 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const allApps = ref([]);
 const meta = ref({});
@@ -152,7 +155,7 @@ async function withdraw(id) {
         await window.axios.delete(`/api/emploi/candidatures/${id}`);
         await load();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur.');
+        toast.error(e?.response?.data?.message || 'Erreur.');
     }
 }
 

@@ -73,12 +73,42 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(60)->by($byUserOrIp($request))
         );
 
+        // ────────────────────────────────────────────────────────────────
+        //  AML screening — tighter than kyc-submissions because each call
+        //  hits Smile's paid AML endpoint AND triggers a full DB write +
+        //  PEP/sanctions match scan. Normal usage is one screening per
+        //  investor profile, so 3/hour is plenty and breaks abuse loops.
+        // ────────────────────────────────────────────────────────────────
+        RateLimiter::for('kyc-aml', static fn (Request $request) =>
+            Limit::perHour(3)->by($byUserOrIp($request))
+        );
+
         RateLimiter::for('admin-write', static fn (Request $request) =>
             Limit::perHour(60)->by($byUserOrIp($request))
         );
 
         RateLimiter::for('admin-read', static fn (Request $request) =>
             Limit::perMinute(120)->by($byUserOrIp($request))
+        );
+
+        // ────────────────────────────────────────────────────────────────
+        //  Admin uploads — image files cap at 4 MB each. 20/h per admin
+        //  bounds disk consumption to ~80 MB/h per admin even if a script
+        //  goes wild, vs. the 240 MB/h that admin-write (60/h) would allow.
+        // ────────────────────────────────────────────────────────────────
+        RateLimiter::for('admin-upload', static fn (Request $request) =>
+            Limit::perHour(20)->by($byUserOrIp($request))
+        );
+
+        // ────────────────────────────────────────────────────────────────
+        //  Webhooks (Smile, PayDunya) — defence in depth alongside the
+        //  HMAC signature middleware. 200/min per source IP breaks a
+        //  replay-flood that survives the signature check (e.g. leaked
+        //  signing key) without rate-limiting legitimate burst traffic
+        //  from the provider's IP pool.
+        // ────────────────────────────────────────────────────────────────
+        RateLimiter::for('webhooks', static fn (Request $request) =>
+            Limit::perMinute(200)->by((string) $request->ip())
         );
 
         // Contact form on /tarifs (Enterprise "Nous contacter").

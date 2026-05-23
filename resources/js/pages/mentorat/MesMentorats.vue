@@ -152,6 +152,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const auth = useAuthStore();
 
@@ -209,7 +212,7 @@ async function respond(mentorshipId, action) {
         await window.axios.post(`/api/mentorat/${mentorshipId}/respond`, { action });
         await loadData();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur');
+        toast.error(e?.response?.data?.message || 'Erreur');
     }
 }
 
@@ -219,7 +222,7 @@ async function completeMentorship(mentorshipId) {
         await window.axios.post(`/api/mentorat/${mentorshipId}/complete`);
         await loadData();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur');
+        toast.error(e?.response?.data?.message || 'Erreur');
     }
 }
 

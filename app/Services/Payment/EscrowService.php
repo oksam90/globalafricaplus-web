@@ -380,9 +380,19 @@ class EscrowService
                 'event_type'        => $result->success ? 'disburse.success' : 'disburse.failed',
                 'direction'         => 'outgoing',
                 'gateway_reference' => $result->disburseReference,
+                // Audit fix 2026-05 — defensive scrub of gateway raw response
+                // (drops phone/email/customer keys even if a future gateway
+                // adapter smuggles them through DisburseResult::$raw) +
+                // explicit masked recipient phone for forensic value.
                 'payload'           => array_merge(
-                    $result->raw,
-                    ['message' => $result->message],
+                    \App\Support\PiiRedactor::redactDisburseRaw($result->raw),
+                    [
+                        'message'                  => $result->message,
+                        'amount'                   => $result->amount,
+                        'currency'                 => $result->currency,
+                        'recipient_phone_masked'   => \App\Support\PiiRedactor::redactPhone($result->recipientPhone),
+                        'provider'                 => $result->provider,
+                    ],
                 ),
                 'created_at'        => now(),
             ]);

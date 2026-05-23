@@ -41,13 +41,9 @@
         </div>
 
         <!-- Create/Edit modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold">{{ editingId ? 'Modifier la zone' : 'Nouvelle zone' }}</h3>
-                    <button @click="showModal = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-xl">&times;</button>
-                </div>
-                <form @submit.prevent="saveZone" class="space-y-4">
+        <Modal v-model="showModal" size="lg"
+            :title="editingId ? 'Modifier la zone' : 'Nouvelle zone'">
+            <form id="mes-zones-form" @submit.prevent="saveZone" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Nom *</label>
                         <input v-model="form.name" type="text" required class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm" />
@@ -88,19 +84,29 @@
                         <label class="block text-sm font-medium mb-1">Email contact</label>
                         <input v-model="form.contact_email" type="email" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm" />
                     </div>
-                    <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
-                    <button type="submit" :disabled="saving"
-                        class="w-full py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm disabled:opacity-50">
-                        {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
-                    </button>
-                </form>
-            </div>
-        </div>
+                <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+            </form>
+
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="mes-zones-form" :disabled="saving"
+                    class="px-5 py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+            </template>
+        </Modal>
     </section>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import { useToast } from '../../composables/useToast';
+import Modal from '../../components/Modal.vue';
+
+const toast = useToast();
 
 const zones = ref([]);
 const loading = ref(true);
@@ -147,7 +153,7 @@ async function saveZone() {
 async function deleteZone(id) {
     if (!confirm('Supprimer cette zone ?')) return;
     try { await window.axios.delete(`/api/gouvernement/zones/${id}`); await load(); }
-    catch (e) { alert(e?.response?.data?.message || 'Erreur.'); }
+    catch (e) { toast.error(e?.response?.data?.message || 'Erreur.'); }
 }
 
 onMounted(load);

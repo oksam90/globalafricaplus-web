@@ -50,7 +50,11 @@ class ProcessSmileCallback implements ShouldQueue
         $jobType      = (int)    ($params['job_type'] ?? 0);
 
         if ($partnerJobId === '' && $smileJobId === '') {
-            Log::warning('Smile callback: no job identifiers, dropping.', ['payload' => $this->payload]);
+            // Audit fix 2026-05 — redact the raw payload (drops signed
+            // ImageLinks + KYCReceipt URLs) before it lands in laravel.log.
+            Log::warning('Smile callback: no job identifiers, dropping.', [
+                'payload' => \App\Support\PiiRedactor::redactSmileCallback((array) $this->payload),
+            ]);
             return;
         }
 

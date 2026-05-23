@@ -163,7 +163,18 @@ class RefundService
                 'event_type'        => $result->success ? 'refund.success' : 'refund.failed',
                 'direction'         => 'outgoing',
                 'gateway_reference' => $result->disburseReference,
-                'payload'           => array_merge($result->raw, ['message' => $result->message]),
+                // Audit fix 2026-05 — defensive PII scrub of gateway raw,
+                // plus explicit masked recipient phone for forensic trail.
+                'payload'           => array_merge(
+                    \App\Support\PiiRedactor::redactDisburseRaw($result->raw),
+                    [
+                        'message'                => $result->message,
+                        'amount'                 => $result->amount,
+                        'currency'               => $result->currency,
+                        'recipient_phone_masked' => \App\Support\PiiRedactor::redactPhone($result->recipientPhone),
+                        'provider'               => $result->provider,
+                    ],
+                ),
                 'created_at'        => now(),
             ]);
         } catch (\Throwable $e) {

@@ -118,6 +118,9 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const projects = ref([]);
 const meta = ref({});
@@ -200,7 +203,7 @@ async function moderate(projectId, action) {
         await window.axios.post(`/api/admin/moderation/${projectId}`, { action });
         await load();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur lors de la modération.');
+        toast.error(e?.response?.data?.message || 'Erreur lors de la modération.');
     }
 }
 
@@ -210,7 +213,7 @@ async function confirmDelete(project) {
         await window.axios.post(`/api/admin/moderation/${project.id}`, { action: 'delete' });
         await load();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur lors de la suppression.');
+        toast.error(e?.response?.data?.message || 'Erreur lors de la suppression.');
     }
 }
 

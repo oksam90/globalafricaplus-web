@@ -89,6 +89,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const tab = ref('trainings');
 const tabs = [
@@ -174,9 +177,9 @@ async function payNext(plan) {
             window.location.href = data.checkout.url;
             return;
         }
-        alert('Réponse inattendue.');
+        toast.error('Réponse inattendue du serveur.');
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur lors de la facturation.');
+        toast.error(e?.response?.data?.message || 'Erreur lors de la facturation.');
     } finally {
         paying.value = null;
     }

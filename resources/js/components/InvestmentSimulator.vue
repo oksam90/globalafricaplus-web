@@ -114,6 +114,9 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useToast } from '../composables/useToast';
+
+const toast = useToast();
 
 const residenceCountries = [
     'France', 'Belgique', 'Canada', 'États-Unis', 'Allemagne', 'Italie', 'Espagne',
@@ -162,7 +165,7 @@ async function simulate() {
         const { data } = await window.axios.post('/api/diaspora/simulate', form.value);
         result.value = data;
     } catch (e) {
-        alert('Erreur lors de la simulation. Vérifiez les paramètres.');
+        toast.error(e?.response?.data?.message || 'Erreur lors de la simulation. Vérifiez les paramètres.');
     } finally {
         loading.value = false;
     }

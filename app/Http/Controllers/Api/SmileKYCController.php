@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SubmitKYCRequest;
 use App\Models\AMLScreening;
 use App\Models\KYCVerification;
+use App\Models\PaymentLog;
 use App\Services\SmileIdentity\SmileIdentityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -225,6 +226,62 @@ class SmileKYCController extends Controller
         }
 
         return response()->json($token, 201);
+    }
+
+    /**
+     * Record explicit biometric consent before the Smile SDK is launched.
+     *
+     * Audit fix 2026-05 — RGPD Art. 9 treats biometric data (selfie, facial
+     * geometry, ID-document photo) as a *special category*. We need an
+     * immutable record that the user gave explicit, informed consent BEFORE
+     * the SDK captured anything. Persisted in payment_logs (immutable audit
+     * table) with consent version, product scope, IP and UA for evidence.
+     *
+     * Expected body:
+     *   { product: 'biometric_kyc'|'doc_verification',
+     *     version: 'v1',
+     *     granted: true }
+     *
+     * Response: 201 with the audit row id.
+     */
+    public function consent(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'product' => ['required', 'string', 'in:biometric_kyc,doc_verification'],
+            'version' => ['required', 'string', 'max:20'],
+            'granted' => ['required', 'boolean'],
+        ]);
+
+        // Refusal still gets a row — useful for KPI / proof we never launched
+        // the SDK without consent.
+        $log = PaymentLog::create([
+            'gateway'           => 'smile_identity',
+            'event_type'        => $data['granted']
+                ? 'biometric_consent.granted'
+                : 'biometric_consent.refused',
+            'direction'         => 'inbound',
+            'ip_address'        => $request->ip(),
+            'user_agent'        => substr((string) $request->userAgent(), 0, 500),
+            'signature_valid'   => true,
+            'gateway_reference' => 'consent:user:' . $request->user()->id,
+            'payload'           => [
+                'user_id'     => $request->user()->id,
+                'product'     => $data['product'],
+                'version'     => $data['version'],
+                'granted'     => $data['granted'],
+                'granted_at'  => now()->toIso8601String(),
+                'legal_basis' => 'RGPD Art. 9.2.a (consentement explicite) + LCB-FT UEMOA Art. 18',
+            ],
+            'created_at'        => now(),
+        ]);
+
+        return response()->json([
+            'id'         => $log->id,
+            'recorded_at' => $log->created_at?->toIso8601String(),
+            'message'    => $data['granted']
+                ? 'Consentement biométrique enregistré.'
+                : 'Refus de consentement enregistré.',
+        ], 201);
     }
 
     // ═════════════════════════════════════════════════════════════════════

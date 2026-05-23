@@ -95,16 +95,9 @@
         </div>
 
         <!-- Edit / create modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold">
-                        {{ form.id ? 'Modifier le partenaire' : 'Nouveau partenaire' }}
-                    </h3>
-                    <button @click="showModal = false" class="text-slate-400 dark:text-slate-500 text-xl">&times;</button>
-                </div>
-
-                <form @submit.prevent="save" class="space-y-4">
+        <Modal v-model="showModal" size="xl"
+            :title="form.id ? 'Modifier le partenaire' : 'Nouveau partenaire'">
+            <form id="partner-form" @submit.prevent="save" class="space-y-4">
                     <div>
                         <label for="p-name" class="block text-xs font-medium mb-1">Nom *</label>
                         <input id="p-name" name="name" v-model="form.name" required type="text" maxlength="150"
@@ -172,21 +165,20 @@
                         Actif (visible sur le site)
                     </label>
 
-                    <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+                <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+            </form>
 
-                    <div class="flex gap-3 pt-2">
-                        <button type="submit" :disabled="saving"
-                            class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
-                            {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
-                        </button>
-                        <button type="button" @click="showModal = false"
-                            class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="partner-form" :disabled="saving"
+                    class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
+                </button>
+            </template>
+        </Modal>
 
         <Teleport to="body">
             <div v-if="toast"
@@ -200,6 +192,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import Modal from '../../components/Modal.vue';
 
 const TYPES = [
     { value: 'institutional', label: 'Institutionnel' },

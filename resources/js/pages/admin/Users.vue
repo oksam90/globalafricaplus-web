@@ -116,14 +116,12 @@
         </div>
 
         <!-- User edit modal -->
-        <div v-if="editUser" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="editUser = null">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold">Gérer : {{ editUser.name }}</h3>
-                    <button @click="editUser = null" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-xl">&times;</button>
-                </div>
-
-                <div class="space-y-4">
+        <Modal
+            :model-value="editUser !== null"
+            @update:model-value="(v) => { if (!v) editUser = null; }"
+            size="lg"
+            :title="editUser ? `Gérer : ${editUser.name}` : ''">
+            <div v-if="editUser" class="space-y-4">
                     <!-- Basic info -->
                     <div>
                         <label class="block text-sm font-medium mb-1">Nom</label>
@@ -257,22 +255,21 @@
                         </button>
                     </div>
 
-                    <p v-if="editError" class="text-sm text-rose-600 dark:text-rose-400">{{ editError }}</p>
-                    <p v-if="editSuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ editSuccess }}</p>
-
-                    <div class="flex gap-3">
-                        <button @click="saveUser" :disabled="editSaving"
-                            class="px-5 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold text-sm disabled:opacity-50">
-                            {{ editSaving ? 'Enregistrement…' : 'Enregistrer' }}
-                        </button>
-                        <button @click="editUser = null"
-                            class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
+                <p v-if="editError" class="text-sm text-rose-600 dark:text-rose-400">{{ editError }}</p>
+                <p v-if="editSuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ editSuccess }}</p>
             </div>
-        </div>
+
+            <template #footer="{ close }">
+                <button @click="close"
+                    class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
+                    Fermer
+                </button>
+                <button @click="saveUser" :disabled="editSaving"
+                    class="px-5 py-2 rounded-md bg-red-600 hover:bg-red-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ editSaving ? 'Enregistrement…' : 'Enregistrer' }}
+                </button>
+            </template>
+        </Modal>
 
         <!-- Toast -->
         <Teleport to="body">
@@ -287,6 +284,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import Modal from '../../components/Modal.vue';
 
 const users = ref([]);
 const meta = ref({});

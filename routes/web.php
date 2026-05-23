@@ -76,15 +76,16 @@ Route::prefix('api')->group(function () {
         ->middleware('throttle:contact-form');
 
     // Smile Identity webhook (Sprint 2 — signature verified by middleware)
+    // Defence-in-depth: IP-bucketed throttle alongside the HMAC signature.
     Route::post('/v1/webhooks/smile-identity', [SmileWebhookController::class, 'handle'])
-        ->middleware('smile.webhook');
+        ->middleware(['throttle:webhooks', 'smile.webhook']);
 
     // PayDunya IPN webhook (public — signature verified by middleware)
     Route::post('/v1/webhooks/paydunya', [WebhookController::class, 'paydunya'])
-        ->middleware('paydunya.webhook');
+        ->middleware(['throttle:webhooks', 'paydunya.webhook']);
     // Alias without the /v1 prefix to match legacy docs
     Route::post('/webhooks/paydunya', [WebhookController::class, 'paydunya'])
-        ->middleware('paydunya.webhook');
+        ->middleware(['throttle:webhooks', 'paydunya.webhook']);
 
     // Advertising, Partners & Testimonials (public)
     Route::get('/advertising/banners', [AdvertisingController::class, 'banners']);
@@ -151,16 +152,26 @@ Route::prefix('api')->group(function () {
         Route::post('/trainings/verify', [TrainingController::class, 'verify']);
         Route::post('/trainings/purchases/{purchase}/refund', [TrainingController::class, 'refund']);
 
-        // ─── Read-only finance endpoints (auth only) ────────────────────
-        // Listing & verifying don't move money — KYC gating would only block
-        // legitimate users from auditing their own state. The verify endpoint
-        // is post-callback and idempotent.
-        Route::get('/installments/mine',                         [InstallmentController::class, 'mine']);
-        Route::get('/investments/mine',                          [InvestmentController::class, 'mine']);
-        Route::get('/investments/{investment}',                  [InvestmentController::class, 'show']);
+        // ─── Read-only finance endpoints — KYC verified required ────────
+        // Audit fix 2026-05 — defence in depth. Controllers already scope
+        // each read by user_id, but we add `kyc.smile:verified` at the
+        // middleware layer too so a user with downgraded / expired KYC
+        // cannot enumerate their financial history while non-compliant.
+        Route::middleware('kyc.smile:verified')->group(function () {
+            Route::get('/installments/mine',                         [InstallmentController::class, 'mine']);
+            Route::get('/investments/mine',                          [InvestmentController::class, 'mine']);
+            Route::get('/investments/{investment}',                  [InvestmentController::class, 'show']);
+            Route::get('/escrow/milestones/mine',                    [EscrowController::class, 'mine']);
+            Route::get('/escrow/projects/{project}/milestones',      [EscrowController::class, 'projectMilestones']);
+        });
+
+        // Post-PayDunya redirect — INTENTIONALLY auth-only (no KYC gate).
+        // The user may have completed payment while KYC was still valid and
+        // returned (slow USSD/ATM auth) after KYC expiration. Gating this
+        // call with `kyc.smile:verified` would freeze a debited payment in
+        // limbo. The controller scopes the lookup by user_id and the call
+        // is idempotent — safe to leave open to any authenticated user.
         Route::post('/investments/verify',                       [InvestmentController::class, 'verify']);
-        Route::get('/escrow/milestones/mine',                    [EscrowController::class, 'mine']);
-        Route::get('/escrow/projects/{project}/milestones',      [EscrowController::class, 'projectMilestones']);
 
         // ─── Investor actions — Pro/Entreprise + KYC + AML (Optimisation points 2 & 3) ─
         // Investing is gated to Pro / Entreprise tiers per the commercial
@@ -210,8 +221,14 @@ Route::prefix('api')->group(function () {
                 Route::post('/basic',     [SmileKYCController::class, 'basic'])->name('basic');
                 Route::post('/biometric', [SmileKYCController::class, 'biometric'])->name('biometric');
                 Route::post('/document',  [SmileKYCController::class, 'document'])->name('document');
-                Route::post('/aml',       [SmileKYCController::class, 'aml'])->name('aml');
                 Route::post('/web-token', [SmileKYCController::class, 'webToken'])->name('web-token');
+                // RGPD biometric consent audit log — RGPD Art. 9.2.a
+                Route::post('/consent',   [SmileKYCController::class, 'consent'])->name('consent');
+            });
+            // AML — tighter bucket: paid AML API + PEP/sanctions scan.
+            // Normal use is one screening per investor profile.
+            Route::middleware('throttle:kyc-aml')->group(function () {
+                Route::post('/aml',       [SmileKYCController::class, 'aml'])->name('aml');
             });
         });
 
@@ -345,7 +362,11 @@ Route::prefix('api')->group(function () {
                 Route::post('/testimonials',                 [AdvertisingController::class, 'adminStoreTestimonial']);
                 Route::patch('/testimonials/{id}',           [AdvertisingController::class, 'adminUpdateTestimonial']);
                 Route::delete('/testimonials/{id}',          [AdvertisingController::class, 'adminDestroyTestimonial']);
-                // Generic admin image uploader (reused by Partners, Trainings, etc.).
+            });
+
+            // Generic admin image uploader — dedicated tighter bucket
+            // (20/h) to bound disk consumption even if a script loops.
+            Route::middleware('throttle:admin-upload')->group(function () {
                 Route::post('/uploads/image',                [AdminController::class, 'uploadImage']);
             });
         });

@@ -188,21 +188,15 @@
         </section>
 
         <!-- Enterprise contact modal -->
-        <Teleport to="body">
-            <div v-if="contactOpen"
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
-                @click.self="closeContactModal">
-                <div class="w-full max-w-lg my-8 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
-                    <div class="flex items-start justify-between mb-1">
-                        <h3 class="text-xl font-black text-slate-900 dark:text-slate-100">Nous contacter</h3>
-                        <button type="button" @click="closeContactModal"
-                            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
-                    </div>
-                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-5">
-                        Pack <strong>Enterprise</strong> — un membre de l'équipe vous recontacte sous 24h avec un devis personnalisé.
-                    </p>
+        <Modal
+            :model-value="contactOpen"
+            @update:model-value="(v) => { if (!v) closeContactModal(); }"
+            size="lg" title="Nous contacter">
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-5">
+                Pack <strong>Enterprise</strong> — un membre de l'équipe vous recontacte sous 24h avec un devis personnalisé.
+            </p>
 
-                    <form @submit.prevent="submitContact" class="space-y-3">
+            <form id="enterprise-contact-form" @submit.prevent="submitContact" class="space-y-3">
                         <div>
                             <label for="contact-name" class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Nom</label>
                             <input id="contact-name" v-model="contactForm.name" type="text" required minlength="2" maxlength="100"
@@ -239,25 +233,23 @@
                             </div>
                         </div>
 
-                        <div v-if="contactError"
-                            class="rounded-md bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/60 p-3 text-sm text-rose-800 dark:text-rose-200">
-                            {{ contactError }}
-                        </div>
-
-                        <div class="flex gap-2 pt-1">
-                            <button type="button" @click="closeContactModal"
-                                class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-                                Annuler
-                            </button>
-                            <button type="submit" :disabled="contactSubmitting"
-                                class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm">
-                                {{ contactSubmitting ? 'Envoi…' : 'Envoyer le message' }}
-                            </button>
-                        </div>
-                    </form>
+                <div v-if="contactError"
+                    class="rounded-md bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/60 p-3 text-sm text-rose-800 dark:text-rose-200">
+                    {{ contactError }}
                 </div>
-            </div>
-        </Teleport>
+            </form>
+
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    Annuler
+                </button>
+                <button type="submit" form="enterprise-contact-form" :disabled="contactSubmitting"
+                    class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold text-sm">
+                    {{ contactSubmitting ? 'Envoi…' : 'Envoyer le message' }}
+                </button>
+            </template>
+        </Modal>
 
         <!-- Success/Error toast -->
         <Teleport to="body">
@@ -274,6 +266,7 @@ import { reactive, ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import ExchangeRateBadge from '../components/ExchangeRateBadge.vue';
+import Modal from '../components/Modal.vue';
 
 const auth = useAuthStore();
 const router = useRouter();

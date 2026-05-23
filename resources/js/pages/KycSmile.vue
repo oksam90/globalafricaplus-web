@@ -235,7 +235,7 @@
                      simply preferred by the user. Bypasses the Hosted Web SDK
                      entirely and uploads selfie + document straight to /upload. -->
                 <div class="mt-6">
-                    <button v-if="!showRestFallback" @click="showRestFallback = true" type="button"
+                    <button v-if="!showRestFallback" @click="openRestFallback" type="button"
                         class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
                         ⚙ Le widget ne s'ouvre pas ? Utiliser le mode REST direct →
                     </button>
@@ -361,6 +361,79 @@
                 </div>
             </section>
         </div>
+
+        <!-- RGPD biometric consent modal — RGPD Art. 9.2.a -->
+        <Modal v-model="consentOpen" size="xl"
+            title="Consentement à la collecte de données biométriques"
+            :close-on-escape="false" :close-on-backdrop="false">
+            <div class="space-y-4 text-sm text-slate-700 dark:text-slate-200">
+                <div class="rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/60 p-3 text-xs">
+                    <strong>⚠ Données sensibles (RGPD Art. 9)</strong> — La vérification d'identité collecte
+                    des données biométriques (photo de visage, géométrie faciale, photo du document d'identité)
+                    considérées comme une catégorie particulière de données personnelles. Votre consentement
+                    explicite est requis.
+                </div>
+
+                <section>
+                    <h4 class="font-bold mb-1">Ce qui sera collecté</h4>
+                    <ul class="list-disc pl-5 space-y-0.5 text-xs">
+                        <li v-if="pendingConsent.product === 'biometric_kyc'">Selfie (photo en temps réel + liveness check)</li>
+                        <li v-if="pendingConsent.product === 'biometric_kyc'">Géométrie faciale comparée à la photo de l'autorité gouvernementale</li>
+                        <li v-if="pendingConsent.product === 'doc_verification'">Photo recto/verso de votre document d'identité</li>
+                        <li v-if="pendingConsent.product === 'doc_verification'">Selfie pour comparaison avec la photo du document</li>
+                        <li>Métadonnées techniques (IP, horodatage, type d'appareil)</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="font-bold mb-1">Sous-traitant et transferts</h4>
+                    <p class="text-xs">
+                        Le traitement est effectué par <strong>Smile Identity Inc.</strong> (sous-traitant RGPD),
+                        avec hébergement en Europe (eu-west-1) et conformité ISO 27001. Aucun transfert hors UE.
+                    </p>
+                </section>
+
+                <section>
+                    <h4 class="font-bold mb-1">Finalité et base légale</h4>
+                    <ul class="list-disc pl-5 space-y-0.5 text-xs">
+                        <li><strong>Finalité</strong> : vérification d'identité (KYC) pour permettre l'accès aux fonctionnalités financières.</li>
+                        <li><strong>Base légale</strong> : votre consentement explicite (RGPD Art. 9.2.a) cumulé à l'obligation légale LCB-FT (Directive UEMOA N° 02/2015/CM/UEMOA Art. 18).</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h4 class="font-bold mb-1">Conservation et droits</h4>
+                    <ul class="list-disc pl-5 space-y-0.5 text-xs">
+                        <li>Durée de conservation : <strong>24 mois</strong> à compter de la vérification, puis suppression automatique.</li>
+                        <li>Vous disposez d'un droit d'accès, de rectification et d'effacement (article 15-17 RGPD).</li>
+                        <li>Pour toute demande, contactez : <a href="mailto:dpo@globalafricaplus.com" class="text-emerald-600 dark:text-emerald-400 underline">dpo@globalafricaplus.com</a>.</li>
+                        <li>Vous pouvez retirer votre consentement à tout moment — cela bloquera les fonctionnalités KYC-gated mais ne s'applique pas aux traitements déjà réalisés.</li>
+                    </ul>
+                </section>
+
+                <label class="flex items-start gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <input v-model="consentChecked" type="checkbox" class="mt-0.5 accent-emerald-600" />
+                    <span class="text-xs">
+                        Je reconnais avoir lu cette information et donne mon <strong>consentement explicite</strong>
+                        à la collecte et au traitement de mes données biométriques par Smile Identity pour la
+                        finalité décrite ci-dessus.
+                    </span>
+                </label>
+
+                <p v-if="consentError" class="text-sm text-rose-600 dark:text-rose-400">{{ consentError }}</p>
+            </div>
+
+            <template #footer="{ close }">
+                <button type="button" @click="refuseConsent(close)" :disabled="consentSaving"
+                    class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold disabled:opacity-50">
+                    Refuser
+                </button>
+                <button type="button" @click="acceptConsent" :disabled="!consentChecked || consentSaving"
+                    class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    {{ consentSaving ? 'Enregistrement…' : 'J\'accepte — lancer la vérification' }}
+                </button>
+            </template>
+        </Modal>
     </div>
 </template>
 
@@ -371,6 +444,14 @@ import { useKycApi } from '../composables/useKycApi';
 import { useSmileWebSdk } from '../composables/useSmileWebSdk';
 import { describeResultCode, describeRiskLevel, tierRank } from '../utils/smileResultCodes';
 import DocVerificationCapture from '../components/DocVerificationCapture.vue';
+import Modal from '../components/Modal.vue';
+import { useToast } from '../composables/useToast';
+
+const toast = useToast();
+
+// RGPD Art. 9.2.a — current version of the consent text. Bump this any time
+// the modal copy is updated so users are re-prompted with the new wording.
+const CONSENT_VERSION = 'v1';
 
 const auth = useAuthStore();
 const kyc = useKycApi();
@@ -533,8 +614,94 @@ async function onSubmitBasic() {
     }
 }
 
-async function launchSdk(product) {
+// ─── RGPD biometric consent modal state ──────────────────────────────
+const consentOpen = ref(false);
+const consentChecked = ref(false);
+const consentSaving = ref(false);
+const consentError = ref('');
+const consentGrantedThisSession = ref(false);
+const pendingConsent = reactive({ product: 'biometric_kyc', viaRest: false });
+
+/**
+ * Entry point — called from the "Lancer le widget" buttons.
+ * Routes through the consent modal first if the user hasn't accepted
+ * yet this session (RGPD Art. 9 — explicit consent before biometric capture).
+ */
+function launchSdk(product) {
     sdkError.value = '';
+    pendingConsent.product = product;
+    pendingConsent.viaRest = false;
+    if (consentGrantedThisSession.value) {
+        // Already accepted in this session — go straight through.
+        return launchSdkAfterConsent(product);
+    }
+    consentChecked.value = false;
+    consentError.value = '';
+    consentOpen.value = true;
+}
+
+/**
+ * REST fallback path also collects biometric data (selfie + ID photo via
+ * /v1/kyc/document or /upload). Gate it through the same consent modal.
+ */
+function openRestFallback() {
+    pendingConsent.product = 'doc_verification';
+    pendingConsent.viaRest = true;
+    if (consentGrantedThisSession.value) {
+        showRestFallback.value = true;
+        return;
+    }
+    consentChecked.value = false;
+    consentError.value = '';
+    consentOpen.value = true;
+}
+
+async function acceptConsent() {
+    if (!consentChecked.value) return;
+    consentSaving.value = true;
+    consentError.value = '';
+    try {
+        await kyc.submitConsent({
+            product: pendingConsent.product,
+            version: CONSENT_VERSION,
+            granted: true,
+        });
+        consentGrantedThisSession.value = true;
+        consentOpen.value = false;
+        // Route post-consent action based on how the modal was opened.
+        if (pendingConsent.viaRest) {
+            showRestFallback.value = true;
+        } else {
+            await launchSdkAfterConsent(pendingConsent.product);
+        }
+    } catch (e) {
+        consentError.value = e?.response?.data?.message
+            || 'Impossible d\'enregistrer le consentement. Réessayez.';
+    } finally {
+        consentSaving.value = false;
+    }
+}
+
+async function refuseConsent(closeFn) {
+    consentError.value = '';
+    consentSaving.value = true;
+    try {
+        // Audit-log the refusal too — proof we never launched the SDK on this user.
+        await kyc.submitConsent({
+            product: pendingConsent.product,
+            version: CONSENT_VERSION,
+            granted: false,
+        });
+    } catch {
+        // Non-fatal — even if the audit POST fails, we still refuse to launch.
+    } finally {
+        consentSaving.value = false;
+        closeFn();
+        toast.warn('Sans consentement, la vérification biométrique ne peut pas démarrer. Vous pourrez réessayer plus tard.');
+    }
+}
+
+async function launchSdkAfterConsent(product) {
     sdkLaunching.value = true;
     try {
         const tokenResp = await kyc.fetchWebToken(product);

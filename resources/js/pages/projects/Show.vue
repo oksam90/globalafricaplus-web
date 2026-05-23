@@ -190,21 +190,13 @@
     <div v-else class="max-w-5xl mx-auto p-12 text-slate-500">Projet introuvable.</div>
 
     <!-- Investment modal -->
-    <Teleport to="body">
-        <div v-if="showInvestModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-            @click.self="showInvestModal = false">
-            <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Investir dans ce projet</h3>
-                    <button @click="showInvestModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
-                </div>
+    <Modal v-model="showInvestModal" size="md" title="Investir dans ce projet">
+        <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+            Vous investissez dans <strong>{{ project?.title }}</strong>. Les fonds sont sécurisés en
+            <em>escrow</em> et libérés au fur et à mesure de l'atteinte des jalons du projet.
+        </p>
 
-                <p class="text-sm text-slate-600 dark:text-slate-300 mb-4">
-                    Vous investissez dans <strong>{{ project?.title }}</strong>. Les fonds sont sécurisés en
-                    <em>escrow</em> et libérés au fur et à mesure de l'atteinte des jalons du projet.
-                </p>
-
-                <form @submit.prevent="submitInvestment" class="space-y-4">
+        <form id="invest-form" @submit.prevent="submitInvestment" class="space-y-4">
                     <div>
                         <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Montant ({{ projectCurrency }})</label>
                         <input v-model.number="investForm.amount" type="number" min="1" step="1" required
@@ -285,20 +277,19 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-2 pt-2">
-                        <button type="button" @click="showInvestModal = false"
-                            class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">
-                            Annuler
-                        </button>
-                        <button type="submit" :disabled="investing || isInvestBlocked"
-                            class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold">
-                            {{ investing ? 'En cours…' : 'Payer' }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </Teleport>
+        </form>
+
+        <template #footer="{ close }">
+            <button type="button" @click="close"
+                class="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">
+                Annuler
+            </button>
+            <button type="submit" form="invest-form" :disabled="investing || isInvestBlocked"
+                class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold">
+                {{ investing ? 'En cours…' : 'Payer' }}
+            </button>
+        </template>
+    </Modal>
 </template>
 
 <script setup>
@@ -307,6 +298,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import ProjectCard from '../../components/ProjectCard.vue';
 import EscrowMilestones from '../../components/EscrowMilestones.vue';
+import Modal from '../../components/Modal.vue';
 
 // Declare `slug` because the route is registered with `props: true`. Without
 // this, Vue logs an "Extraneous non-props attributes (slug)" warning because

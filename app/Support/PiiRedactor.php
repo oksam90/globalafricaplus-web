@@ -83,6 +83,45 @@ final class PiiRedactor
         return $copy;
     }
 
+    /**
+     * Generic defensive scrub for mobile-money disbursement raw responses
+     * (PayDunya DirectPay today; Wave/Orange Money/etc. tomorrow). Drops any
+     * key that *looks* like PII so a future gateway adapter that smuggles
+     * customer data through DisburseResult::$raw can't leak it into
+     * payment_logs.
+     *
+     * Keys preserved: response_code, response_text, description, transaction_id
+     * Keys dropped or masked: anything containing phone/msisdn/email/name/address
+     */
+    public static function redactDisburseRaw(?array $raw): array
+    {
+        if (!$raw) return [];
+
+        $clean = [];
+        foreach ($raw as $key => $value) {
+            $lower = strtolower((string) $key);
+
+            // Hard drop — these always carry PII or are out-of-band noise.
+            if (str_contains($lower, 'email')
+                || str_contains($lower, 'phone')
+                || str_contains($lower, 'msisdn')
+                || str_contains($lower, 'address')
+                || str_contains($lower, 'customer')
+            ) {
+                continue;
+            }
+
+            // Soft mask — name-ish fields kept as initials for forensics.
+            if (str_contains($lower, 'name')) {
+                $clean[$key] = is_string($value) ? self::initials($value) : null;
+                continue;
+            }
+
+            $clean[$key] = is_array($value) ? self::redactDisburseRaw($value) : $value;
+        }
+        return $clean;
+    }
+
     // ────────────────────────────────────────────────────────────────────
     //  Smile Identity callbacks (ProcessSmileCallback)
     // ────────────────────────────────────────────────────────────────────

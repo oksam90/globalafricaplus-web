@@ -109,13 +109,12 @@
         </div>
 
         <!-- Create/Edit modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showCreateModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold">{{ editingId ? 'Modifier l\'appel' : 'Nouvel appel à projets' }}</h3>
-                    <button @click="closeModal" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-xl">&times;</button>
-                </div>
-                <form @submit.prevent="saveCall" class="space-y-4">
+        <Modal
+            :model-value="showCreateModal"
+            @update:model-value="(v) => { if (!v) closeModal(); }"
+            size="2xl"
+            :title="editingId ? 'Modifier l\'appel' : 'Nouvel appel à projets'">
+            <form id="mes-appels-form" @submit.prevent="saveCall" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Titre *</label>
                         <input v-model="form.title" type="text" required maxlength="200"
@@ -181,26 +180,29 @@
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm"></textarea>
                     </div>
 
-                    <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+                <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+            </form>
 
-                    <div class="flex gap-3">
-                        <button type="submit" :disabled="formSaving"
-                            class="px-5 py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm disabled:opacity-50">
-                            {{ formSaving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer (brouillon)') }}
-                        </button>
-                        <button type="button" @click="closeModal"
-                            class="px-5 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="mes-appels-form" :disabled="formSaving"
+                    class="px-5 py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ formSaving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer (brouillon)') }}
+                </button>
+            </template>
+        </Modal>
     </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useToast } from '../../composables/useToast';
+import Modal from '../../components/Modal.vue';
+
+const toast = useToast();
 
 const allCalls = ref([]);
 const loading = ref(true);
@@ -325,22 +327,22 @@ async function saveCall() {
 async function publishCall(id) {
     if (!confirm('Publier cet appel ? Il sera visible par tous.')) return;
     try { await window.axios.post(`/api/gouvernement/appels/${id}/publish`); await load(); }
-    catch (e) { alert(e?.response?.data?.message || 'Erreur.'); }
+    catch (e) { toast.error(e?.response?.data?.message || 'Erreur.'); }
 }
 async function closeCall(id) {
     if (!confirm('Clôturer cet appel ?')) return;
     try { await window.axios.post(`/api/gouvernement/appels/${id}/close`); await load(); }
-    catch (e) { alert(e?.response?.data?.message || 'Erreur.'); }
+    catch (e) { toast.error(e?.response?.data?.message || 'Erreur.'); }
 }
 async function awardCall(id) {
     if (!confirm('Marquer cet appel comme attribué ?')) return;
     try { await window.axios.post(`/api/gouvernement/appels/${id}/award`); await load(); }
-    catch (e) { alert(e?.response?.data?.message || 'Erreur.'); }
+    catch (e) { toast.error(e?.response?.data?.message || 'Erreur.'); }
 }
 async function deleteCall(id) {
     if (!confirm('Supprimer ce brouillon ?')) return;
     try { await window.axios.delete(`/api/gouvernement/appels/${id}`); await load(); }
-    catch (e) { alert(e?.response?.data?.message || 'Erreur.'); }
+    catch (e) { toast.error(e?.response?.data?.message || 'Erreur.'); }
 }
 
 onMounted(load);

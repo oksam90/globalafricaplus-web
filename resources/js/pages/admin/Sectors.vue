@@ -93,64 +93,56 @@
         </div>
 
         <!-- Edit / create modal -->
-        <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="showModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6">
-                <div class="flex items-center justify-between mb-5">
-                    <h3 class="text-lg font-bold">
-                        {{ form.id ? 'Modifier le secteur' : 'Nouveau secteur' }}
-                    </h3>
-                    <button @click="showModal = false" class="text-slate-400 dark:text-slate-500 text-xl">&times;</button>
+        <Modal v-model="showModal" size="md"
+            :title="form.id ? 'Modifier le secteur' : 'Nouveau secteur'">
+            <form id="sector-form" @submit.prevent="save" class="space-y-4">
+                <div>
+                    <label for="sector-name" class="block text-sm font-medium mb-1">Nom *</label>
+                    <input id="sector-name" name="name" v-model="form.name" required type="text" maxlength="100"
+                        class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" />
                 </div>
-
-                <form @submit.prevent="save" class="space-y-4">
+                <div>
+                    <label for="sector-slug" class="block text-sm font-medium mb-1">Slug
+                        <span class="text-xs text-slate-400">(laissé vide = généré depuis le nom)</span>
+                    </label>
+                    <input id="sector-slug" name="slug" v-model="form.slug" type="text" maxlength="120"
+                        pattern="[a-zA-Z0-9_-]+"
+                        placeholder="ex. agro-tech"
+                        class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-mono" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label for="sector-name" class="block text-sm font-medium mb-1">Nom *</label>
-                        <input id="sector-name" name="name" v-model="form.name" required type="text" maxlength="100"
+                        <label for="sector-icon" class="block text-sm font-medium mb-1">Icône / emoji</label>
+                        <input id="sector-icon" name="icon" v-model="form.icon" type="text" maxlength="50"
+                            placeholder="🌾"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" />
                     </div>
                     <div>
-                        <label for="sector-slug" class="block text-sm font-medium mb-1">Slug
-                            <span class="text-xs text-slate-400">(laissé vide = généré depuis le nom)</span>
-                        </label>
-                        <input id="sector-slug" name="slug" v-model="form.slug" type="text" maxlength="120"
-                            pattern="[a-zA-Z0-9_-]+"
-                            placeholder="ex. agro-tech"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-mono" />
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label for="sector-icon" class="block text-sm font-medium mb-1">Icône / emoji</label>
-                            <input id="sector-icon" name="icon" v-model="form.icon" type="text" maxlength="50"
-                                placeholder="🌾"
-                                class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" />
-                        </div>
-                        <div>
-                            <label for="sector-color" class="block text-sm font-medium mb-1">Couleur</label>
-                            <div class="flex items-center gap-2">
-                                <input id="sector-color" name="color" v-model="form.color" type="color"
-                                    class="h-9 w-12 rounded border border-slate-200 dark:border-slate-700 bg-transparent" />
-                                <input v-model="form.color" type="text" maxlength="20" placeholder="#10b981"
-                                    aria-label="Code couleur hex"
-                                    class="flex-1 px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-mono" />
-                            </div>
+                        <label for="sector-color" class="block text-sm font-medium mb-1">Couleur</label>
+                        <div class="flex items-center gap-2">
+                            <input id="sector-color" name="color" v-model="form.color" type="color"
+                                class="h-9 w-12 rounded border border-slate-200 dark:border-slate-700 bg-transparent" />
+                            <input v-model="form.color" type="text" maxlength="20" placeholder="#10b981"
+                                aria-label="Code couleur hex"
+                                class="flex-1 px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-mono" />
                         </div>
                     </div>
+                </div>
 
-                    <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+                <p v-if="formError" class="text-sm text-rose-600 dark:text-rose-400">{{ formError }}</p>
+            </form>
 
-                    <div class="flex gap-3 pt-2">
-                        <button type="submit" :disabled="saving"
-                            class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
-                            {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
-                        </button>
-                        <button type="button" @click="showModal = false"
-                            class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2 rounded-md border border-slate-200 dark:border-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="sector-form" :disabled="saving"
+                    class="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm disabled:opacity-50">
+                    {{ saving ? 'Enregistrement…' : (form.id ? 'Mettre à jour' : 'Créer') }}
+                </button>
+            </template>
+        </Modal>
 
         <!-- Toast -->
         <Teleport to="body">
@@ -165,6 +157,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
+import Modal from '../../components/Modal.vue';
 
 const items = ref([]);
 const meta = ref({});

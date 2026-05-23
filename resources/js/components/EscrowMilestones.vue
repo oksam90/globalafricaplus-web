@@ -118,79 +118,75 @@
         </article>
 
         <!-- Submit-evidence modal -->
-        <Teleport to="body">
-            <div v-if="submitting" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-                @click.self="submitting = null">
-                <div class="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">
-                        Soumettre les preuves — {{ submitting.title }}
-                    </h3>
-                    <form @submit.prevent="doSubmit" class="space-y-3">
-                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Description / explication</label>
-                        <textarea v-model="evidenceForm.notes" rows="4" required maxlength="5000"
-                            placeholder="Décrivez ce qui a été livré pour ce jalon…"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:border-emerald-400 focus:outline-none"></textarea>
+        <Modal
+            :model-value="submitting !== null"
+            @update:model-value="(v) => { if (!v) submitting = null; }"
+            size="lg"
+            :title="submitting ? `Soumettre les preuves — ${submitting.title}` : ''">
+            <form id="escrow-submit-form" @submit.prevent="doSubmit" class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">Description / explication</label>
+                <textarea v-model="evidenceForm.notes" rows="4" required maxlength="5000"
+                    placeholder="Décrivez ce qui a été livré pour ce jalon…"
+                    class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:border-emerald-400 focus:outline-none"></textarea>
 
-                        <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Liens vers les preuves (rapports, photos, vidéos)</label>
-                        <div v-for="(_, i) in evidenceForm.urls" :key="i" class="flex gap-2">
-                            <input v-model="evidenceForm.urls[i]" type="url" placeholder="https://..."
-                                class="flex-1 px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm" />
-                            <button type="button" @click="evidenceForm.urls.splice(i, 1)"
-                                class="px-2 text-rose-600 dark:text-rose-400">✕</button>
-                        </div>
-                        <button type="button" @click="evidenceForm.urls.push('')"
-                            class="text-sm text-emerald-700 dark:text-emerald-400 hover:underline">+ Ajouter un lien</button>
-
-                        <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
-
-                        <div class="flex gap-2 pt-2">
-                            <button type="button" @click="submitting = null"
-                                class="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold">
-                                Annuler
-                            </button>
-                            <button type="submit" :disabled="acting === submitting?.id"
-                                class="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold">
-                                {{ acting === submitting?.id ? 'Envoi…' : 'Soumettre' }}
-                            </button>
-                        </div>
-                    </form>
+                <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200 mt-2">Liens vers les preuves (rapports, photos, vidéos)</label>
+                <div v-for="(_, i) in evidenceForm.urls" :key="i" class="flex gap-2">
+                    <input v-model="evidenceForm.urls[i]" type="url" placeholder="https://..."
+                        class="flex-1 px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm" />
+                    <button type="button" @click="evidenceForm.urls.splice(i, 1)"
+                        class="px-2 text-rose-600 dark:text-rose-400">✕</button>
                 </div>
-            </div>
+                <button type="button" @click="evidenceForm.urls.push('')"
+                    class="text-sm text-emerald-700 dark:text-emerald-400 hover:underline">+ Ajouter un lien</button>
 
-            <!-- Reject modal -->
-            <div v-if="rejecting" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
-                @click.self="rejecting = null">
-                <div class="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Refuser le jalon</h3>
-                    <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
-                        Le jalon retournera à l'entrepreneur avec votre justification.
-                    </p>
-                    <form @submit.prevent="doReject" class="space-y-3">
-                        <textarea v-model="rejectReason" rows="4" required maxlength="2000"
-                            placeholder="Pourquoi refusez-vous ce jalon ?"
-                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:border-rose-400 focus:outline-none"></textarea>
+                <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
+            </form>
 
-                        <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="escrow-submit-form" :disabled="acting === submitting?.id"
+                    class="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-semibold">
+                    {{ acting === submitting?.id ? 'Envoi…' : 'Soumettre' }}
+                </button>
+            </template>
+        </Modal>
 
-                        <div class="flex gap-2 pt-2">
-                            <button type="button" @click="rejecting = null"
-                                class="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold">
-                                Annuler
-                            </button>
-                            <button type="submit" :disabled="acting === rejecting?.id"
-                                class="flex-1 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-semibold">
-                                {{ acting === rejecting?.id ? 'Envoi…' : 'Refuser' }}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </Teleport>
+        <!-- Reject modal -->
+        <Modal
+            :model-value="rejecting !== null"
+            @update:model-value="(v) => { if (!v) rejecting = null; }"
+            size="md" title="Refuser le jalon">
+            <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                Le jalon retournera à l'entrepreneur avec votre justification.
+            </p>
+            <form id="escrow-reject-form" @submit.prevent="doReject" class="space-y-3">
+                <textarea v-model="rejectReason" rows="4" required maxlength="2000"
+                    placeholder="Pourquoi refusez-vous ce jalon ?"
+                    class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:border-rose-400 focus:outline-none"></textarea>
+
+                <p v-if="actionError" class="text-sm text-rose-600 dark:text-rose-400">{{ actionError.message }}</p>
+            </form>
+
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="escrow-reject-form" :disabled="acting === rejecting?.id"
+                    class="flex-1 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-semibold">
+                    {{ acting === rejecting?.id ? 'Envoi…' : 'Refuser' }}
+                </button>
+            </template>
+        </Modal>
     </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue';
+import Modal from './Modal.vue';
 
 const props = defineProps({
     projectId: { type: [Number, String], required: true },

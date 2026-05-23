@@ -125,13 +125,8 @@
         </section>
 
         <!-- Apply modal -->
-        <div v-if="showApplyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="showApplyModal = false">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold">Candidater</h3>
-                    <button @click="showApplyModal = false" class="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-xl">&times;</button>
-                </div>
-                <form @submit.prevent="submitApplication" class="space-y-4">
+        <Modal v-model="showApplyModal" size="lg" title="Candidater">
+            <form id="call-apply-form" @submit.prevent="submitApplication" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Projet lié (optionnel)</label>
                         <select v-model="applyForm.project_id" class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
@@ -151,15 +146,21 @@
                             placeholder="Décrivez votre approche, méthodologie, planning…"
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-sky-400 dark:focus:border-sky-500 focus:outline-none text-sm"></textarea>
                     </div>
-                    <p v-if="applyError" class="text-sm text-rose-600 dark:text-rose-400">{{ applyError }}</p>
-                    <p v-if="applySuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ applySuccess }}</p>
-                    <button type="submit" :disabled="applyLoading"
-                        class="w-full py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold disabled:opacity-50">
-                        {{ applyLoading ? 'Envoi…' : 'Envoyer ma candidature' }}
-                    </button>
-                </form>
-            </div>
-        </div>
+                <p v-if="applyError" class="text-sm text-rose-600 dark:text-rose-400">{{ applyError }}</p>
+                <p v-if="applySuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ applySuccess }}</p>
+            </form>
+
+            <template #footer="{ close }">
+                <button type="button" @click="close"
+                    class="px-5 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" form="call-apply-form" :disabled="applyLoading"
+                    class="px-5 py-2.5 rounded-md bg-sky-600 hover:bg-sky-700 text-white font-semibold disabled:opacity-50">
+                    {{ applyLoading ? 'Envoi…' : 'Envoyer ma candidature' }}
+                </button>
+            </template>
+        </Modal>
     </div>
 </template>
 
@@ -167,6 +168,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import Modal from '../../components/Modal.vue';
 
 const route = useRoute();
 const auth = useAuthStore();

@@ -59,33 +59,33 @@
         </template>
 
         <!-- Template detail modal -->
-        <div v-if="selectedTemplate" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" @click.self="selectedTemplate = null">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-8">
-                <div class="flex items-start justify-between mb-6">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold capitalize">
-                                {{ sectorLabels[selectedTemplate.sector] || selectedTemplate.sector }}
-                            </span>
-                            <span class="text-xs text-slate-500 dark:text-slate-400">{{ selectedTemplate.downloads_count }} téléchargements</span>
-                        </div>
-                        <h2 class="text-2xl font-bold">{{ selectedTemplate.title }}</h2>
-                        <p class="text-slate-600 dark:text-slate-300 mt-1">{{ selectedTemplate.description }}</p>
+        <Modal
+            :model-value="selectedTemplate !== null"
+            @update:model-value="(v) => { if (!v) selectedTemplate = null; }"
+            size="3xl">
+            <template #header>
+                <div v-if="selectedTemplate">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold capitalize">
+                            {{ sectorLabels[selectedTemplate.sector] || selectedTemplate.sector }}
+                        </span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ selectedTemplate.downloads_count }} téléchargements</span>
                     </div>
-                    <button @click="selectedTemplate = null" class="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-2xl font-bold">&times;</button>
+                    <h2 class="text-2xl font-bold">{{ selectedTemplate.title }}</h2>
+                    <p class="text-slate-600 dark:text-slate-300 mt-1">{{ selectedTemplate.description }}</p>
                 </div>
+            </template>
 
-                <div class="space-y-6">
-                    <div v-for="(section, i) in selectedTemplate.sections" :key="i"
-                        class="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl p-5">
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-sm">
-                                {{ i + 1 }}
-                            </span>
-                            <h3 class="font-bold">{{ section.title }}</h3>
-                        </div>
-                        <p class="text-sm text-slate-600 dark:text-slate-300 italic">{{ section.prompt }}</p>
+            <div v-if="selectedTemplate" class="space-y-6">
+                <div v-for="(section, i) in selectedTemplate.sections" :key="i"
+                    class="bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700 rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-sm">
+                            {{ i + 1 }}
+                        </span>
+                        <h3 class="font-bold">{{ section.title }}</h3>
                     </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 italic">{{ section.prompt }}</p>
                 </div>
 
                 <div class="mt-6 bg-sky-50 dark:bg-sky-900/30 border border-sky-100 dark:border-sky-900/50 rounded-xl p-4">
@@ -94,18 +94,22 @@
                         pour vous aider à rédiger. Adaptez le contenu à votre projet et à votre marché cible.
                     </p>
                 </div>
+            </div>
 
-                <button @click="selectedTemplate = null" class="mt-4 px-6 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-sm">
+            <template #footer="{ close }">
+                <button @click="close"
+                    class="px-6 py-2.5 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold text-sm">
                     Fermer
                 </button>
-            </div>
-        </div>
+            </template>
+        </Modal>
     </section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import Modal from '../../components/Modal.vue';
 
 const auth = useAuthStore();
 const templates = ref([]);

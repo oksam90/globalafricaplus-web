@@ -120,6 +120,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const route = useRoute();
 const callId = route.params.id;
@@ -194,7 +197,7 @@ async function review(app) {
         // Update in place
         Object.assign(app, data.data, { _status: data.data.status, _score: data.data.score, _notes: data.data.review_notes || '' });
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur.');
+        toast.error(e?.response?.data?.message || 'Erreur.');
     }
 }
 

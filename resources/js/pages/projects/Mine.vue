@@ -73,6 +73,9 @@
 
 <script setup>
 import { onMounted, ref } from 'vue';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const projects = ref([]);
 const loading = ref(true);
@@ -106,7 +109,7 @@ async function publish(p) {
         await window.axios.post(`/api/projects/${p.id}/publish`);
         await load();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Impossible de publier');
+        toast.error(e?.response?.data?.message || 'Impossible de publier');
     }
 }
 async function remove(p) {

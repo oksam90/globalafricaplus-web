@@ -79,6 +79,18 @@ export function useKycApi() {
         return data;
     }
 
+    /**
+     * Record biometric-consent decision in the immutable audit log.
+     * MUST be called before launching the Smile SDK (RGPD Art. 9).
+     * Returns the audit row id on success.
+     */
+    async function submitConsent({ product, version, granted }) {
+        const { data } = await window.axios.post('/api/v1/kyc/consent', {
+            product, version, granted,
+        });
+        return data;
+    }
+
     return {
         status: readonly(status),
         history: readonly(history),
@@ -91,5 +103,6 @@ export function useKycApi() {
         submitDocument,
         submitAML,
         fetchWebToken,
+        submitConsent,
     };
 }

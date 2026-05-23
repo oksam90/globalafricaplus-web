@@ -137,6 +137,9 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const auth = useAuthStore();
 const loading = ref(true);
@@ -183,7 +186,7 @@ async function quickUpdate(stepId, status, notes) {
         await window.axios.post(`/api/formalisation/steps/${stepId}/progress`, { status, notes: notes || null });
         await load();
     } catch (e) {
-        alert(e?.response?.data?.message || 'Erreur.');
+        toast.error(e?.response?.data?.message || 'Erreur.');
     }
 }
 

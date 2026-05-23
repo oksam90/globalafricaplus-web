@@ -16,6 +16,7 @@
             <router-view />
         </main>
         <SiteFooter />
+        <ToastContainer />
     </div>
 </template>
 
@@ -23,6 +24,7 @@
 import SiteHeader from './components/SiteHeader.vue';
 import SiteFooter from './components/SiteFooter.vue';
 import NavigationLoader from './components/NavigationLoader.vue';
+import ToastContainer from './components/ToastContainer.vue';
 import { useThemeStore } from './stores/theme';
 // Init theme store early so dark class is applied before first paint
 useThemeStore();
