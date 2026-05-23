@@ -308,6 +308,14 @@ import { useAuthStore } from '../../stores/auth';
 import ProjectCard from '../../components/ProjectCard.vue';
 import EscrowMilestones from '../../components/EscrowMilestones.vue';
 
+// Declare `slug` because the route is registered with `props: true`. Without
+// this, Vue logs an "Extraneous non-props attributes (slug)" warning because
+// the template has multiple root nodes (article + Teleport) and can't fall
+// back to attribute inheritance.
+defineProps({
+    slug: { type: String, default: null },
+});
+
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -358,10 +366,25 @@ function openInvestModal() {
     investError.value = null;
     showInvestModal.value = true;
 
-    if (auth.isFreePlan) {
+    if (!auth.canInvest) {
         investError.value = {
             kind: 'subscription',
-            message: 'Vous devez avoir un abonnement payant pour investir dans ce projet.',
+            message: 'L\'investissement est réservé aux abonnements Pro et Entreprise. Mettez votre abonnement à niveau pour participer au financement de ce projet.',
+        };
+    } else if (auth.amlStatus === 'blocked') {
+        investError.value = {
+            kind: 'kyc',
+            message: 'Votre compte est bloqué pour conformité AML. Contactez le support avant toute opération.',
+        };
+    } else if (auth.amlStatus === 'flagged') {
+        investError.value = {
+            kind: 'kyc',
+            message: 'Votre dossier AML est en cours de revue. Vous pourrez investir dès la levée du flag.',
+        };
+    } else if (!auth.amlCompleted) {
+        investError.value = {
+            kind: 'kyc',
+            message: 'Votre profil investisseur n\'est pas encore validé : un screening AML est requis. Complétez votre vérification KYC/AML pour investir.',
         };
     } else if (!auth.isKycVerified) {
         investError.value = {
@@ -401,11 +424,15 @@ async function submitInvestment() {
         // subscribed + kyc.smile:verified middlewares with deep-link CTAs.
         const body = e?.response?.data || {};
         if (body.subscription_required) {
-            investError.value = { kind: 'subscription', message: body.message || 'Vous devez avoir un abonnement payant pour investir.' };
+            investError.value = { kind: 'subscription', message: body.message || 'L\'investissement est réservé aux abonnements Pro et Entreprise.' };
         } else if (body.error === 'kyc_insufficient' || body.error === 'kyc_expired') {
             investError.value = { kind: 'kyc', message: body.message || 'Une vérification KYC est requise pour investir.' };
         } else if (body.error === 'aml_blocked') {
             investError.value = { kind: 'kyc', message: body.message || 'Votre compte est bloqué pour conformité AML — contactez le support.' };
+        } else if (body.error === 'aml_flagged') {
+            investError.value = { kind: 'kyc', message: body.message || 'Votre dossier AML est en cours de revue.' };
+        } else if (body.error === 'aml_required') {
+            investError.value = { kind: 'kyc', message: body.message || 'Un screening AML est requis avant d\'investir.' };
         } else {
             investError.value = { message: body.message || 'Erreur lors de l\'initiation du paiement.' };
         }

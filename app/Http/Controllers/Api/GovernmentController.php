@@ -10,6 +10,7 @@ use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class GovernmentController extends Controller
@@ -419,5 +420,315 @@ class GovernmentController extends Controller
         $zone->delete();
 
         return response()->json(['message' => 'Zone supprimée.']);
+    }
+
+    // ═══════════════════════════════════════════════════
+    //  ADMIN — full CRUD on government calls (Optimisation point 7)
+    // ═══════════════════════════════════════════════════
+
+    /**
+     * Admin — paginated list of every call (all statuses, all authors).
+     */
+    public function adminCallsIndex(Request $request): JsonResponse
+    {
+        $query = GovernmentCall::with('author:id,name,email')
+            ->withCount('applications');
+
+        if ($search = trim((string) $request->query('q', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('country', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+
+        $sort = $request->query('sort', 'recent');
+        $query = match ($sort) {
+            'closes'   => $query->orderBy('closes_at'),
+            'budget'   => $query->orderByDesc('budget'),
+            default    => $query->orderByDesc('created_at'),
+        };
+
+        return response()->json($query->paginate(min(50, (int) $request->query('per_page', 20))));
+    }
+
+    /**
+     * Admin — single call for the edit modal.
+     */
+    public function adminCallShow(int $id): JsonResponse
+    {
+        $call = GovernmentCall::with('author:id,name,email')
+            ->withCount('applications')
+            ->findOrFail($id);
+
+        return response()->json(['data' => $call]);
+    }
+
+    /**
+     * Admin — create a call on behalf of the platform.
+     */
+    public function adminStoreCall(Request $request): JsonResponse
+    {
+        $data = $this->validateCall($request);
+
+        if (empty($data['user_id'])) {
+            $data['user_id'] = $request->user()->id;
+        }
+        $data['slug'] = GovernmentCall::generateUniqueSlug($data['title']);
+        $data['currency'] = $data['currency'] ?? 'EUR';
+        $data['status']   = $data['status'] ?? 'draft';
+
+        if (in_array($data['status'], ['open', 'closed', 'awarded'], true)) {
+            $data['published_at'] = $data['published_at'] ?? now();
+        }
+
+        $call = GovernmentCall::create($data);
+
+        Log::info('admin.government_call.created', [
+            'admin_id' => $request->user()->id,
+            'call_id'  => $call->id,
+            'title'    => $call->title,
+        ]);
+
+        return response()->json([
+            'message' => "Appel à projets « {$call->title} » créé.",
+            'data'    => $call->fresh(['author:id,name,email']),
+        ], 201);
+    }
+
+    /**
+     * Admin — update any call.
+     */
+    public function adminUpdateCall(Request $request, int $id): JsonResponse
+    {
+        $call = GovernmentCall::findOrFail($id);
+        $data = $this->validateCall($request, $id);
+
+        if (isset($data['title']) && $data['title'] !== $call->title) {
+            $data['slug'] = GovernmentCall::generateUniqueSlug($data['title'], $call->id);
+        }
+
+        // Stamp published_at the first time the call transitions out of draft.
+        if (
+            isset($data['status'])
+            && in_array($data['status'], ['open', 'closed', 'awarded'], true)
+            && $call->published_at === null
+        ) {
+            $data['published_at'] = now();
+        }
+
+        $call->update($data);
+
+        Log::info('admin.government_call.updated', [
+            'admin_id' => $request->user()->id,
+            'call_id'  => $call->id,
+            'changes'  => array_keys($data),
+        ]);
+
+        return response()->json([
+            'message' => "Appel à projets « {$call->title} » mis à jour.",
+            'data'    => $call->fresh(['author:id,name,email']),
+        ]);
+    }
+
+    /**
+     * Admin — hard-delete a call. Cascades to applications via FK constraint.
+     */
+    public function adminDestroyCall(Request $request, int $id): JsonResponse
+    {
+        $call = GovernmentCall::withCount('applications')->findOrFail($id);
+
+        if ($call->applications_count > 0 && !$request->boolean('force')) {
+            return response()->json([
+                'message'            => "Cet appel a {$call->applications_count} candidature(s). Passez `force: true` pour confirmer.",
+                'applications_count' => $call->applications_count,
+                'requires_force'     => true,
+            ], 422);
+        }
+
+        Log::warning('admin.government_call.deleted', [
+            'admin_id'           => $request->user()->id,
+            'call_id'            => $call->id,
+            'title'              => $call->title,
+            'applications_count' => $call->applications_count,
+            'forced'             => $request->boolean('force'),
+        ]);
+
+        $title = $call->title;
+        $call->delete();
+
+        return response()->json([
+            'message' => "Appel à projets « {$title} » supprimé.",
+            'id'      => $id,
+        ]);
+    }
+
+    // ─── Admin — Economic zones (Optimisation point 8) ─────────────────
+
+    /**
+     * Admin — paginated list of every economic zone (all authors).
+     */
+    public function adminZonesIndex(Request $request): JsonResponse
+    {
+        $query = EconomicZone::with('author:id,name,email');
+
+        if ($search = trim((string) $request->query('q', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('country', 'like', "%{$search}%")
+                  ->orWhere('region', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+
+        $sort = $request->query('sort', 'name');
+        $query = match ($sort) {
+            'recent' => $query->orderByDesc('created_at'),
+            'area'   => $query->orderByDesc('area_hectares'),
+            default  => $query->orderBy('name'),
+        };
+
+        return response()->json($query->paginate(min(50, (int) $request->query('per_page', 20))));
+    }
+
+    /**
+     * Admin — single zone for the edit modal.
+     */
+    public function adminZoneShow(int $id): JsonResponse
+    {
+        $zone = EconomicZone::with('author:id,name,email')->findOrFail($id);
+        return response()->json(['data' => $zone]);
+    }
+
+    /**
+     * Admin — create a zone.
+     */
+    public function adminStoreZone(Request $request): JsonResponse
+    {
+        $data = $this->validateZone($request);
+
+        if (empty($data['user_id'])) {
+            $data['user_id'] = $request->user()->id;
+        }
+        $data['slug'] = EconomicZone::generateUniqueSlug($data['name']);
+
+        $zone = EconomicZone::create($data);
+
+        Log::info('admin.economic_zone.created', [
+            'admin_id' => $request->user()->id,
+            'zone_id'  => $zone->id,
+            'name'     => $zone->name,
+        ]);
+
+        return response()->json([
+            'message' => "Zone « {$zone->name} » créée.",
+            'data'    => $zone->fresh(['author:id,name,email']),
+        ], 201);
+    }
+
+    /**
+     * Admin — update any zone.
+     */
+    public function adminUpdateZone(Request $request, int $id): JsonResponse
+    {
+        $zone = EconomicZone::findOrFail($id);
+        $data = $this->validateZone($request, $id);
+
+        if (isset($data['name']) && $data['name'] !== $zone->name) {
+            $data['slug'] = EconomicZone::generateUniqueSlug($data['name'], $zone->id);
+        }
+
+        $zone->update($data);
+
+        Log::info('admin.economic_zone.updated', [
+            'admin_id' => $request->user()->id,
+            'zone_id'  => $zone->id,
+            'changes'  => array_keys($data),
+        ]);
+
+        return response()->json([
+            'message' => "Zone « {$zone->name} » mise à jour.",
+            'data'    => $zone->fresh(['author:id,name,email']),
+        ]);
+    }
+
+    /**
+     * Admin — delete any zone.
+     */
+    public function adminDestroyZone(Request $request, int $id): JsonResponse
+    {
+        $zone = EconomicZone::findOrFail($id);
+
+        Log::warning('admin.economic_zone.deleted', [
+            'admin_id' => $request->user()->id,
+            'zone_id'  => $zone->id,
+            'name'     => $zone->name,
+        ]);
+
+        $name = $zone->name;
+        $zone->delete();
+
+        return response()->json([
+            'message' => "Zone « {$name} » supprimée.",
+            'id'      => $id,
+        ]);
+    }
+
+    /**
+     * Shared validation for admin zone create / update.
+     */
+    protected function validateZone(Request $request, ?int $id = null): array
+    {
+        $nameRule    = $id ? ['sometimes', 'string', 'max:150'] : ['required', 'string', 'max:150'];
+        $countryRule = $id ? ['sometimes', 'string', 'max:80']  : ['required', 'string', 'max:80'];
+
+        return $request->validate([
+            'name'          => $nameRule,
+            'country'       => $countryRule,
+            'region'        => ['nullable', 'string', 'max:100'],
+            'description'   => ['nullable', 'string', 'max:5000'],
+            'incentives'    => ['nullable', 'array'],
+            'incentives.*'  => ['string', 'max:200'],
+            'sectors'       => ['nullable', 'array'],
+            'sectors.*'     => ['string', 'max:80'],
+            'area_hectares' => ['nullable', 'numeric', 'min:0'],
+            'status'        => ['nullable', Rule::in(['active', 'planned', 'closed'])],
+            'website'       => ['nullable', 'url', 'max:300'],
+            'contact_email' => ['nullable', 'email', 'max:150'],
+            'user_id'       => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+    }
+
+    /**
+     * Shared validation for admin call create / update.
+     */
+    protected function validateCall(Request $request, ?int $id = null): array
+    {
+        $titleRule = $id ? ['sometimes', 'string', 'max:200'] : ['required', 'string', 'max:200'];
+        $descRule  = $id ? ['sometimes', 'string', 'max:10000'] : ['required', 'string', 'max:10000'];
+        $countryRule = $id ? ['sometimes', 'string', 'max:80'] : ['required', 'string', 'max:80'];
+
+        return $request->validate([
+            'title'                => $titleRule,
+            'description'          => $descRule,
+            'country'              => $countryRule,
+            'geographic_zone'      => ['nullable', 'string', 'max:150'],
+            'sector'               => ['nullable', 'string', 'max:100'],
+            'eligibility_criteria' => ['nullable', 'string', 'max:5000'],
+            'required_documents'   => ['nullable', 'string', 'max:3000'],
+            'evaluation_criteria'  => ['nullable', 'string', 'max:3000'],
+            'budget'               => ['nullable', 'numeric', 'min:0'],
+            'currency'             => ['nullable', 'string', 'size:3', 'alpha'],
+            'opens_at'             => ['nullable', 'date'],
+            'closes_at'            => ['nullable', 'date', 'after_or_equal:opens_at'],
+            'status'               => ['nullable', Rule::in(['draft', 'open', 'closed', 'awarded'])],
+            'user_id'              => ['nullable', 'integer', 'exists:users,id'],
+        ]);
     }
 }

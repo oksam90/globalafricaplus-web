@@ -46,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscribed' => \App\Http\Middleware\CheckSubscription::class,
             'kyc' => \App\Http\Middleware\CheckKyc::class,
             'kyc.smile' => \App\Http\Middleware\RequireKYCLevel::class,
+            'aml.checked' => \App\Http\Middleware\RequireAmlCleared::class,
             'paydunya.webhook' => \App\Http\Middleware\VerifyPayDunyaWebhook::class,
             'smile.webhook' => \App\Http\Middleware\VerifySmileSignature::class,
         ]);

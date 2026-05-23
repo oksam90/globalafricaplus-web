@@ -344,7 +344,7 @@ async function loadPlans() {
 async function loadRefundEligibility() {
     if (!auth.isAuthenticated) return;
     try {
-        const { data } = await window.axios.get('/api/subscription/me');
+        const { data } = await window.axios.get('/api/subscription/my');
         isRefundable.value = !!data.is_refundable;
     } catch {
         isRefundable.value = false;

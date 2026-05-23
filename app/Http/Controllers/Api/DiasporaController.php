@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DiasporaController extends Controller
 {
@@ -280,5 +281,134 @@ class DiasporaController extends Controller
         $query->orderByRaw('(jobs_target * 2 + followers_count + (CASE WHEN amount_needed > 0 THEN (1 - amount_raised/amount_needed) * 50 ELSE 0 END)) DESC');
 
         return response()->json($query->paginate(12));
+    }
+
+    // ───────────────── Admin CRUD — Country Guides (Optimisation point 5) ────
+
+    /**
+     * Admin — paginated list of every country guide.
+     */
+    public function adminCountriesIndex(Request $request): JsonResponse
+    {
+        $query = CountryGuide::query();
+
+        if ($search = trim((string) $request->query('q', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('country', 'like', "%{$search}%")
+                  ->orWhere('country_code', 'like', "%{$search}%");
+            });
+        }
+
+        $sort = $request->query('sort', 'country');
+        $query = match ($sort) {
+            'recent' => $query->orderByDesc('created_at'),
+            'gdp'    => $query->orderByDesc('gdp'),
+            default  => $query->orderBy('country'),
+        };
+
+        return response()->json($query->paginate(min(50, (int) $request->query('per_page', 20))));
+    }
+
+    /**
+     * Admin — fetch a single guide for editing.
+     */
+    public function adminCountryShow(int $id): JsonResponse
+    {
+        return response()->json(['data' => CountryGuide::findOrFail($id)]);
+    }
+
+    /**
+     * Admin — create a new country guide.
+     */
+    public function adminStoreCountry(Request $request): JsonResponse
+    {
+        $data = $this->validateCountryGuide($request);
+        $guide = CountryGuide::create($data);
+
+        Log::info('admin.country_guide.created', [
+            'admin_id'     => $request->user()->id,
+            'guide_id'     => $guide->id,
+            'country_code' => $guide->country_code,
+        ]);
+
+        return response()->json([
+            'message' => "Guide pays « {$guide->country} » créé.",
+            'data'    => $guide,
+        ], 201);
+    }
+
+    /**
+     * Admin — update a country guide.
+     */
+    public function adminUpdateCountry(Request $request, int $id): JsonResponse
+    {
+        $guide = CountryGuide::findOrFail($id);
+        $data = $this->validateCountryGuide($request, $id);
+        $guide->update($data);
+
+        Log::info('admin.country_guide.updated', [
+            'admin_id' => $request->user()->id,
+            'guide_id' => $guide->id,
+            'changes'  => array_keys($data),
+        ]);
+
+        return response()->json([
+            'message' => "Guide pays « {$guide->country} » mis à jour.",
+            'data'    => $guide->fresh(),
+        ]);
+    }
+
+    /**
+     * Admin — delete a country guide.
+     */
+    public function adminDestroyCountry(Request $request, int $id): JsonResponse
+    {
+        $guide = CountryGuide::findOrFail($id);
+
+        Log::warning('admin.country_guide.deleted', [
+            'admin_id'     => $request->user()->id,
+            'guide_id'     => $guide->id,
+            'country_code' => $guide->country_code,
+        ]);
+
+        $name = $guide->country;
+        $guide->delete();
+
+        return response()->json([
+            'message' => "Guide pays « {$name} » supprimé.",
+            'id'      => $id,
+        ]);
+    }
+
+    /**
+     * Shared validation for create / update. On update, the unique rules
+     * exclude the current row.
+     */
+    protected function validateCountryGuide(Request $request, ?int $id = null): array
+    {
+        $unique = $id ? ',' . $id : '';
+
+        return $request->validate([
+            'country'                => ['required', 'string', 'max:100', 'unique:country_guides,country' . $unique],
+            'country_code'           => ['required', 'string', 'size:2', 'alpha', 'unique:country_guides,country_code' . $unique],
+            'flag'                   => ['nullable', 'string', 'max:10'],
+            'currency'               => ['nullable', 'string', 'size:3', 'alpha'],
+            'official_language'      => ['nullable', 'string', 'max:60'],
+            'population'             => ['nullable', 'integer', 'min:0'],
+            'gdp'                    => ['nullable', 'numeric', 'min:0'],
+            'gdp_growth'             => ['nullable', 'numeric'],
+            'remittances_gdp'        => ['nullable', 'numeric', 'min:0'],
+            'ease_of_business_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'key_sectors'            => ['nullable', 'array'],
+            'key_sectors.*'          => ['string', 'max:60'],
+            'legal_framework'        => ['nullable', 'string', 'max:20000'],
+            'taxation'               => ['nullable', 'string', 'max:20000'],
+            'investment_incentives'  => ['nullable', 'string', 'max:20000'],
+            'risks'                  => ['nullable', 'string', 'max:20000'],
+            'opportunities'          => ['nullable', 'string', 'max:20000'],
+            'diaspora_programs'      => ['nullable', 'string', 'max:20000'],
+            'investment_agency'      => ['nullable', 'string', 'max:120'],
+            'investment_agency_url'  => ['nullable', 'url', 'max:255'],
+        ]);
     }
 }

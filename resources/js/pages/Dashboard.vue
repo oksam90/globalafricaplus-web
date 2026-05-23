@@ -249,12 +249,32 @@
             <!-- INVESTOR-SPECIFIC -->
             <!-- ============================================ -->
             <template v-if="auth.activeRole === 'investor'">
+                <!-- Optimisation point 2 — investing requires Pro/Entreprise. -->
+                <div v-if="!auth.canInvest"
+                    class="mb-6 rounded-2xl border border-amber-200 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/30 p-5 flex items-start gap-4">
+                    <span class="text-2xl shrink-0">⭐</span>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-amber-900 dark:text-amber-200">Investissement réservé aux abonnements Pro et Entreprise</h3>
+                        <p class="text-sm text-amber-800 dark:text-amber-300 mt-1">
+                            Votre plan actuel <strong>{{ auth.planSlug }}</strong> ne donne pas accès aux fonctionnalités d'investissement.
+                            Passez en Pro ou Entreprise pour investir dans des projets et valider les jalons d'escrow.
+                        </p>
+                        <router-link to="/tarifs"
+                            class="inline-block mt-3 px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold">
+                            Voir les packs
+                        </router-link>
+                    </div>
+                </div>
+
                 <div class="mb-4 flex items-baseline justify-between">
                     <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Actions rapides</h2>
                 </div>
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
                     <DashCard title="Explorer les projets" icon="🔎" text="Découvrez des projets à fort potentiel." cta="Explorer" to="/projets" />
-                    <DashCard title="Mes jalons à valider" icon="✅" text="Validez les preuves soumises pour libérer le séquestre." cta="Voir" to="/escrow/mes-jalons" />
+                    <DashCard :title="auth.canInvest ? 'Mes jalons à valider' : '🔒 Mes jalons à valider'" icon="✅"
+                        :text="auth.canInvest ? 'Validez les preuves soumises pour libérer le séquestre.' : 'Passez en Pro ou Entreprise pour valider les jalons.'"
+                        :cta="auth.canInvest ? 'Voir' : 'Voir les packs'"
+                        :to="auth.canInvest ? '/escrow/mes-jalons' : '/tarifs'" />
                     <DashCard title="Simulateur diaspora" icon="🧮" text="Estimez impact et rendement de vos investissements." cta="Lancer" to="/diaspora" />
                 </div>
 
@@ -596,6 +616,24 @@
                     <DashCard title="Formations" icon="📚"
                         text="Catalogue complet — supprimer ou auditer les formations publiées."
                         cta="Gérer" to="/admin/formations" />
+                    <DashCard title="Secteurs" icon="🏷️"
+                        text="Créer, modifier ou supprimer les secteurs d'activité (catégories de projets)."
+                        cta="Gérer" to="/admin/secteurs" />
+                    <DashCard title="Guides pays" icon="🌍"
+                        text="Cadre juridique, fiscalité, opportunités et programmes diaspora par pays."
+                        cta="Gérer" to="/admin/guides-pays" />
+                    <DashCard title="Appels à projets" icon="📢"
+                        text="Créer et gérer les appels à projets publics (gouvernement, bailleurs)."
+                        cta="Gérer" to="/admin/appels" />
+                    <DashCard title="Zones Économiques Spéciales" icon="🗺️"
+                        text="Créer et gérer les ZES (incitations, secteurs, statut)."
+                        cta="Gérer" to="/admin/zones" />
+                    <DashCard title="Partenaires" icon="🤝"
+                        text="Section « Nos Partenaires » du site public — logos, ordre d'affichage, statut."
+                        cta="Gérer" to="/admin/partenaires" />
+                    <DashCard title="Témoignages" icon="💬"
+                        text="Carrousel témoignages — auteur, photo, note, mise en avant."
+                        cta="Gérer" to="/admin/temoignages" />
                     <DashCard title="Mon profil admin" icon="⚙️"
                         text="Configurez votre département, responsabilités et préférences."
                         cta="Éditer" to="/profil/admin" />

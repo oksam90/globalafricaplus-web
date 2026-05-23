@@ -103,13 +103,16 @@ class AuthController extends Controller
                 'is_refundable' => $user->activeSubscription()?->isRefundable() ?? false,
             ],
             'kyc' => [
-                'level'           => $user->kyc_level ?? 'basic',
-                'is_verified'     => $user->isKycVerified(),
-                'has_pending'     => $user->hasKycPending(),
-                'expires_at'      => $user->kyc_expires_at,
-                'aml_status'      => $user->aml_status ?? 'clear',
-                'latest_status'   => $latestSmile?->status,
-                'latest_job_type' => $latestSmile?->job_type,
+                'level'             => $user->kyc_level ?? 'basic',
+                'is_verified'       => $user->isKycVerified(),
+                'has_pending'       => $user->hasKycPending(),
+                'expires_at'        => $user->kyc_expires_at,
+                'aml_status'        => $user->aml_status ?? 'clear',
+                'aml_checked_at'    => $user->aml_last_checked_at,
+                'aml_completed'     => $user->aml_last_checked_at !== null
+                    && ($user->aml_status ?? 'clear') === 'clear',
+                'latest_status'     => $latestSmile?->status,
+                'latest_job_type'   => $latestSmile?->job_type,
             ],
         ]);
     }

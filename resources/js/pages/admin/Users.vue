@@ -206,6 +206,57 @@
                         </div>
                     </div>
 
+                    <!-- Subscription management -->
+                    <div class="border-t border-slate-100 dark:border-slate-700 pt-4">
+                        <label class="block text-sm font-medium mb-2">Abonnement</label>
+
+                        <div v-if="currentSubscription"
+                            class="rounded-lg border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/30 p-3 mb-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="text-sm">
+                                    <div class="font-semibold text-emerald-900 dark:text-emerald-200">
+                                        {{ currentSubscription.plan?.name || currentSubscription.plan_slug }}
+                                        <span class="text-xs font-normal">({{ currentSubscription.billing_cycle }})</span>
+                                    </div>
+                                    <div class="text-xs text-emerald-800 dark:text-emerald-300 mt-1">
+                                        Statut : <strong>{{ currentSubscription.status }}</strong>
+                                        <template v-if="currentSubscription.ends_at">
+                                            · Expire le {{ formatDate(currentSubscription.ends_at) }}
+                                        </template>
+                                    </div>
+                                </div>
+                                <button @click="revokeSubscription" :disabled="subSaving"
+                                    class="text-xs font-semibold text-rose-700 dark:text-rose-300 hover:underline disabled:opacity-50">
+                                    {{ subSaving ? '…' : 'Désactiver' }}
+                                </button>
+                            </div>
+                        </div>
+                        <div v-else class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                            Aucun abonnement actif.
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <select v-model="subForm.plan_slug"
+                                class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
+                                <option value="">Sélectionner un plan…</option>
+                                <option v-for="p in subscriptionPlans" :key="p.slug" :value="p.slug">
+                                    {{ p.name }}
+                                </option>
+                            </select>
+                            <select v-model="subForm.billing_cycle"
+                                class="px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm">
+                                <option value="monthly">Mensuel</option>
+                                <option value="yearly">Annuel</option>
+                            </select>
+                        </div>
+                        <input v-model="subForm.reason" type="text" placeholder="Motif (optionnel) — ex. paiement hors-ligne, comp interne…"
+                            class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-xs mb-2" />
+                        <button @click="grantSubscription" :disabled="!subForm.plan_slug || subSaving"
+                            class="text-xs font-semibold px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50">
+                            {{ subSaving ? 'Activation…' : (currentSubscription ? 'Remplacer le plan' : 'Activer un plan') }}
+                        </button>
+                    </div>
+
                     <p v-if="editError" class="text-sm text-rose-600 dark:text-rose-400">{{ editError }}</p>
                     <p v-if="editSuccess" class="text-sm text-emerald-600 dark:text-emerald-400">{{ editSuccess }}</p>
 
@@ -267,6 +318,11 @@ const editError = ref('');
 const editSuccess = ref('');
 const deletingId = ref(null);
 const toast = ref(null);
+
+const currentSubscription = ref(null);
+const subscriptionPlans = ref([]);
+const subForm = reactive({ plan_slug: '', billing_cycle: 'monthly', reason: '' });
+const subSaving = ref(false);
 
 const availableRoles = ['entrepreneur', 'investor', 'mentor', 'jobseeker', 'government', 'admin'];
 
@@ -338,7 +394,7 @@ async function load() {
     }
 }
 
-function openUserModal(u) {
+async function openUserModal(u) {
     editUser.value = u;
     Object.assign(editForm, {
         name: u.name,
@@ -354,6 +410,61 @@ function openUserModal(u) {
     initialKycLevel.value = u.kyc_level || 'none';
     editError.value = '';
     editSuccess.value = '';
+
+    // Reset subscription form + fetch current subscription state.
+    currentSubscription.value = null;
+    subForm.plan_slug = '';
+    subForm.billing_cycle = 'monthly';
+    subForm.reason = '';
+    try {
+        const { data } = await window.axios.get(`/api/admin/users/${u.id}`);
+        currentSubscription.value = data.subscription || null;
+    } catch (e) { /* non-fatal */ }
+}
+
+async function loadSubscriptionPlans() {
+    try {
+        const { data } = await window.axios.get('/api/admin/config');
+        subscriptionPlans.value = data.subscription_plans || [];
+    } catch (e) { /* non-fatal */ }
+}
+
+async function grantSubscription() {
+    if (!subForm.plan_slug || !editUser.value) return;
+    if (!confirm(`Activer le plan « ${subForm.plan_slug} » (${subForm.billing_cycle}) pour ${editUser.value.name} sans paiement ?`)) return;
+    subSaving.value = true;
+    try {
+        const { data } = await window.axios.post(
+            `/api/admin/users/${editUser.value.id}/subscription`,
+            { plan_slug: subForm.plan_slug, billing_cycle: subForm.billing_cycle, reason: subForm.reason || null },
+        );
+        currentSubscription.value = data.subscription;
+        subForm.plan_slug = '';
+        subForm.reason = '';
+        showToast(data.message || 'Plan activé.', 'success');
+    } catch (e) {
+        showToast(e?.response?.data?.message || 'Erreur lors de l\'activation.', 'error');
+    } finally {
+        subSaving.value = false;
+    }
+}
+
+async function revokeSubscription() {
+    if (!currentSubscription.value || !editUser.value) return;
+    if (!confirm(`Désactiver immédiatement l'abonnement de ${editUser.value.name} ?\n\nL'accès aux fonctionnalités premium sera coupé.`)) return;
+    subSaving.value = true;
+    try {
+        const { data } = await window.axios.delete(
+            `/api/admin/users/${editUser.value.id}/subscription`,
+            { data: { reason: subForm.reason || null } },
+        );
+        currentSubscription.value = null;
+        showToast(data.message || 'Abonnement désactivé.', 'success');
+    } catch (e) {
+        showToast(e?.response?.data?.message || 'Erreur lors de la désactivation.', 'error');
+    } finally {
+        subSaving.value = false;
+    }
 }
 
 async function saveUser() {
@@ -425,5 +536,8 @@ async function toggleRole(userId, slug) {
     }
 }
 
-onMounted(load);
+onMounted(() => {
+    load();
+    loadSubscriptionPlans();
+});
 </script>

@@ -8,6 +8,8 @@ use App\Models\KYCVerification;
 use App\Models\Mentorship;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use App\Models\Training;
 use App\Models\TrainingPurchase;
 use App\Models\User;
@@ -16,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -163,12 +166,139 @@ class AdminController extends Controller
         $projectsCount = Project::where('user_id', $id)->count();
         $publishedCount = Project::where('user_id', $id)->where('status', 'published')->count();
 
+        $subscription = $user->activeSubscription();
+
         return response()->json([
             'user' => $user,
             'stats' => [
                 'projects_count' => $projectsCount,
                 'published_count' => $publishedCount,
             ],
+            'subscription' => $subscription?->load('plan'),
+        ]);
+    }
+
+    // ───────────────── Subscriptions (admin grant / revoke) ─────────────────
+
+    /**
+     * Admin grants a subscription plan to a user manually — bypasses payment.
+     *
+     * Typical use: enterprise client paid out-of-band (bank transfer, invoice),
+     * or platform comp/trial extension. Any existing active subscription is
+     * cancelled first to keep activeSubscription() coherent.
+     */
+    public function grantSubscription(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+
+        $data = $request->validate([
+            'plan_slug'     => ['required', 'string', 'exists:subscription_plans,slug'],
+            'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
+            'reason'        => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $plan = SubscriptionPlan::where('slug', $data['plan_slug'])->firstOrFail();
+        $cycle = $data['billing_cycle'];
+        $endsAt = $cycle === 'yearly' ? now()->addYear() : now()->addMonth();
+
+        $planColumn = in_array($plan->slug, ['starter', 'pro', 'enterprise'], true) ? $plan->slug : 'starter';
+
+        $admin = $request->user();
+        $reason = $data['reason'] ?? null;
+
+        $subscription = DB::transaction(function () use ($user, $plan, $cycle, $endsAt, $planColumn, $admin, $reason) {
+            Subscription::where('user_id', $user->id)
+                ->whereIn('status', ['active', 'trialing'])
+                ->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+
+            return Subscription::create([
+                'user_id'                  => $user->id,
+                'plan_id'                  => $plan->id,
+                'plan_slug'                => $planColumn,
+                'billing_cycle'            => $cycle,
+                'amount'                   => 0,
+                'currency'                 => $plan->currency ?: 'XOF',
+                'status'                   => 'active',
+                'starts_at'                => now(),
+                'ends_at'                  => $plan->isFree() ? null : $endsAt,
+                'trial_ends_at'            => null,
+                'payment_method'           => 'admin_grant',
+                'payment_gateway'          => null,
+                'gateway_subscription_ref' => null,
+                'payment_reference'        => 'admin-grant:' . Str::uuid(),
+                'gateway_metadata'         => [
+                    'granted_by_admin_id'    => $admin->id,
+                    'granted_by_admin_email' => $admin->email,
+                    'reason'                 => $reason,
+                    'granted_at'             => now()->toIso8601String(),
+                ],
+            ]);
+        });
+
+        Log::warning('admin.grant_subscription', [
+            'admin_id'      => $request->user()->id,
+            'admin_email'   => $request->user()->email,
+            'target_id'     => $user->id,
+            'target_email'  => $user->email,
+            'plan_slug'     => $plan->slug,
+            'billing_cycle' => $cycle,
+            'reason'        => $data['reason'] ?? null,
+            'ip'            => $request->ip(),
+        ]);
+
+        return response()->json([
+            'message'      => "Plan « {$plan->name} » activé pour {$user->name}.",
+            'subscription' => $subscription->load('plan'),
+        ]);
+    }
+
+    /**
+     * Admin revokes (cancels) the user's active subscription immediately.
+     *
+     * Unlike user-initiated cancel which keeps access until ends_at, this
+     * sets status = cancelled AND ends_at = now() so middleware-gated
+     * features cut off immediately.
+     */
+    public function revokeSubscription(Request $request, int $id): JsonResponse
+    {
+        $user = User::findOrFail($id);
+        $sub = $user->activeSubscription();
+
+        if (!$sub) {
+            return response()->json(['message' => "Cet utilisateur n'a pas d'abonnement actif."], 422);
+        }
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $previous = $sub->plan?->name;
+        $sub->update([
+            'status'       => 'cancelled',
+            'cancelled_at' => now(),
+            'ends_at'      => now(),
+            'gateway_metadata' => array_merge((array) $sub->gateway_metadata, [
+                'revoked_by_admin_id'    => $request->user()->id,
+                'revoked_by_admin_email' => $request->user()->email,
+                'revoke_reason'          => $data['reason'] ?? null,
+                'revoked_at'             => now()->toIso8601String(),
+            ]),
+        ]);
+
+        Log::warning('admin.revoke_subscription', [
+            'admin_id'        => $request->user()->id,
+            'admin_email'     => $request->user()->email,
+            'target_id'       => $user->id,
+            'target_email'    => $user->email,
+            'subscription_id' => $sub->id,
+            'plan'            => $previous,
+            'reason'          => $data['reason'] ?? null,
+            'ip'              => $request->ip(),
+        ]);
+
+        return response()->json([
+            'message'      => "Abonnement de {$user->name} désactivé.",
+            'subscription' => $sub->fresh()->load('plan'),
         ]);
     }
 
@@ -439,6 +569,98 @@ class AdminController extends Controller
     }
 
     /**
+     * Show a single training for the admin edit modal.
+     */
+    public function showTraining(Request $request, int $id): JsonResponse
+    {
+        $training = Training::with('instructor:id,name,email')
+            ->withCount(['purchases as active_purchases_count' => fn ($q) => $q->where('status', 'active')])
+            ->withCount('purchases')
+            ->findOrFail($id);
+
+        return response()->json(['data' => $training]);
+    }
+
+    /**
+     * Admin — create a new training (Optimisation point 6).
+     *
+     * Defaults `user_id` to the calling admin if none is supplied (most admins
+     * create platform-published trainings rather than instructor-authored ones).
+     */
+    public function storeTraining(Request $request): JsonResponse
+    {
+        $data = $this->validateTraining($request);
+
+        if (empty($data['user_id'])) {
+            $data['user_id'] = $request->user()->id;
+        }
+
+        $training = Training::create($data);
+
+        Log::info('admin.training.created', [
+            'admin_id'    => $request->user()->id,
+            'training_id' => $training->id,
+            'title'       => $training->title,
+        ]);
+
+        return response()->json([
+            'message' => "Formation « {$training->title} » créée.",
+            'data'    => $training->fresh(['instructor:id,name,email']),
+        ], 201);
+    }
+
+    /**
+     * Admin — update an existing training.
+     */
+    public function updateTraining(Request $request, int $id): JsonResponse
+    {
+        $training = Training::findOrFail($id);
+        $data = $this->validateTraining($request, $id);
+
+        $training->update($data);
+
+        Log::info('admin.training.updated', [
+            'admin_id'    => $request->user()->id,
+            'training_id' => $training->id,
+            'changes'     => array_keys($data),
+        ]);
+
+        return response()->json([
+            'message' => "Formation « {$training->title} » mise à jour.",
+            'data'    => $training->fresh(['instructor:id,name,email']),
+        ]);
+    }
+
+    /**
+     * Shared validation for training create / update. Slug is optional on
+     * create (the model boot hook generates one from the title), but if it
+     * is supplied it must be unique.
+     */
+    protected function validateTraining(Request $request, ?int $id = null): array
+    {
+        $unique = $id ? ',' . $id : '';
+
+        return $request->validate([
+            'title'             => ['required', 'string', 'max:200'],
+            'slug'              => ['nullable', 'string', 'max:220', 'alpha_dash', 'unique:trainings,slug' . $unique],
+            'summary'           => ['nullable', 'string', 'max:1000'],
+            'description'       => ['nullable', 'string', 'max:30000'],
+            'cover_image'       => ['nullable', 'string', 'max:500'],
+            'video_preview_url' => ['nullable', 'url', 'max:500'],
+            'content_url'       => ['nullable', 'url', 'max:500'],
+            'category'          => ['nullable', 'string', 'max:80'],
+            'level'             => ['nullable', 'in:beginner,intermediate,advanced'],
+            'duration_minutes'  => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'curriculum'        => ['nullable', 'array'],
+            'curriculum.*'      => ['string', 'max:300'],
+            'price'             => ['required', 'numeric', 'min:0'],
+            'currency'          => ['nullable', 'string', 'size:3', 'alpha'],
+            'is_published'      => ['nullable', 'boolean'],
+            'user_id'           => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+    }
+
+    /**
      * Hard-delete a training.
      *
      * Safeguards:
@@ -554,6 +776,51 @@ class AdminController extends Controller
         ]);
     }
 
+    // ───────────────── Media uploads (admin) ─────────────────
+
+    /**
+     * Generic admin image uploader.
+     *
+     * Stores the file under `storage/app/public/<folder>/` and returns the
+     * publicly-resolvable URL via the `public` disk. Used by the partner
+     * modal and reusable for any admin media field (training covers,
+     * testimonial avatars, ad banners…).
+     *
+     * Request:
+     *   - file:   image file (required)
+     *   - folder: target sub-directory (default: misc) — sanitised to
+     *             [a-z0-9_-] so callers can pass `partners`, `logos`, etc.
+     *
+     * Response: { url, path, mime, size_kb }
+     */
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file'   => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:4096'],
+            'folder' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $folder = preg_replace('/[^a-z0-9_-]/i', '', (string) $request->input('folder', 'misc')) ?: 'misc';
+
+        $path = $request->file('file')->store($folder, 'public');
+        $url  = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+
+        Log::info('admin.upload_image', [
+            'admin_id' => $request->user()->id,
+            'folder'   => $folder,
+            'path'     => $path,
+            'mime'     => $request->file('file')->getMimeType(),
+            'size_kb'  => (int) round($request->file('file')->getSize() / 1024),
+        ]);
+
+        return response()->json([
+            'url'     => $url,
+            'path'    => $path,
+            'mime'    => $request->file('file')->getMimeType(),
+            'size_kb' => (int) round($request->file('file')->getSize() / 1024),
+        ], 201);
+    }
+
     // ───────────────── Platform config helpers ─────────────────
 
     public function platformConfig(): JsonResponse
@@ -565,9 +832,14 @@ class AdminController extends Controller
             ->orderByDesc('count')
             ->get();
 
+        $subscriptionPlans = SubscriptionPlan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get(['id', 'slug', 'name', 'price_monthly', 'price_yearly', 'currency']);
+
         return response()->json([
             'roles' => $roles,
             'countries' => $countries,
+            'subscription_plans' => $subscriptionPlans,
         ]);
     }
 }

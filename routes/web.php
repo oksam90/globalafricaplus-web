@@ -162,22 +162,39 @@ Route::prefix('api')->group(function () {
         Route::get('/escrow/milestones/mine',                    [EscrowController::class, 'mine']);
         Route::get('/escrow/projects/{project}/milestones',      [EscrowController::class, 'projectMilestones']);
 
-        // ─── Money-moving endpoints — Audit fix 2026-05 ──────────────────
-        // Per UEMOA Directive N° 02/2015/CM/UEMOA Art. 18, every transactional
-        // financial operation requires verified identity. We pair that with
-        // an active subscription per the platform's commercial model.
-        Route::middleware(['subscribed', 'kyc.smile:verified'])->group(function () {
+        // ─── Investor actions — Pro/Entreprise + KYC + AML (Optimisation points 2 & 3) ─
+        // Investing is gated to Pro / Entreprise tiers per the commercial
+        // model. A validated investor profile (KYC verified + AML cleared)
+        // is required by UEMOA Directive N° 02/2015/CM/UEMOA Art. 18 and
+        // platform LCB-FT policy.
+        Route::middleware([
+            'subscribed:pro,enterprise',
+            'kyc.smile:verified',
+            'aml.checked',
+        ])->group(function () {
             Route::post('/investments',                              [InvestmentController::class, 'store']);
             Route::post('/investments/{investment}/installments',    [InstallmentController::class, 'createForInvestment']);
             Route::post('/installments/{plan}/pay-next',             [InstallmentController::class, 'payNext']);
-            Route::post('/escrow/milestones/{milestone}/submit',     [EscrowController::class, 'submit']);
             Route::post('/escrow/milestones/{milestone}/reject',     [EscrowController::class, 'reject']);
         });
 
-        // ─── Escrow funds release — `certified` tier ─────────────────────
-        // Approving a milestone triggers a real disbursement to the project
-        // owner. The spec (§ 8) calls explicitly for `kyc:certified` here.
-        Route::middleware(['subscribed', 'kyc.smile:certified'])->group(function () {
+        // ─── Entrepreneur escrow action — any paid plan ──────────────────
+        // Submitting milestone evidence is a project-owner action, kept on
+        // the generic `subscribed` gate.
+        Route::middleware(['subscribed', 'kyc.smile:verified'])->group(function () {
+            Route::post('/escrow/milestones/{milestone}/submit',     [EscrowController::class, 'submit']);
+        });
+
+        // ─── Escrow funds release — `certified` tier + Pro/Entreprise + AML ─
+        // Approving a milestone is an investor action that triggers a real
+        // disbursement to the project owner. The spec (§ 8) calls for
+        // `kyc:certified`; we pair it with the Pro/Entreprise gate and
+        // require AML clearance per LCB-FT policy.
+        Route::middleware([
+            'subscribed:pro,enterprise',
+            'kyc.smile:certified',
+            'aml.checked',
+        ])->group(function () {
             Route::post('/escrow/milestones/{milestone}/approve',    [EscrowController::class, 'approve']);
         });
 
@@ -271,17 +288,65 @@ Route::prefix('api')->group(function () {
                 Route::get('/users',         [AdminController::class, 'users']);
                 Route::get('/users/{id}',    [AdminController::class, 'userShow']);
                 Route::get('/trainings',     [AdminController::class, 'trainings']);
+                Route::get('/trainings/{id}', [AdminController::class, 'showTraining']);
                 Route::get('/moderation',    [AdminController::class, 'moderationQueue']);
                 Route::get('/config',        [AdminController::class, 'platformConfig']);
+                // Optimisation point 4 — Sectors admin.
+                Route::get('/sectors',           [SectorController::class, 'adminIndex']);
+                // Optimisation point 5 — Country guides admin.
+                Route::get('/country-guides',    [DiasporaController::class, 'adminCountriesIndex']);
+                Route::get('/country-guides/{id}', [DiasporaController::class, 'adminCountryShow']);
+                // Optimisation point 7 — Government calls admin.
+                Route::get('/calls',             [GovernmentController::class, 'adminCallsIndex']);
+                Route::get('/calls/{id}',        [GovernmentController::class, 'adminCallShow']);
+                // Optimisation point 8 — Economic zones admin.
+                Route::get('/zones',             [GovernmentController::class, 'adminZonesIndex']);
+                Route::get('/zones/{id}',        [GovernmentController::class, 'adminZoneShow']);
+                // Optimisation point 9 — Partners admin.
+                Route::get('/partners',          [AdvertisingController::class, 'adminPartnersIndex']);
+                Route::get('/partners/{id}',     [AdvertisingController::class, 'adminPartnerShow']);
+                // Optimisation point 10 — Testimonials admin.
+                Route::get('/testimonials',      [AdvertisingController::class, 'adminTestimonialsIndex']);
+                Route::get('/testimonials/{id}', [AdvertisingController::class, 'adminTestimonialShow']);
             });
             // Mutations — tight bucket against runaway scripts / accidental loops.
             Route::middleware('throttle:admin-write')->group(function () {
                 Route::patch('/users/{id}',                  [AdminController::class, 'userUpdate']);
                 Route::post('/users/{id}/toggle-role',       [AdminController::class, 'userToggleRole']);
+                Route::post('/users/{id}/subscription',      [AdminController::class, 'grantSubscription']);
+                Route::delete('/users/{id}/subscription',    [AdminController::class, 'revokeSubscription']);
                 Route::delete('/users/{id}',                 [AdminController::class, 'destroyUser']);
                 Route::delete('/mentors/{id}',               [AdminController::class, 'destroyMentor']);
+                Route::post('/trainings',                    [AdminController::class, 'storeTraining']);
+                Route::patch('/trainings/{id}',              [AdminController::class, 'updateTraining']);
                 Route::delete('/trainings/{id}',             [AdminController::class, 'destroyTraining']);
                 Route::post('/moderation/{project}',         [AdminController::class, 'moderateProject']);
+                // Optimisation point 4 — Sectors admin.
+                Route::post('/sectors',                      [SectorController::class, 'store']);
+                Route::patch('/sectors/{id}',                [SectorController::class, 'update']);
+                Route::delete('/sectors/{id}',               [SectorController::class, 'destroy']);
+                // Optimisation point 5 — Country guides admin.
+                Route::post('/country-guides',               [DiasporaController::class, 'adminStoreCountry']);
+                Route::patch('/country-guides/{id}',         [DiasporaController::class, 'adminUpdateCountry']);
+                Route::delete('/country-guides/{id}',        [DiasporaController::class, 'adminDestroyCountry']);
+                // Optimisation point 7 — Government calls admin.
+                Route::post('/calls',                        [GovernmentController::class, 'adminStoreCall']);
+                Route::patch('/calls/{id}',                  [GovernmentController::class, 'adminUpdateCall']);
+                Route::delete('/calls/{id}',                 [GovernmentController::class, 'adminDestroyCall']);
+                // Optimisation point 8 — Economic zones admin.
+                Route::post('/zones',                        [GovernmentController::class, 'adminStoreZone']);
+                Route::patch('/zones/{id}',                  [GovernmentController::class, 'adminUpdateZone']);
+                Route::delete('/zones/{id}',                 [GovernmentController::class, 'adminDestroyZone']);
+                // Optimisation point 9 — Partners admin.
+                Route::post('/partners',                     [AdvertisingController::class, 'adminStorePartner']);
+                Route::patch('/partners/{id}',               [AdvertisingController::class, 'adminUpdatePartner']);
+                Route::delete('/partners/{id}',              [AdvertisingController::class, 'adminDestroyPartner']);
+                // Optimisation point 10 — Testimonials admin.
+                Route::post('/testimonials',                 [AdvertisingController::class, 'adminStoreTestimonial']);
+                Route::patch('/testimonials/{id}',           [AdvertisingController::class, 'adminUpdateTestimonial']);
+                Route::delete('/testimonials/{id}',          [AdvertisingController::class, 'adminDestroyTestimonial']);
+                // Generic admin image uploader (reused by Partners, Trainings, etc.).
+                Route::post('/uploads/image',                [AdminController::class, 'uploadImage']);
             });
         });
 

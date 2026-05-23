@@ -185,6 +185,42 @@ const routes = [
         component: () => import('../pages/admin/Trainings.vue'),
         meta: { requiresAuth: true },
     },
+    {
+        path: '/admin/secteurs',
+        name: 'admin.sectors',
+        component: () => import('../pages/admin/Sectors.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/guides-pays',
+        name: 'admin.country-guides',
+        component: () => import('../pages/admin/CountryGuides.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/appels',
+        name: 'admin.calls',
+        component: () => import('../pages/admin/Calls.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/zones',
+        name: 'admin.zones',
+        component: () => import('../pages/admin/Zones.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/partenaires',
+        name: 'admin.partners',
+        component: () => import('../pages/admin/Partners.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/admin/temoignages',
+        name: 'admin.testimonials',
+        component: () => import('../pages/admin/Testimonials.vue'),
+        meta: { requiresAuth: true },
+    },
 
     // Legal pages (CGU, Politique de confidentialité, DPA)
     { path: '/cgu', name: 'legal.cgu', component: () => import('../pages/legal/Cgu.vue') },

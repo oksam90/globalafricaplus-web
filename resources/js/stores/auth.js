@@ -29,10 +29,30 @@ export const useAuthStore = defineStore('auth', {
         planSlug: (s) => s.subscription?.plan_slug || 'free',
         hasActiveSubscription: (s) => !!s.subscription?.has_active,
         isFreePlan: (s) => (s.subscription?.plan_slug || 'free') === 'free',
+        /**
+         * Optimisation point 2 — investing is restricted to Pro/Entreprise.
+         * `starter` users have a paid subscription but cannot invest.
+         */
+        canInvest: (s) => ['pro', 'enterprise'].includes(s.subscription?.plan_slug || 'free'),
         /** KYC helpers */
         isKycVerified: (s) => !!s.kyc?.is_verified,
         kycLevel: (s) => s.kyc?.level || 'none',
         needsKyc: (s) => !s.kyc?.is_verified,
+        /** AML helpers (Optimisation point 3) */
+        amlStatus: (s) => s.kyc?.aml_status || 'clear',
+        amlCompleted: (s) => !!s.kyc?.aml_completed,
+        /**
+         * Full investor-profile gate: Pro/Entreprise + KYC verified + AML cleared.
+         * Mirrors the backend stack `subscribed:pro,enterprise` + `kyc.smile:verified`
+         * + `aml.checked`.
+         */
+        investorProfileReady: (s) => {
+            const plan = s.subscription?.plan_slug || 'free';
+            const planOk = ['pro', 'enterprise'].includes(plan);
+            const kycOk = !!s.kyc?.is_verified;
+            const amlOk = !!s.kyc?.aml_completed;
+            return planOk && kycOk && amlOk;
+        },
         /** Global completion = average across role profiles */
         globalCompletion: (s) => {
             const profiles = s.user?.role_profiles || [];

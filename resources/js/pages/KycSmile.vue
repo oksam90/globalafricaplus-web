@@ -34,17 +34,25 @@
             </div>
         </section>
 
-        <!-- Already verified banner -->
-        <div v-if="kycVerified" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <!-- Already verified banner — only when KYC AND AML are done. -->
+        <div v-if="investorProfileComplete" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div class="bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 sm:p-8 text-center">
                 <div class="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center mx-auto mb-3">
                     <span class="text-3xl">✓</span>
                 </div>
                 <h2 class="text-2xl font-black text-emerald-900 dark:text-emerald-200">KYC {{ status?.kyc_level === 'certified' ? 'Certifié' : 'Vérifié' }}</h2>
                 <p class="mt-2 text-emerald-800 dark:text-emerald-300">
-                    Votre identité a été vérifiée le
-                    <strong>{{ formatDate(status?.kyc_verified_at) }}</strong>.
-                    Validité jusqu'au <strong>{{ formatDate(status?.kyc_expires_at) }}</strong>.
+                    <template v-if="status?.kyc_verified_at">
+                        Votre identité a été vérifiée le
+                        <strong>{{ formatDate(status?.kyc_verified_at) }}</strong>.
+                    </template>
+                    <template v-else>Votre identité a été vérifiée.</template>
+                    <template v-if="status?.kyc_expires_at">
+                        Validité jusqu'au <strong>{{ formatDate(status?.kyc_expires_at) }}</strong>.
+                    </template>
+                </p>
+                <p class="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+                    Screening AML effectué le <strong>{{ formatDate(status?.aml_last_checked_at) }}</strong> — statut : <strong>{{ amlLabel(status?.aml_status) }}</strong>.
                 </p>
                 <div v-if="status?.aml_status === 'flagged'" class="mt-3 px-3 py-2 rounded-lg bg-amber-100 text-amber-800 inline-block text-sm font-semibold">
                     ⚠ Signalement AML — votre dossier est en revue.
@@ -62,8 +70,32 @@
             </div>
         </div>
 
-        <!-- Wizard -->
+
+        <!-- Wizard — shown when the investor profile is not yet complete
+             (either KYC missing/expired, or KYC done but AML pending). -->
         <div v-else class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- AML pending banner — KYC OK, just AML left. -->
+            <div v-if="kycVerified && !amlCompleted"
+                class="mb-6 rounded-2xl border-2 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-5 flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-800 flex items-center justify-center shrink-0">
+                    <span class="text-xl">⚠</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-amber-900 dark:text-amber-200">
+                        Profil investisseur incomplet — screening AML requis
+                    </h3>
+                    <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">
+                        Votre identité est vérifiée (KYC <strong>{{ tierLabel(status?.kyc_level) }}</strong>),
+                        mais le screening AML (lutte anti-blanchiment) n'a pas encore été réalisé.
+                        Cette étape est obligatoire pour pouvoir investir.
+                    </p>
+                    <button v-if="currentStep !== 4" @click="currentStep = 4"
+                        class="mt-3 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold">
+                        Aller à l'étape AML →
+                    </button>
+                </div>
+            </div>
+
             <!-- Toast/result banner -->
             <div v-if="lastResult" class="mb-6 rounded-2xl border p-4 flex gap-3"
                 :class="resultBannerClasses(lastResult.tone)">
@@ -356,6 +388,14 @@ const amlResult = ref(null);
 
 const status = computed(() => kyc.status.value);
 const kycVerified = computed(() => tierRank(status.value?.kyc_level) >= 1 && !status.value?.is_expired);
+/**
+ * Optimisation point 3 — investing requires KYC verified AND AML cleared.
+ * Users who were certified before the AML gate landed have aml_last_checked_at = null;
+ * we treat the profile as incomplete until they run the AML screening too.
+ */
+const amlCompleted = computed(() => !!status.value?.aml_last_checked_at
+    && (status.value?.aml_status ?? 'clear') !== 'blocked');
+const investorProfileComplete = computed(() => kycVerified.value && amlCompleted.value);
 const todayIso = new Date().toISOString().slice(0, 10);
 
 /**
@@ -539,6 +579,12 @@ async function onSubmitAml() {
     try {
         const res = await kyc.submitAML({ ...amlForm });
         amlResult.value = res;
+        // Refresh status so the success banner picks up aml_last_checked_at /
+        // aml_status without a manual page reload.
+        await kyc.fetchStatus().catch(() => {});
+        // Also refresh the auth store so the global investorProfileReady getter
+        // unblocks the "Investir" button on project pages.
+        await auth.fetchUser().catch(() => {});
     } catch (e) {
         lastResult.value = { tone: 'error', title: 'Échec du screening AML', message: e?.response?.data?.message || 'Erreur inattendue.' };
     }
@@ -552,7 +598,16 @@ function restart() {
     amlResult.value = null;
 }
 
-onMounted(() => {
-    kyc.fetchStatus().catch(() => {});
+onMounted(async () => {
+    try {
+        await kyc.fetchStatus();
+        // Land users with KYC done but AML pending directly on step 4 so they
+        // don't have to click through the AML CTA banner.
+        if (kycVerified.value && !amlCompleted.value) {
+            currentStep.value = 4;
+        }
+    } catch {
+        /* non-fatal */
+    }
 });
 </script>
