@@ -113,7 +113,7 @@ class EscrowService
     }
 
     /**
-     * Effectively credit the project owner's mobile-money account.
+     * Effectively credit the project owner's company bank account via SEPA / partner bank.
      * Idempotent: if already released, just returns the milestone.
      *
      * Called from the ProcessEscrowRelease job (async, with retries).
@@ -145,12 +145,12 @@ class EscrowService
             throw new RuntimeException('Projet ou investissement introuvable.');
         }
 
-        if (empty($project->payout_phone)) {
-            throw new RuntimeException("Le porteur de projet n'a pas configuré son numéro de paiement.");
+        if (empty($project->payout_iban)) {
+            throw new RuntimeException("Le porteur de projet n'a pas configuré son compte bancaire (IBAN).");
         }
 
         $gateway = $this->gatewayFactory->forCountry(
-            $project->payout_country ?: ($project->country ?: 'SN'),
+            $project->payout_bank_country ?: ($project->country ?: 'SN'),
         );
 
         // Convert milestone amount (project currency) → XOF for PayDunya disburse.
@@ -167,23 +167,34 @@ class EscrowService
                 'gateway_reference' => 'rel_' . Str::random(20),
                 'payment_type'      => 'escrow_release',
                 'status'            => 'processing',
-                'customer_phone'    => $project->payout_phone,
-                'customer_country'  => $project->payout_country,
+                'customer_name'     => $project->payout_account_holder,
+                'customer_country'  => $project->payout_bank_country,
                 'description'      => "Libération jalon #{$milestone->position} — {$project->title}",
                 'custom_data'      => [
-                    'milestone_id'  => $milestone->id,
-                    'investment_id' => $investment->id,
-                    'project_id'    => $project->id,
+                    'milestone_id'    => $milestone->id,
+                    'investment_id'   => $investment->id,
+                    'project_id'      => $project->id,
                     'native_amount'   => (float) $milestone->amount,
                     'native_currency' => $milestone->currency,
+                    'payout_method'   => 'bank_transfer',
+                    'account_holder'  => $project->payout_account_holder,
+                    'bank_name'       => $project->payout_bank_name,
+                    'iban'            => $project->payout_iban,
+                    'bic'             => $project->payout_bic,
                 ],
             ]);
         });
 
+        // Le décaissement passe désormais par un virement bancaire au nom de
+        // l'entreprise (IBAN/BIC) plutôt que par un compte Mobile Money. La
+        // signature du gateway reste utilisée pour conserver le contrat unifié,
+        // mais le `phone` est remplacé par l'IBAN et le `provider` par le nom
+        // de la banque — l'adaptateur réel (SEPA / partenaire bancaire) reste
+        // à brancher côté gateway.
         $result = $gateway->disburse(
-            $project->payout_phone,
+            $project->payout_iban,
             $amountXof,
-            $project->payout_provider ?: 'unknown',
+            $project->payout_bank_name ?: 'bank_transfer',
         );
 
         $this->logDisburse($transaction, $result);

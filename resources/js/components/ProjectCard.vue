@@ -28,6 +28,8 @@
                 </span>
             </div>
 
+            <TrustBadges v-if="project.trust_badges" :badges="project.trust_badges" size="sm" class="mt-3" />
+
             <div class="mt-4">
                 <div class="flex justify-between text-xs font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400 mb-1">
                     <span>{{ formatAmount(project.amount_raised) }}</span>
@@ -47,6 +49,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import TrustBadges from './TrustBadges.vue';
 
 const props = defineProps({ project: { type: Object, required: true } });
 

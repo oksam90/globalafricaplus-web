@@ -15,22 +15,24 @@ class Project extends Model
         'user_id', 'category_id', 'sub_category_id',
         'title', 'slug', 'summary', 'description',
         'country', 'city', 'amount_needed', 'amount_raised', 'currency',
-        'payout_phone', 'payout_provider', 'payout_country',
+        'payout_account_holder', 'payout_bank_name', 'payout_iban', 'payout_bic', 'payout_bank_country',
         'stage', 'status', 'jobs_target', 'views_count', 'followers_count',
         'cover_image', 'gallery', 'website', 'video_url', 'pitch_deck_url',
+        'stage_details',
         'tags', 'deadline', 'published_at',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'gallery' => 'array',
+        'stage_details' => 'array',
         'deadline' => 'date',
         'published_at' => 'datetime',
         'amount_needed' => 'decimal:2',
         'amount_raised' => 'decimal:2',
     ];
 
-    protected $appends = ['progress_percent'];
+    protected $appends = ['progress_percent', 'trust_badges'];
 
     protected static function booted(): void
     {
@@ -156,5 +158,67 @@ class Project extends Model
             return 0;
         }
         return round(min(100, ($this->amount_raised / $this->amount_needed) * 100), 1);
+    }
+
+    /**
+     * Badges de confiance affichés sur la card / fiche projet.
+     *
+     *  - legal_formalization : l'entrepreneur a renseigné dans son profil
+     *    entrepreneur le statut juridique, le n° RCCM (registration_number)
+     *    et le n° fiscal (tax_id). Données partagées entre tous ses projets.
+     *  - bank_account : le projet a un compte de réception bancaire complet
+     *    pour le décaissement automatique des jalons.
+     *  - stage_info : toutes les « Informations à fournir » du stade du projet
+     *    sont renseignées (config/project_stages.php → info_required).
+     *  - stage_docs : tous les « Documents requis » du stade sont renseignés —
+     *    pitch deck (pitch_deck_url) inclus (config → docs_required).
+     *
+     * `stage` est renvoyé pour que le front puisse libeller les deux badges
+     * de stade (« … — stade « Idée » »).
+     *
+     * Si la relation `user.roleProfiles.role` n'est pas chargée, le badge
+     * juridique est marqué `null` (indéterminé) plutôt que `false`, pour
+     * éviter un faux négatif sur les endpoints qui n'eager-loadent pas.
+     */
+    public function getTrustBadgesAttribute(): array
+    {
+        $legal = null;
+        if ($this->relationLoaded('user') && $this->user?->relationLoaded('roleProfiles')) {
+            $entrepreneurProfile = $this->user->roleProfiles
+                ->first(fn ($p) => $p->relationLoaded('role') && $p->role?->slug === 'entrepreneur');
+            $data = $entrepreneurProfile?->data ?? [];
+            $legal = !empty($data['legal_status'])
+                  && !empty($data['registration_number'])
+                  && !empty($data['tax_id']);
+        }
+
+        $bank = !empty($this->payout_account_holder)
+            && !empty($this->payout_bank_name)
+            && !empty($this->payout_iban)
+            && !empty($this->payout_bic)
+            && !empty($this->payout_bank_country);
+
+        // ── Badges propres au stade du projet ──
+        $stage   = $this->stage ?: 'idea';
+        $stageDef = config("project_stages.$stage", config('project_stages.idea', []));
+        $details = $this->stage_details ?? [];
+
+        $allFilled = static fn (array $keys): bool => collect($keys)
+            ->every(fn ($k) => filled($details[$k] ?? null));
+
+        $infoRequired = $stageDef['info_required'] ?? [];
+        $docsRequired = $stageDef['docs_required'] ?? [];
+
+        $stageInfo = !empty($infoRequired) && $allFilled($infoRequired);
+        // Le pitch deck est toujours requis pour les documents.
+        $stageDocs = filled($this->pitch_deck_url) && $allFilled($docsRequired);
+
+        return [
+            'legal_formalization' => $legal,
+            'bank_account'        => $bank,
+            'stage'               => $stage,
+            'stage_info'          => $stageInfo,
+            'stage_docs'          => $stageDocs,
+        ];
     }
 }

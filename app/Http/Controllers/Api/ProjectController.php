@@ -25,7 +25,7 @@ class ProjectController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Project::query()
-            ->with(['category:id,slug,name,color,icon', 'subCategory:id,category_id,slug,name', 'user:id,name,country,avatar', 'sdgs:id,number,name,color'])
+            ->with(['category:id,slug,name,color,icon', 'subCategory:id,category_id,slug,name', 'user:id,name,country,avatar', 'user.roleProfiles.role:id,slug', 'sdgs:id,number,name,color'])
             ->withCount('followers')
             ->published();
 
@@ -65,7 +65,7 @@ class ProjectController extends Controller
     public function show(Request $request, string $slug): JsonResponse
     {
         $project = Project::with([
-            'category', 'subCategory', 'user:id,name,country,avatar,bio',
+            'category', 'subCategory', 'user:id,name,country,avatar,bio', 'user.roleProfiles.role:id,slug',
             'sdgs:id,number,name,color',
             'updates' => fn ($q) => $q->limit(10),
             'updates.author:id,name,avatar',
@@ -116,7 +116,10 @@ class ProjectController extends Controller
      */
     public function mine(Request $request): JsonResponse
     {
-        $projects = Project::with(['category:id,slug,name,color'])
+        $projects = Project::with([
+                'category:id,slug,name,color',
+                'user:id,name,country,avatar', 'user.roleProfiles.role:id,slug',
+            ])
             ->withCount(['followers', 'updates', 'investments'])
             ->where('user_id', $request->user()->id)
             ->latest()
@@ -138,10 +141,19 @@ class ProjectController extends Controller
         $sdgIds = $data['sdg_ids'] ?? [];
         unset($data['sdg_ids']);
 
+        // Champs de formalisation juridique : portés par l'utilisateur, pas
+        // par le projet (un même RCCM couvre tous les projets de l'entrepreneur).
+        $this->persistOwnerLegalFields($request->user(), $data);
+
         $project = Project::create($data);
         if (!empty($sdgIds)) $project->sdgs()->sync($sdgIds);
 
-        return response()->json(['data' => $project->load(['category', 'subCategory', 'sdgs'])], 201);
+        return response()->json([
+            'data' => $project->load([
+                'category', 'subCategory', 'sdgs',
+                'user:id,name,country,avatar', 'user.roleProfiles.role:id,slug',
+            ]),
+        ], 201);
     }
 
     public function update(UpdateProjectRequest $request, Project $project): JsonResponse
@@ -158,10 +170,59 @@ class ProjectController extends Controller
         $sdgIds = $data['sdg_ids'] ?? null;
         unset($data['sdg_ids']);
 
+        $this->persistOwnerLegalFields($project->user, $data);
+
         $project->update($data);
         if ($sdgIds !== null) $project->sdgs()->sync($sdgIds);
 
-        return response()->json(['data' => $project->fresh(['category', 'subCategory', 'sdgs'])]);
+        return response()->json([
+            'data' => $project->fresh([
+                'category', 'subCategory', 'sdgs',
+                'user:id,name,country,avatar', 'user.roleProfiles.role:id,slug',
+            ]),
+        ]);
+    }
+
+    /**
+     * Extrait les champs de formalisation juridique du payload projet et les
+     * persiste dans le profil entrepreneur (RoleProfile.data JSON), où ils
+     * sont déjà partagés entre tous les projets du même porteur. Les clés
+     * sont retirées de `$data` pour ne pas atteindre Project::create()/
+     * update() (champs non fillable côté Project).
+     *
+     * Mapping payload → profil entrepreneur :
+     *   legal_status → legal_status
+     *   rccm_number  → registration_number
+     *   tax_number   → tax_id
+     */
+    private function persistOwnerLegalFields(\App\Models\User $owner, array &$data): void
+    {
+        $map = [
+            'legal_status' => 'legal_status',
+            'rccm_number'  => 'registration_number',
+            'tax_number'   => 'tax_id',
+        ];
+
+        $patch = [];
+        foreach ($map as $payloadKey => $profileKey) {
+            if (array_key_exists($payloadKey, $data)) {
+                $patch[$profileKey] = $data[$payloadKey];
+                unset($data[$payloadKey]);
+            }
+        }
+        if (!$patch) return;
+
+        $role = \App\Models\Role::where('slug', 'entrepreneur')->first();
+        if (!$role) return;
+
+        $profile = \App\Models\RoleProfile::firstOrCreate(
+            ['user_id' => $owner->id, 'role_id' => $role->id],
+            ['data' => [], 'completion' => 0],
+        );
+        $profile->data = array_merge($profile->data ?? [], $patch);
+        $profile->setRelation('role', $role);
+        $profile->recomputeCompletion();
+        $profile->save();
     }
 
     public function destroy(Request $request, Project $project): JsonResponse

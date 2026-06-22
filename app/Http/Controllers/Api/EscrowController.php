@@ -50,8 +50,11 @@ class EscrowController extends Controller
                 'id'              => $project->id,
                 'slug'            => $project->slug,
                 'title'           => $project->title,
-                'payout_phone'    => $isOwner || $isAdmin ? $project->payout_phone : null,
-                'payout_provider' => $isOwner || $isAdmin ? $project->payout_provider : null,
+                'payout_account_holder' => $isOwner || $isAdmin ? $project->payout_account_holder : null,
+                'payout_bank_name'      => $isOwner || $isAdmin ? $project->payout_bank_name      : null,
+                'payout_iban'           => $isOwner || $isAdmin ? $project->payout_iban           : null,
+                'payout_bic'            => $isOwner || $isAdmin ? $project->payout_bic            : null,
+                'payout_bank_country'   => $isOwner || $isAdmin ? $project->payout_bank_country   : null,
             ],
         ]);
     }

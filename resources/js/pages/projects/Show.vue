@@ -27,6 +27,7 @@
             </div>
             <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100">{{ project.title }}</h1>
             <p class="mt-3 text-lg text-slate-600 dark:text-slate-300">{{ project.summary }}</p>
+            <TrustBadges v-if="project.trust_badges" :badges="project.trust_badges" size="md" class="mt-4" />
         </header>
 
         <!-- Tabs + Sidebar -->
@@ -77,7 +78,32 @@
                         <ul class="text-sm space-y-1">
                             <li v-if="project.website"><a :href="project.website" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">🌐 Site web</a></li>
                             <li v-if="project.video_url"><a :href="project.video_url" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">🎬 Vidéo de présentation</a></li>
-                            <li v-if="project.pitch_deck_url"><a :href="project.pitch_deck_url" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">📊 Pitch deck</a></li>
+                            <li v-if="project.pitch_deck_url"><a :href="project.pitch_deck_url" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">📊 {{ stageCfg.pitchLabel }}</a></li>
+                        </ul>
+                    </section>
+
+                    <!-- Informations à fournir selon le stade -->
+                    <section v-if="stageInfoItems.length">
+                        <h2 class="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
+                            Informations clés <span class="text-sm font-medium text-slate-500 dark:text-slate-400">— stade {{ stageLabel(project.stage) }}</span>
+                        </h2>
+                        <dl class="space-y-3">
+                            <div v-for="it in stageInfoItems" :key="it.key" class="rounded-lg border border-slate-100 dark:border-slate-700 p-3">
+                                <dt class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ it.label }}</dt>
+                                <dd class="mt-1 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line">{{ it.value }}</dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <!-- Documents requis selon le stade -->
+                    <section v-if="stageDocItems.length" class="space-y-2">
+                        <h2 class="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">
+                            Documents <span class="text-sm font-medium text-slate-500 dark:text-slate-400">— stade {{ stageLabel(project.stage) }}</span>
+                        </h2>
+                        <ul class="text-sm space-y-1">
+                            <li v-for="d in stageDocItems" :key="d.key">
+                                <a :href="d.value" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">📄 {{ d.label }}</a>
+                            </li>
                         </ul>
                     </section>
                 </div>
@@ -184,6 +210,16 @@
                     class="mt-2 block text-center w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-emerald-300 dark:hover:border-emerald-500/60 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
                     ✎ Modifier
                 </router-link>
+
+                <div v-if="project.trust_badges" class="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
+                    <h4 class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+                        Niveau de confiance
+                    </h4>
+                    <TrustBadges :badges="project.trust_badges" size="md" />
+                    <p class="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Les badges signalent les informations vérifiables fournies par le porteur de projet pour rassurer les investisseurs.
+                    </p>
+                </div>
             </aside>
         </div>
     </article>
@@ -299,6 +335,8 @@ import { useAuthStore } from '../../stores/auth';
 import ProjectCard from '../../components/ProjectCard.vue';
 import EscrowMilestones from '../../components/EscrowMilestones.vue';
 import Modal from '../../components/Modal.vue';
+import TrustBadges from '../../components/TrustBadges.vue';
+import { stageConfig } from '../../utils/projectStages';
 
 // Declare `slug` because the route is registered with `props: true`. Without
 // this, Vue logs an "Extraneous non-props attributes (slug)" warning because
@@ -455,6 +493,23 @@ const progress = computed(() => {
     const raised = parseFloat(project.value.amount_raised) || 0;
     if (need <= 0) return 0;
     return Math.min(100, Math.round((raised / need) * 100));
+});
+
+// ── Informations & documents propres au stade du projet ──
+const stageCfg = computed(() => stageConfig(project.value?.stage));
+
+const stageInfoItems = computed(() => {
+    const details = project.value?.stage_details || {};
+    return stageCfg.value.info
+        .map((f) => ({ ...f, value: details[f.key] }))
+        .filter((f) => f.value);
+});
+
+const stageDocItems = computed(() => {
+    const details = project.value?.stage_details || {};
+    return stageCfg.value.docs
+        .map((d) => ({ ...d, value: details[d.key] }))
+        .filter((d) => d.value);
 });
 
 function formatAmount(v) {

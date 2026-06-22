@@ -8,6 +8,16 @@
         <p class="text-slate-600 dark:text-slate-300 mt-1">Présentez votre initiative pour trouver du financement, des talents et des partenaires.</p>
 
         <form @submit.prevent="submit" class="mt-8 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 space-y-5">
+            <!-- Stade en premier : il pilote la structure du reste du formulaire -->
+            <Field label="Stade du projet *" hint="Le stade détermine les informations et documents attendus par les investisseurs.">
+                <select v-model="form.stage" required class="input">
+                    <option value="idea">Idée</option>
+                    <option value="mvp">MVP</option>
+                    <option value="launch">Lancement</option>
+                    <option value="scaling">Croissance</option>
+                </select>
+            </Field>
+
             <Field label="Titre du projet *">
                 <input v-model="form.title" type="text" required maxlength="200" class="input" />
             </Field>
@@ -61,19 +71,9 @@
                 </Field>
             </div>
 
-            <div class="grid sm:grid-cols-2 gap-4">
-                <Field label="Stade *">
-                    <select v-model="form.stage" required class="input">
-                        <option value="idea">Idée</option>
-                        <option value="mvp">MVP</option>
-                        <option value="launch">Lancement</option>
-                        <option value="scaling">Croissance</option>
-                    </select>
-                </Field>
-                <Field label="Date limite">
-                    <input v-model="form.deadline" type="date" class="input" />
-                </Field>
-            </div>
+            <Field label="Date limite">
+                <input v-model="form.deadline" type="date" class="input" />
+            </Field>
 
             <Field label="Tags" hint="Ajoutez avec Entrée ou virgule">
                 <TagInput v-model="form.tags" placeholder="agritech, solaire…" />
@@ -100,40 +100,93 @@
                     <input v-model="form.video_url" type="url" placeholder="https://" class="input" />
                 </Field>
             </div>
-            <Field label="Pitch deck (lien)">
-                <input v-model="form.pitch_deck_url" type="url" placeholder="https://" class="input" />
-            </Field>
+
+            <!-- ─── Section pilotée par le stade : Informations à fournir ─── -->
+            <fieldset v-if="currentStage.info.length"
+                class="rounded-xl border border-sky-200 dark:border-sky-800/50 bg-sky-50/50 dark:bg-sky-900/20 p-4 space-y-4">
+                <legend class="px-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                    Informations à fournir — stade « {{ stageLabel(form.stage) }} »
+                </legend>
+                <p class="text-xs text-sky-800/80 dark:text-sky-300/80 -mt-2">
+                    Ces éléments aident les investisseurs à évaluer la maturité de votre projet au stade sélectionné.
+                </p>
+                <Field v-for="f in currentStage.info" :key="f.key" :label="f.label">
+                    <textarea v-model="form.stage_details[f.key]" rows="3" maxlength="5000"
+                        class="input" :placeholder="f.placeholder || ''"></textarea>
+                </Field>
+            </fieldset>
+
+            <!-- ─── Section pilotée par le stade : Documents requis ─── -->
+            <fieldset class="rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50/50 dark:bg-violet-900/20 p-4 space-y-4">
+                <legend class="px-2 text-sm font-semibold text-violet-900 dark:text-violet-200">
+                    Documents requis — stade « {{ stageLabel(form.stage) }} »
+                </legend>
+                <p class="text-xs text-violet-800/80 dark:text-violet-300/80 -mt-2">
+                    Renseignez un lien public ou partagé (Google Drive, Dropbox, site…) vers chaque document.
+                </p>
+                <Field :label="currentStage.pitchLabel" hint="Lien vers le pitch deck">
+                    <input v-model="form.pitch_deck_url" type="url" placeholder="https://" class="input" />
+                </Field>
+                <Field v-for="d in currentStage.docs" :key="d.key" :label="d.label" hint="Lien vers le document">
+                    <input v-model="form.stage_details[d.key]" type="url" placeholder="https://" class="input" />
+                </Field>
+            </fieldset>
+
+            <fieldset class="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-900/20 p-4 space-y-4">
+                <legend class="px-2 text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                    Statut juridique &amp; formalisation
+                </legend>
+                <p class="text-xs text-indigo-800/80 dark:text-indigo-300/80 -mt-2">
+                    Ces informations sont communes à tous vos projets. Complétez-les pour obtenir le badge
+                    <strong>« Statut juridique &amp; formalisation »</strong> qui rassure vos investisseurs sur la fiabilité de votre entreprise.
+                </p>
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <Field label="Statut juridique *">
+                        <select v-model="form.legal_status" class="input">
+                            <option value="">—</option>
+                            <option value="informal">Informel (non enregistré)</option>
+                            <option value="individual">Entreprise individuelle</option>
+                            <option value="suarl">SUARL / SARLU</option>
+                            <option value="sarl">SARL</option>
+                            <option value="sas">SAS</option>
+                            <option value="sa">SA</option>
+                            <option value="gie">GIE</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </Field>
+                    <Field label="N° RCCM / Registre de commerce" hint="ex. SN-DKR-2024-B-12345">
+                        <input v-model="form.rccm_number" type="text" maxlength="100" placeholder="SN-DKR-2024-B-12345" class="input" />
+                    </Field>
+                    <Field label="N° fiscal (NINEA / NIF / NCC)" hint="Identifiant fiscal de l'entreprise">
+                        <input v-model="form.tax_number" type="text" maxlength="100" placeholder="0051234567 2A4" class="input" />
+                    </Field>
+                </div>
+            </fieldset>
 
             <fieldset class="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/20 p-4 space-y-4">
                 <legend class="px-2 text-sm font-semibold text-emerald-900 dark:text-emerald-200">
                     Compte de réception (séquestre)
                 </legend>
                 <p class="text-xs text-emerald-800/80 dark:text-emerald-300/80 -mt-2">
-                    Ces informations sont nécessaires pour recevoir le décaissement automatique des jalons validés par vos investisseurs (PayDunya Mobile Money).
+                    Ces informations sont nécessaires pour recevoir, par virement bancaire, le décaissement des jalons validés par vos investisseurs. Le compte doit être au nom de l'entreprise porteuse du projet.
                 </p>
-                <div class="grid sm:grid-cols-3 gap-4">
-                    <Field label="Numéro Mobile Money" hint="Format international, ex. +221771234567">
-                        <input v-model="form.payout_phone" type="tel" placeholder="+221771234567" class="input" />
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <Field label="Titulaire du compte" hint="Raison sociale de l'entreprise">
+                        <input v-model="form.payout_account_holder" type="text" maxlength="200" placeholder="SARL AgriDrone Sahel" class="input" />
                     </Field>
-                    <Field label="Opérateur">
-                        <select v-model="form.payout_provider" class="input">
-                            <option value="">—</option>
-                            <option value="orange-money-senegal">Orange Money (SN)</option>
-                            <option value="wave-senegal">Wave (SN)</option>
-                            <option value="free-money-senegal">Free Money (SN)</option>
-                            <option value="orange-money-ci">Orange Money (CI)</option>
-                            <option value="mtn-ci">MTN MoMo (CI)</option>
-                            <option value="moov-ci">Moov Money (CI)</option>
-                            <option value="orange-money-mali">Orange Money (ML)</option>
-                            <option value="moov-benin">Moov Money (BJ)</option>
-                            <option value="mtn-benin">MTN MoMo (BJ)</option>
-                            <option value="t-money-togo">T-Money (TG)</option>
-                            <option value="orange-money-burkina">Orange Money (BF)</option>
-                            <option value="moov-burkina">Moov Money (BF)</option>
-                        </select>
+                    <Field label="Banque" hint="Nom de l'établissement bancaire">
+                        <input v-model="form.payout_bank_name" type="text" maxlength="150" placeholder="Ecobank Sénégal" class="input" />
+                    </Field>
+                </div>
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <Field label="IBAN" hint="Sans espaces, ex. SN08SN0100100123456789012345">
+                        <input v-model="form.payout_iban" type="text" maxlength="34" placeholder="SN08SN0100100123456789012345" class="input uppercase font-mono" />
+                    </Field>
+                    <Field label="BIC / SWIFT" hint="8 ou 11 caractères">
+                        <input v-model="form.payout_bic" type="text" maxlength="11" placeholder="ECOCSNDA" class="input uppercase font-mono" />
                     </Field>
                     <Field label="Pays du compte" hint="Code ISO à 2 lettres">
-                        <input v-model="form.payout_country" type="text" maxlength="2" placeholder="SN" class="input uppercase" />
+                        <input v-model="form.payout_bank_country" type="text" maxlength="2" placeholder="SN" class="input uppercase" />
                     </Field>
                 </div>
             </fieldset>
@@ -160,12 +213,19 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
+import { stageConfig, stageLabel } from '../../utils/projectStages';
 import Field from '../../components/Field.vue';
 import TagInput from '../../components/TagInput.vue';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const isEdit = computed(() => !!route.params.slug);
+
+// Champs attendus selon le stade sélectionné (cf. utils/projectStages.js).
+// Le pitch deck réutilise le champ existant pitch_deck_url (non dupliqué).
+const currentStage = computed(() => stageConfig(form.stage));
 
 const categories = ref([]);
 const subCategories = ref([]);
@@ -180,10 +240,12 @@ const form = reactive({
     country: '', city: '',
     amount_needed: 0, currency: 'EUR', jobs_target: 0,
     stage: 'idea', deadline: '',
+    stage_details: {},
     tags: [],
     sdg_ids: [],
     website: '', video_url: '', pitch_deck_url: '',
-    payout_phone: '', payout_provider: '', payout_country: '',
+    legal_status: '', rccm_number: '', tax_number: '',
+    payout_account_holder: '', payout_bank_name: '', payout_iban: '', payout_bic: '', payout_bank_country: '',
     status: 'draft',
 });
 
@@ -200,6 +262,20 @@ async function loadLookups() {
     ]);
     categories.value = sectorsRes.data.data || [];
     sdgs.value = sdgsRes.data.data || [];
+}
+
+// Préremplit les champs de formalisation depuis le RoleProfile entrepreneur
+// déjà chargé dans le store auth (/api/auth/me eager-load roleProfiles.role).
+// Mapping RoleProfile.data → form :
+//   legal_status        → legal_status
+//   registration_number → rccm_number
+//   tax_id              → tax_number
+function hydrateOwnerLegalFields() {
+    const profile = auth.profileFor('entrepreneur');
+    const d = profile?.data || {};
+    form.legal_status = form.legal_status || d.legal_status        || '';
+    form.rccm_number  = form.rccm_number  || d.registration_number || '';
+    form.tax_number   = form.tax_number   || d.tax_id              || '';
 }
 
 async function loadProject() {
@@ -220,14 +296,21 @@ async function loadProject() {
         jobs_target: p.jobs_target || 0,
         stage: p.stage,
         deadline: p.deadline ? p.deadline.substring(0, 10) : '',
+        stage_details: p.stage_details || {},
         tags: p.tags || [],
         sdg_ids: (p.sdgs || []).map((s) => s.id),
         website: p.website || '',
         video_url: p.video_url || '',
         pitch_deck_url: p.pitch_deck_url || '',
-        payout_phone: p.payout_phone || '',
-        payout_provider: p.payout_provider || '',
-        payout_country: p.payout_country || '',
+        payout_account_holder: p.payout_account_holder || '',
+        payout_bank_name: p.payout_bank_name || '',
+        payout_iban: p.payout_iban || '',
+        payout_bic: p.payout_bic || '',
+        payout_bank_country: p.payout_bank_country || '',
+        // legal_status / rccm_number / tax_number sont hydratés depuis le
+        // RoleProfile entrepreneur (commun à tous les projets du porteur) —
+        // pas depuis le projet lui-même. hydrateOwnerLegalFields() s'en charge
+        // en onMounted après loadProject().
         status: p.status,
     });
     onCategoryChange();
@@ -237,6 +320,21 @@ function cleanPayload() {
     const payload = { ...form };
     if (!payload.deadline) delete payload.deadline;
     if (!payload.sub_category_id) payload.sub_category_id = null;
+
+    // Ne conserver dans stage_details que les clés du stade sélectionné, en
+    // ignorant les champs vides — ainsi les données stockées restent cohérentes
+    // avec le stade affiché si l'entrepreneur a changé de stade en cours de route.
+    const allowed = [
+        ...currentStage.value.info.map((f) => f.key),
+        ...currentStage.value.docs.map((d) => d.key),
+    ];
+    const details = {};
+    for (const key of allowed) {
+        const val = (form.stage_details?.[key] ?? '').toString().trim();
+        if (val) details[key] = val;
+    }
+    payload.stage_details = details;
+
     return payload;
 }
 
@@ -256,6 +354,11 @@ async function save(status = null) {
             slug = data.data.slug;
             projectId.value = data.data.id;
         }
+        // Les champs juridiques ont été persistés dans le RoleProfile
+        // entrepreneur côté backend. On rafraîchit le store auth pour que les
+        // autres écrans (Profile/Edit, Dashboard, autres projets) voient
+        // immédiatement la mise à jour et le badge se calcule correctement.
+        try { await auth.fetchUser(); } catch { /* ignore */ }
         router.push(`/projets/${slug}`);
     } catch (e) {
         error.value = e?.response?.data?.message ||
@@ -272,6 +375,7 @@ function publishNow() { save('published'); }
 onMounted(async () => {
     await loadLookups();
     await loadProject();
+    hydrateOwnerLegalFields();
 });
 </script>
 
