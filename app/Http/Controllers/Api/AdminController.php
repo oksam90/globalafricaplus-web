@@ -342,7 +342,7 @@ class AdminController extends Controller
                     'smile_job_id'      => null,
                     'partner_job_id'    => $partnerJobId,
                     'job_type'          => 'basic_kyc', // closest existing enum value
-                    'country'           => substr(strtoupper((string) ($user->country ?? 'SN')), 0, 2),
+                    'country'           => $this->resolveIsoCountry($user->country),
                     'id_type'           => 'NATIONAL_ID',
                     'id_number_hash'    => hash_hmac('sha256', $partnerJobId, (string) config('app.key')),
                     'result_code'       => 'ADMOVR',
@@ -397,6 +397,71 @@ class AdminController extends Controller
                     : 'Utilisateur mis à jour.'),
             'kyc_override' => $tierIsRising || $tierIsDropping,
         ]);
+    }
+
+    /**
+     * Convertit le `country` d'un utilisateur (stocké comme nom d'affichage,
+     * ex. "Sénégal") en code ISO-3166 alpha-2 sûr pour la colonne char(2) de
+     * kyc_verifications.
+     *
+     * Correctif: l'ancien `substr(strtoupper($name), 0, 2)` était byte-based et
+     * coupait au milieu d'un caractère multi-octets accentué ("Sénégal" → "S\xC3"),
+     * produisant une chaîne UTF-8 invalide → MySQL "Incorrect string value" → 500.
+     *
+     * On mappe les pays effectivement servis (UEMOA / CEMAC + diaspora courante)
+     * et on retombe sur un fallback strictement ASCII (jamais d'UTF-8 invalide).
+     */
+    private function resolveIsoCountry(?string $country): string
+    {
+        $c = trim((string) $country);
+        if ($c === '') {
+            return 'SN';
+        }
+
+        // Déjà un code ISO alpha-2 ?
+        if (preg_match('/^[A-Za-z]{2}$/', $c)) {
+            return strtoupper($c);
+        }
+
+        static $map = [
+            // UEMOA
+            'sénégal' => 'SN', 'senegal' => 'SN',
+            "côte d'ivoire" => 'CI', "cote d'ivoire" => 'CI', 'cote divoire' => 'CI',
+            'mali' => 'ML',
+            'burkina faso' => 'BF', 'burkina' => 'BF',
+            'togo' => 'TG',
+            'bénin' => 'BJ', 'benin' => 'BJ',
+            'niger' => 'NE',
+            'guinée-bissau' => 'GW', 'guinee-bissau' => 'GW', 'guinée bissau' => 'GW',
+            // CEMAC
+            'cameroun' => 'CM', 'cameroon' => 'CM',
+            'gabon' => 'GA',
+            'tchad' => 'TD', 'chad' => 'TD',
+            'congo' => 'CG', 'république du congo' => 'CG',
+            'république centrafricaine' => 'CF', 'centrafrique' => 'CF',
+            'guinée équatoriale' => 'GQ', 'guinee equatoriale' => 'GQ',
+            // Diaspora courante
+            'france' => 'FR',
+            'belgique' => 'BE', 'belgium' => 'BE',
+            'canada' => 'CA',
+            'états-unis' => 'US', 'etats-unis' => 'US', 'usa' => 'US', 'united states' => 'US',
+            'royaume-uni' => 'GB', 'uk' => 'GB', 'united kingdom' => 'GB',
+            'allemagne' => 'DE', 'germany' => 'DE',
+            'espagne' => 'ES', 'spain' => 'ES',
+            'italie' => 'IT', 'italy' => 'IT',
+            'maroc' => 'MA', 'morocco' => 'MA',
+            'guinée' => 'GN', 'guinee' => 'GN',
+        ];
+
+        $key = mb_strtolower($c, 'UTF-8');
+        if (isset($map[$key])) {
+            return $map[$key];
+        }
+
+        // Fallback strictement ASCII : on retire tout ce qui n'est pas A-Z,
+        // on garde les 2 premières lettres. Jamais d'octet UTF-8 invalide.
+        $ascii = strtoupper(preg_replace('/[^A-Za-z]/', '', $c));
+        return $ascii !== '' ? substr($ascii, 0, 2) : 'SN';
     }
 
     public function userToggleRole(Request $request, int $id): JsonResponse
