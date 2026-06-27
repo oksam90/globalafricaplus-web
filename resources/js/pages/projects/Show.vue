@@ -106,6 +106,36 @@
                             </li>
                         </ul>
                     </section>
+
+                    <!-- Localisation de l'entreprise (Lancement & Croissance) -->
+                    <section v-if="stageLocItems.length" class="space-y-2">
+                        <h2 class="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">Localisation de l'entreprise</h2>
+                        <ul class="text-sm space-y-1">
+                            <li v-for="l in stageLocItems" :key="l.key">
+                                <a :href="l.value" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">📍 {{ l.label }}</a>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- Preuves d'un financement antérieur -->
+                    <section v-if="stageFinItems.length" class="space-y-2">
+                        <h2 class="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">Preuves d'un financement antérieur</h2>
+                        <ul class="text-sm space-y-1">
+                            <li v-for="f in stageFinItems" :key="f.key">
+                                <a :href="f.value" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">💰 {{ f.label }}</a>
+                            </li>
+                        </ul>
+                    </section>
+
+                    <!-- Preuves de l'apport personnel -->
+                    <section v-if="stageEqItems.length" class="space-y-2">
+                        <h2 class="text-lg font-bold mb-2 text-slate-900 dark:text-slate-100">Preuves de l'apport personnel</h2>
+                        <ul class="text-sm space-y-1">
+                            <li v-for="e in stageEqItems" :key="e.key">
+                                <a :href="e.value" target="_blank" class="text-emerald-700 dark:text-emerald-400 hover:underline">🤝 {{ e.label }}</a>
+                            </li>
+                        </ul>
+                    </section>
                 </div>
 
                 <!-- Updates -->
@@ -336,7 +366,7 @@ import ProjectCard from '../../components/ProjectCard.vue';
 import EscrowMilestones from '../../components/EscrowMilestones.vue';
 import Modal from '../../components/Modal.vue';
 import TrustBadges from '../../components/TrustBadges.vue';
-import { stageConfig } from '../../utils/projectStages';
+import { stageConfig, FINANCING, EQUITY } from '../../utils/projectStages';
 
 // Declare `slug` because the route is registered with `props: true`. Without
 // this, Vue logs an "Extraneous non-props attributes (slug)" warning because
@@ -510,6 +540,40 @@ const stageDocItems = computed(() => {
     return stageCfg.value.docs
         .map((d) => ({ ...d, value: details[d.key] }))
         .filter((d) => d.value);
+});
+
+// Section "Localisation de l'entreprise" (présente aux stades Lancement & Croissance)
+const stageLocItems = computed(() => {
+    const loc = stageCfg.value.localization;
+    if (!loc) return [];
+    const details = project.value?.stage_details || {};
+    const items = [];
+    if (details.loc_doc_type && details.loc_doc_link) {
+        const t = loc.docTypes.find((t) => t.value === details.loc_doc_type);
+        items.push({ key: 'loc_doc', label: t?.label || "Justificatif d'occupation", value: details.loc_doc_link });
+    }
+    for (const d of loc.docs) {
+        if (details[d.key]) items.push({ key: d.key, label: d.label, value: details[d.key] });
+    }
+    return items;
+});
+
+// Section "Preuves d'un financement antérieur" (uniquement si déclaré "oui")
+const stageFinItems = computed(() => {
+    const details = project.value?.stage_details || {};
+    if (details.fin_has_prior !== 'oui') return [];
+    return FINANCING.fields
+        .map((f) => ({ ...f, value: details[f.key] }))
+        .filter((f) => f.value);
+});
+
+// Section "Preuves de l'apport personnel" (uniquement si déclaré "oui")
+const stageEqItems = computed(() => {
+    const details = project.value?.stage_details || {};
+    if (details.eq_has_prior !== 'oui') return [];
+    return EQUITY.fields
+        .map((f) => ({ ...f, value: details[f.key] }))
+        .filter((f) => f.value);
 });
 
 function formatAmount(v) {

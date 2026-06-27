@@ -56,6 +56,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/webhooks/paydunya',
             'api/webhooks/paydunya',
             'api/v1/webhooks/smile-identity',
+            'api/v1/webhooks/yousign',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

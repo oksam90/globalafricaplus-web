@@ -91,6 +91,45 @@ const items = computed(() => {
             });
         }
     }
+
+    // ── Badge "Localisation de l'entreprise" (stades Lancement & Croissance) ──
+    // `null`/`undefined` aux autres stades → badge masqué.
+    if (props.badges?.localization !== null && props.badges?.localization !== undefined) {
+        out.push({
+            key: 'localization',
+            label: 'Localisation',
+            ok: !!props.badges.localization,
+            tooltip: props.badges.localization
+                ? "Localisation de l'entreprise : justificatif d'occupation et pièces de localisation fournis."
+                : "Localisation de l'entreprise : justificatifs d'occupation des locaux incomplets.",
+        });
+    }
+
+    // ── Badge "Preuves d'un financement antérieur" (tous stades) ──
+    // `null`/`undefined` (pas de financement antérieur déclaré) → badge masqué.
+    if (props.badges?.financing !== null && props.badges?.financing !== undefined) {
+        out.push({
+            key: 'financing',
+            label: 'Financement antérieur',
+            ok: !!props.badges.financing,
+            tooltip: props.badges.financing
+                ? "Preuves d'un financement antérieur : historique de financement documenté (contrat, attribution, attestation, relevés)."
+                : "Preuves d'un financement antérieur : justificatifs de financement incomplets.",
+        });
+    }
+
+    // ── Badge "Preuves de l'apport personnel" (tous stades) ──
+    // `null`/`undefined` (pas d'apport personnel déclaré) → badge masqué.
+    if (props.badges?.equity !== null && props.badges?.equity !== undefined) {
+        out.push({
+            key: 'equity',
+            label: 'Apport personnel',
+            ok: !!props.badges.equity,
+            tooltip: props.badges.equity
+                ? "Preuves de l'apport personnel : apport documenté (déclaration de montant, nature des apports, relevés, attestation bancaire)."
+                : "Preuves de l'apport personnel : justificatifs d'apport incomplets.",
+        });
+    }
     return out;
 });
 </script>

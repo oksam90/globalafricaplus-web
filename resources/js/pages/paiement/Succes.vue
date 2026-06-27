@@ -43,6 +43,11 @@
                     </a>
                 </div>
 
+                <!-- Convention d'investissement : télécharger / signer -->
+                <div v-if="paymentType === 'investment' && investment" class="mt-8 text-left">
+                    <InvestmentContract :investment="investment" />
+                </div>
+
                 <div v-if="paymentType === 'investment' && investment?.milestones?.length" class="mt-8 text-left">
                     <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Jalons de libération</h2>
                     <ul class="space-y-2">
@@ -91,6 +96,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import InvestmentContract from '../../components/InvestmentContract.vue';
 
 const route = useRoute();
 const auth = useAuthStore();

@@ -7,6 +7,8 @@ use App\Models\Investment;
 use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Convention\ConventionGenerator;
+use App\Services\Convention\ConventionSignatureService;
 use App\Services\Payment\DTOs\PaymentStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -174,7 +176,7 @@ class InvestmentService
             throw new RuntimeException("Cannot activate investment: payment status is {$status->status}.");
         }
 
-        return DB::transaction(function () use ($transaction, $status) {
+        $investment = DB::transaction(function () use ($transaction, $status) {
             $investment = Investment::where('transaction_id', $transaction->id)->first();
 
             if (!$investment) {
@@ -224,6 +226,36 @@ class InvestmentService
 
             return $investment->fresh();
         });
+
+        // Génération automatique de la convention (aiguillage par type + injection
+        // des vraies données). Best-effort : un échec ne doit jamais bloquer le
+        // paiement déjà encaissé. Idempotent côté générateur.
+        try {
+            app(ConventionGenerator::class)->generateForInvestment($investment);
+            $investment->refresh();
+        } catch (\Throwable $e) {
+            Log::warning('convention.generate_failed', [
+                'investment_id' => $investment->id,
+                'type'          => $investment->type,
+                'message'       => $e->getMessage(),
+            ]);
+        }
+
+        // Étape 6 — envoi automatique à la signature électronique (si activé).
+        // Best-effort : ne bloque jamais le paiement déjà encaissé.
+        if (config('yousign.auto_send') && $investment->contract_pdf_path) {
+            try {
+                app(ConventionSignatureService::class)->sendForSignature($investment);
+                $investment->refresh();
+            } catch (\Throwable $e) {
+                Log::warning('convention.signature_send_failed', [
+                    'investment_id' => $investment->id,
+                    'message'       => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return $investment;
     }
 
     /**

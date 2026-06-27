@@ -213,12 +213,39 @@ class Project extends Model
         // Le pitch deck est toujours requis pour les documents.
         $stageDocs = filled($this->pitch_deck_url) && $allFilled($docsRequired);
 
+        // Badge "Localisation de l'entreprise" — seulement aux stades qui
+        // définissent localization_required (Lancement & Croissance). `null`
+        // ailleurs → le front masque le badge.
+        $locRequired  = $stageDef['localization_required'] ?? null;
+        $localization = $locRequired === null ? null : $allFilled($locRequired);
+
+        // Badge "Preuves d'un financement antérieur" — tous les stades, mais
+        // seulement si l'entrepreneur déclare avoir eu un financement antérieur
+        // (fin_has_prior = "oui"). Sinon `null` → badge masqué : l'absence
+        // d'historique n'est pas un signal négatif.
+        $financing = null;
+        if (($details['fin_has_prior'] ?? null) === 'oui') {
+            $finRequired = config('project_stages.financing_required', []);
+            $financing = !empty($finRequired) && $allFilled($finRequired);
+        }
+
+        // Badge "Preuves de l'apport personnel" — tous les stades, seulement si
+        // l'entrepreneur déclare un apport personnel (eq_has_prior = "oui").
+        $equity = null;
+        if (($details['eq_has_prior'] ?? null) === 'oui') {
+            $eqRequired = config('project_stages.equity_required', []);
+            $equity = !empty($eqRequired) && $allFilled($eqRequired);
+        }
+
         return [
             'legal_formalization' => $legal,
             'bank_account'        => $bank,
             'stage'               => $stage,
             'stage_info'          => $stageInfo,
             'stage_docs'          => $stageDocs,
+            'localization'        => $localization,
+            'financing'           => $financing,
+            'equity'              => $equity,
         ];
     }
 }

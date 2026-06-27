@@ -283,22 +283,27 @@
                     <h2 class="text-xl font-bold mb-4 text-slate-900 dark:text-slate-100">Derniers investissements</h2>
                     <div class="space-y-3">
                         <div v-for="inv in roleData.recent_investments" :key="inv.id"
-                            class="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
-                            <div class="flex items-center gap-3">
-                                <router-link v-if="inv.project" :to="`/projets/${inv.project.slug}`"
-                                    class="font-semibold text-blue-700 dark:text-blue-400 hover:underline">
-                                    {{ inv.project.title }}
-                                </router-link>
-                                <span v-if="inv.project?.category" class="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                    :style="{ backgroundColor: inv.project.category.color + '20', color: inv.project.category.color }">
-                                    {{ inv.project.category.name }}
-                                </span>
+                            class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <router-link v-if="inv.project" :to="`/projets/${inv.project.slug}`"
+                                        class="font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                                        {{ inv.project.title }}
+                                    </router-link>
+                                    <span v-if="inv.project?.category" class="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                        :style="{ backgroundColor: inv.project.category.color + '20', color: inv.project.category.color }">
+                                        {{ inv.project.category.name }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 text-sm">
+                                    <span class="font-bold text-slate-900 dark:text-slate-100">{{ fmtMoney(inv.amount) }}</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                        :class="invStatusClass(inv.status)">{{ invStatusLabel(inv.status) }}</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-4 text-sm">
-                                <span class="font-bold text-slate-900 dark:text-slate-100">{{ fmtMoney(inv.amount) }}</span>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                    :class="invStatusClass(inv.status)">{{ invStatusLabel(inv.status) }}</span>
-                            </div>
+                            <!-- Convention d'investissement (paiement confirmé) -->
+                            <InvestmentContract v-if="['escrow', 'released'].includes(inv.status)"
+                                :investment="inv" class="mt-3" />
                         </div>
                     </div>
                 </div>
@@ -654,6 +659,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import DashCard from '../components/DashCard.vue';
 import KycBanner from '../components/KycBanner.vue';
+import InvestmentContract from '../components/InvestmentContract.vue';
 
 const auth = useAuthStore();
 

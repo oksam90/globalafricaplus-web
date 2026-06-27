@@ -25,6 +25,41 @@
 |
 */
 
+// Clés requises pour le badge "Localisation de l'entreprise" (stades Lancement
+// & Croissance). Le type de justificatif (loc_doc_type) + son lien (loc_doc_link)
+// sont obligatoires. Champs volontairement exclus car facultatifs :
+//   loc_quittances_loyer / loc_attestation_bailleur (propres à une location)
+//   loc_certificat_domiciliation_fiscale (« selon pays »)
+$localizationRequired = [
+    'loc_doc_type',
+    'loc_doc_link',
+    'loc_factures_services',
+    'loc_photos_bureau',
+    'loc_photo_equipe',
+];
+
+// Clés requises pour le badge "Preuves d'un financement antérieur" (tous les
+// stades, uniquement si fin_has_prior = "oui"). Cœur de preuve : le financement
+// a bien été obtenu (contrat + lettre + attestation) ET reçu (relevés bancaires).
+// Les autres pièces (usage, factures, KPIs, prêt, témoignages…) sont facultatives.
+$financingRequired = [
+    'fin_contrat',
+    'fin_lettre_attribution',
+    'fin_attestation_institution',
+    'fin_releves_bancaires',
+];
+
+// Clés requises pour le badge "Preuves de l'apport personnel" (tous les stades,
+// uniquement si eq_has_prior = "oui"). Cœur de preuve : déclaration du montant +
+// nature des apports + relevés bancaires des virements + attestation bancaire.
+// Les autres pièces (statuts, cap table, PV, factures, actifs…) sont facultatives.
+$equityRequired = [
+    'eq_declaration_montant',
+    'eq_detail_nature',
+    'eq_releves_bancaires',
+    'eq_attestation_bancaire',
+];
+
 return [
 
     'idea' => [
@@ -87,6 +122,7 @@ return [
             'launch_client_references',
             'launch_audit_report',
         ],
+        'localization_required' => $localizationRequired,
     ],
 
     'scaling' => [
@@ -109,6 +145,11 @@ return [
             'scaling_information_memorandum',
             // scaling_impact_report : facultatif
         ],
+        'localization_required' => $localizationRequired,
     ],
+
+    // Sections transversales (tous stades) — clés sœurs, pas des stades.
+    'financing_required' => $financingRequired,
+    'equity_required'    => $equityRequired,
 
 ];

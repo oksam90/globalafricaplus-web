@@ -87,6 +87,10 @@ Route::prefix('api')->group(function () {
     Route::post('/webhooks/paydunya', [WebhookController::class, 'paydunya'])
         ->middleware(['throttle:webhooks', 'paydunya.webhook']);
 
+    // Yousign signature webhook (HMAC verified inside the controller if a secret is set).
+    Route::post('/v1/webhooks/yousign', [WebhookController::class, 'yousign'])
+        ->middleware('throttle:webhooks');
+
     // Advertising, Partners & Testimonials (public)
     Route::get('/advertising/banners', [AdvertisingController::class, 'banners']);
     Route::post('/advertising/banners/{id}/click', [AdvertisingController::class, 'bannerClick']);
@@ -161,6 +165,11 @@ Route::prefix('api')->group(function () {
             Route::get('/installments/mine',                         [InstallmentController::class, 'mine']);
             Route::get('/investments/mine',                          [InvestmentController::class, 'mine']);
             Route::get('/investments/{investment}',                  [InvestmentController::class, 'show']);
+            Route::get('/investments/{investment}/contract',         [InvestmentController::class, 'contract']);
+            // Convention — signature électronique (Yousign)
+            Route::post('/investments/{investment}/contract/send',   [InvestmentController::class, 'sendForSignature']);
+            Route::get('/investments/{investment}/contract/refresh', [InvestmentController::class, 'refreshSignature']);
+            Route::get('/investments/{investment}/contract/signed',  [InvestmentController::class, 'downloadSigned']);
             Route::get('/escrow/milestones/mine',                    [EscrowController::class, 'mine']);
             Route::get('/escrow/projects/{project}/milestones',      [EscrowController::class, 'projectMilestones']);
         });

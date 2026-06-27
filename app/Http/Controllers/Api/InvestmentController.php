@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Investment;
 use App\Models\Transaction;
+use App\Services\Convention\ConventionGenerator;
+use App\Services\Convention\ConventionSignatureService;
 use App\Services\Payment\Gateways\PayDunyaGateway;
 use App\Services\Payment\InstallmentService;
 use App\Services\Payment\InvestmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvestmentController extends Controller
 {
@@ -115,6 +119,122 @@ class InvestmentController extends Controller
         $investment->load(['project:id,slug,title,country,currency,amount_needed,amount_raised', 'milestones', 'transaction']);
 
         return response()->json(['data' => $investment]);
+    }
+
+    /**
+     * Download the auto-generated investment contract (.docx).
+     * Regenerates on demand if missing (e.g. activated before the feature shipped).
+     */
+    public function contract(Request $request, Investment $investment, ConventionGenerator $generator): StreamedResponse|JsonResponse
+    {
+        $user = $request->user();
+        $isAdmin = method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
+        if ($investment->investor_id !== $user->id && !$isAdmin) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        if (!in_array($investment->status, ['escrow', 'released'], true)) {
+            return response()->json(['message' => "La convention n'est disponible qu'après confirmation du paiement."], 422);
+        }
+
+        $disk = (string) config('conventions.disk', 'local');
+        $wantsPdf = $request->query('format') === 'pdf';
+
+        // (Re)génère si le fichier demandé manque (docx, ou pdf si demandé).
+        $missing = !$investment->contract_path || !Storage::disk($disk)->exists($investment->contract_path);
+        if ($wantsPdf && (!$investment->contract_pdf_path || !Storage::disk($disk)->exists($investment->contract_pdf_path))) {
+            $missing = true;
+        }
+        if ($missing) {
+            try {
+                $generator->generateForInvestment($investment->fresh());
+                $investment->refresh();
+            } catch (\Throwable $e) {
+                return response()->json(['message' => 'Génération de la convention impossible : ' . $e->getMessage()], 500);
+            }
+        }
+
+        $base = 'Convention_' . ($investment->contract_type ?: $investment->type) . '_' . $investment->id;
+
+        // PDF demandé et disponible → on sert le PDF ; sinon repli sur le Word.
+        if ($wantsPdf && $investment->contract_pdf_path && Storage::disk($disk)->exists($investment->contract_pdf_path)) {
+            return Storage::disk($disk)->download($investment->contract_pdf_path, $base . '.pdf');
+        }
+
+        return Storage::disk($disk)->download($investment->contract_path, $base . '.docx');
+    }
+
+    /**
+     * Envoie (ou ré-envoie) la convention à la signature électronique Yousign.
+     */
+    public function sendForSignature(Request $request, Investment $investment, ConventionSignatureService $signatures): JsonResponse
+    {
+        if (!$this->canManageContract($request, $investment)) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+        if (!in_array($investment->status, ['escrow', 'released'], true)) {
+            return response()->json(['message' => "La signature n'est disponible qu'après confirmation du paiement."], 422);
+        }
+
+        try {
+            $signatures->sendForSignature($investment);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'message'              => 'Convention envoyée à la signature des deux parties.',
+            'contract_status'      => $investment->fresh()->contract_status,
+            'signature_request_id' => $investment->fresh()->signature_request_id,
+        ]);
+    }
+
+    /**
+     * Rafraîchit l'état de signature depuis Yousign (et récupère le PDF signé).
+     */
+    public function refreshSignature(Request $request, Investment $investment, ConventionSignatureService $signatures): JsonResponse
+    {
+        if (!$this->canManageContract($request, $investment)) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        try {
+            $status = $signatures->syncStatus($investment);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'provider_status' => $status,
+            'contract_status' => $investment->fresh()->contract_status,
+            'signed'          => $investment->fresh()->contract_status === 'signed',
+        ]);
+    }
+
+    /**
+     * Télécharge le PDF final signé par les deux parties.
+     */
+    public function downloadSigned(Request $request, Investment $investment): StreamedResponse|JsonResponse
+    {
+        if (!$this->canManageContract($request, $investment)) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $disk = (string) config('conventions.disk', 'local');
+        if (!$investment->contract_signed_path || !Storage::disk($disk)->exists($investment->contract_signed_path)) {
+            return response()->json(['message' => 'Convention signée non disponible.'], 404);
+        }
+
+        $filename = 'Convention_signee_' . ($investment->contract_type ?: $investment->type) . '_' . $investment->id . '.pdf';
+        return Storage::disk($disk)->download($investment->contract_signed_path, $filename);
+    }
+
+    /** Le porteur (investisseur) du contrat ou un admin. */
+    private function canManageContract(Request $request, Investment $investment): bool
+    {
+        $user = $request->user();
+        $isAdmin = method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
+        return $investment->investor_id === $user->id || $isAdmin;
     }
 
     /**
