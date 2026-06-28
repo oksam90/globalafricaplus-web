@@ -44,6 +44,13 @@ find "${NEW_RELEASE}" -type d -exec chmod 2775 {} \;
 find "${NEW_RELEASE}" -type f -exec chmod 0664 {} \;
 chmod -R ug+rwX "${SHARED_PATH}/storage" "${SHARED_PATH}/bootstrap/cache" 2>/dev/null || true
 
+# Le serveur web ET le worker tournent en www-data : les données runtime
+# (logs, sessions, conventions .docx/.pdf, conversions LibreOffice) doivent lui
+# appartenir. `sudo -n` : si le droit n'est pas accordé (sudoers), on n'attend
+# pas de mot de passe et on continue — le worker en www-data garde de toute
+# façon la cohérence runtime.
+sudo -n chown -R www-data:www-data "${SHARED_PATH}/storage" "${SHARED_PATH}/bootstrap/cache" 2>/dev/null || true
+
 # ─── 4. APP_KEY si absent ──────────────────────────────
 if ! grep -q "^APP_KEY=base64:" "${SHARED_PATH}/.env"; then
   echo "▶ Generating APP_KEY…"

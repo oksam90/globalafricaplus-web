@@ -145,11 +145,12 @@ supervisorctl reread && supervisorctl update || true
 # Cron Laravel scheduler
 (crontab -u ${APP_USER} -l 2>/dev/null; echo "* * * * * cd ${APP_PATH}/current && php artisan schedule:run >> /dev/null 2>&1") | crontab -u ${APP_USER} -
 
-# Autoriser le user deploy à reload PHP-FPM sans mot de passe
+# Autoriser le user deploy à reload PHP-FPM + reposer les droits storage sans mot de passe
 cat > /etc/sudoers.d/deploy-reload <<EOF
 ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl reload php${PHP_VERSION}-fpm
 ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl restart php${PHP_VERSION}-fpm
 ${APP_USER} ALL=(root) NOPASSWD: /usr/bin/supervisorctl restart globalafricaplus-worker:*
+${APP_USER} ALL=(root) NOPASSWD: /usr/bin/chown -R www-data:www-data ${APP_PATH}/shared/storage ${APP_PATH}/shared/bootstrap/cache
 EOF
 chmod 0440 /etc/sudoers.d/deploy-reload
 
