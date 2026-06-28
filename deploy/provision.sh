@@ -150,7 +150,7 @@ cat > /etc/sudoers.d/deploy-reload <<EOF
 ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl reload php${PHP_VERSION}-fpm
 ${APP_USER} ALL=(root) NOPASSWD: /bin/systemctl restart php${PHP_VERSION}-fpm
 ${APP_USER} ALL=(root) NOPASSWD: /usr/bin/supervisorctl restart globalafricaplus-worker:*
-${APP_USER} ALL=(root) NOPASSWD: /usr/bin/chown -R www-data:www-data ${APP_PATH}/shared/storage ${APP_PATH}/shared/bootstrap/cache
+${APP_USER} ALL=(root) NOPASSWD: /usr/bin/chown -R www-data\:www-data ${APP_PATH}/shared/storage ${APP_PATH}/shared/bootstrap/cache
 EOF
 chmod 0440 /etc/sudoers.d/deploy-reload
 
