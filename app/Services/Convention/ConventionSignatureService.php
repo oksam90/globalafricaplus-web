@@ -152,9 +152,20 @@ class ConventionSignatureService
     /** @return array{0:string,1:string} */
     private function splitName(string $fullName): array
     {
-        $parts = preg_split('/\s+/', trim($fullName)) ?: [];
-        $first = $parts[0] ?? 'Partie';
+        // Yousign n'accepte dans les noms que des lettres (accents inclus),
+        // espaces, tirets et apostrophes. On retire le reste (« + », chiffres,
+        // symboles…) sinon l'API rejette « unauthorized chars » (HTTP 400).
+        $clean = $this->sanitizeName($fullName);
+        $parts = preg_split('/\s+/', $clean) ?: [];
+        $first = ($parts[0] ?? '') !== '' ? $parts[0] : 'Partie';
         $last  = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : $first;
-        return [$first, $last];
+
+        return [$first ?: 'Partie', $last ?: 'Partie'];
+    }
+
+    private function sanitizeName(string $value): string
+    {
+        $value = preg_replace('/[^\p{L}\p{M}\s\'’\-]/u', ' ', $value) ?? '';
+        return trim(preg_replace('/\s+/', ' ', $value) ?? '');
     }
 }
