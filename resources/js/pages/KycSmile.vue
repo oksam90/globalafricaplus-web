@@ -34,6 +34,27 @@
             </div>
         </section>
 
+        <!-- C'est quoi le KYC ? — version réduite + « Lire plus » -->
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100">C'est quoi le KYC ?</h2>
+                <div class="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                    <p>Les informations remplies à chaque étape du formulaire seront enregistrées avant soumission pour une meilleure expérience.</p>
+                    <p>Le formulaire KYC est une mesure de sécurité que Globalafrica+ s'engage à prendre pour identifier ses utilisateurs, investisseurs, porteurs de projets et partenaires institutionnels.</p>
+                    <p v-if="kycInfoExpanded">
+                        Globalafrica+ étant une plateforme numérique panafricaine facilitant la mise en relation entre acteurs économiques, les investissements productifs, les transactions financières via mobile money et passerelles internationales, ainsi que les mécanismes d'escrow (séquestre), elle est assujettie aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme et de la prolifération, conformément aux dispositions de l'article 5 de la Directive de l'Union Économique et Monétaire Ouest Africaine (UEMOA) N° 02/2015/CM/UEMOA. Globalafrica+ s'est engagée à prendre des mesures afin d'identifier ses clients et d'éviter que ses services soient utilisés à des fins de blanchiment d'argent ou tout autres crimes financiers.
+                    </p>
+                </div>
+                <button type="button" @click="kycInfoExpanded = !kycInfoExpanded"
+                    class="mt-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
+                    {{ kycInfoExpanded ? 'Lire moins' : 'Lire plus' }}
+                </button>
+                <p v-if="lastSavedLabel" class="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
+                    ✓ Brouillon enregistré automatiquement à {{ lastSavedLabel }}
+                </p>
+            </div>
+        </div>
+
         <!-- Already verified banner — only when KYC AND AML are done. -->
         <div v-if="investorProfileComplete" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
             <div class="bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl p-6 sm:p-8 text-center">
@@ -438,7 +459,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useKycApi } from '../composables/useKycApi';
 import { useSmileWebSdk } from '../composables/useSmileWebSdk';
@@ -465,6 +486,8 @@ const sdkError = ref('');
 // fallback so the user can still finish KYC via /upload — see
 // components/DocVerificationCapture.vue.
 const showRestFallback = ref(false);
+// Section « C'est quoi le KYC ? » — repliée par défaut, dépliée via « Lire plus ».
+const kycInfoExpanded = ref(false);
 const amlResult = ref(null);
 
 const status = computed(() => kyc.status.value);
@@ -573,6 +596,62 @@ const amlForm = reactive({
     countries: [auth.user?.country?.toUpperCase() ?? 'SN'],
     birth_year: '',
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sauvegarde automatique du brouillon KYC (localStorage, par utilisateur).
+// « Les informations remplies à chaque étape seront enregistrées avant
+// soumission » : on persiste les champs saisis + l'étape courante, on les
+// restaure au chargement, et on efface le brouillon une fois le KYC/AML terminé.
+// Les données restent uniquement sur l'appareil de l'utilisateur, et les PII les
+// plus sensibles (n° de pièce, date de naissance) sont volontairement EXCLUES du
+// brouillon (cf. persistKycDraft).
+// ─────────────────────────────────────────────────────────────────────────────
+const draftReady = ref(false);
+const lastSavedAt = ref(null);
+const kycDraftKey = computed(() => `gaplus.kyc_draft.${auth.user?.id ?? 'anon'}`);
+const lastSavedLabel = computed(() => (lastSavedAt.value ? new Date(lastSavedAt.value).toLocaleTimeString('fr-FR') : ''));
+
+function persistKycDraft() {
+    try {
+        // Confidentialité : on N'ENREGISTRE PAS le n° de pièce (id_number) ni la
+        // date de naissance (dob) — les PII les plus sensibles. On garde le reste
+        // (pays, type de pièce, nom, prénom) pour le confort de reprise ; l'usager
+        // ressaisit juste ces deux champs à la reprise.
+        const basicSafe = {
+            country: basicForm.country,
+            id_type: basicForm.id_type,
+            first_name: basicForm.first_name,
+            last_name: basicForm.last_name,
+        };
+        localStorage.setItem(kycDraftKey.value, JSON.stringify({
+            basicForm: basicSafe,
+            amlForm,
+            currentStep: currentStep.value,
+            savedAt: Date.now(),
+        }));
+        lastSavedAt.value = Date.now();
+    } catch { /* quota / mode privé — non bloquant */ }
+}
+function restoreKycDraft() {
+    try {
+        const raw = localStorage.getItem(kycDraftKey.value);
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        if (d.basicForm) Object.assign(basicForm, d.basicForm);
+        if (d.amlForm) Object.assign(amlForm, d.amlForm);
+        if (typeof d.currentStep === 'number') currentStep.value = d.currentStep;
+        lastSavedAt.value = d.savedAt || null;
+    } catch { /* ignore */ }
+}
+function clearKycDraft() {
+    try { localStorage.removeItem(kycDraftKey.value); } catch { /* ignore */ }
+    lastSavedAt.value = null;
+}
+
+// Enregistre à chaque modification des champs ou changement d'étape.
+watch([basicForm, amlForm, currentStep], () => { if (draftReady.value) persistKycDraft(); }, { deep: true });
+// Une fois le parcours terminé (KYC vérifié + AML fait), on nettoie le brouillon.
+watch(investorProfileComplete, (done) => { if (done) clearKycDraft(); });
 
 function tierLabel(level) { return ({ basic: 'Basic', verified: 'Vérifié', certified: 'Certifié' })[level] || 'Basic'; }
 function amlLabel(s) { return ({ clear: 'Clair', flagged: 'Signalé', blocked: 'Bloqué' })[s] || '—'; }
@@ -763,11 +842,16 @@ function restart() {
     Object.assign(amlForm, { full_name: '', birth_year: '' });
     lastResult.value = null;
     amlResult.value = null;
+    clearKycDraft();
 }
 
 onMounted(async () => {
     try {
         await kyc.fetchStatus();
+        // Restaure le brouillon sauvegardé (champs + étape) avant les ajustements.
+        if (!investorProfileComplete.value) {
+            restoreKycDraft();
+        }
         // Land users with KYC done but AML pending directly on step 4 so they
         // don't have to click through the AML CTA banner.
         if (kycVerified.value && !amlCompleted.value) {
@@ -775,6 +859,9 @@ onMounted(async () => {
         }
     } catch {
         /* non-fatal */
+    } finally {
+        // À partir d'ici, toute modification est auto-enregistrée.
+        draftReady.value = true;
     }
 });
 </script>

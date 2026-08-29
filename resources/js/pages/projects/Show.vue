@@ -30,9 +30,12 @@
             <TrustBadges v-if="project.trust_badges" :badges="project.trust_badges" size="md" class="mt-4" />
         </header>
 
-        <!-- Tabs + Sidebar -->
-        <div class="mt-8 grid lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
+        <!-- Vue publique = en-tête + carte de synthèse uniquement. Le détail complet
+             (onglets À propos / Actualités / Jalons & séquestre / Projets similaires)
+             s'ouvre via « Voir le détail complet » — réservé au porteur du projet et
+             aux investisseurs connectés (cf. canViewFull). -->
+        <div :class="showFull ? 'mt-8 grid lg:grid-cols-3 gap-8' : 'mt-8 max-w-md'">
+            <div v-if="showFull" class="lg:col-span-2">
                 <!-- Tab nav -->
                 <div class="border-b border-slate-200 dark:border-slate-700 mb-6 flex gap-6 overflow-x-auto">
                     <button v-for="t in tabs" :key="t.id" @click="tab = t.id"
@@ -226,6 +229,12 @@
                 <button @click="openInvestModal" :disabled="investing"
                     class="mt-6 w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold">
                     {{ investing ? 'Redirection…' : 'Investir dans ce projet' }}
+                </button>
+
+                <!-- Détail complet — porteur du projet + investisseurs connectés uniquement -->
+                <button v-if="canViewFull" @click="showFull = !showFull"
+                    class="mt-2 w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-500 text-slate-800 dark:text-slate-100 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                    {{ showFull ? '▲ Masquer le détail' : '▼ Voir le détail complet' }}
                 </button>
 
                 <button v-if="auth.isAuthenticated" @click="toggleFollow"
@@ -507,6 +516,10 @@ const loading = ref(true);
 const tab = ref('about');
 const isFollowing = ref(false);
 const canEdit = ref(false);
+const showFull = ref(false);
+// Détail complet (onglets, jalons, description) réservé au porteur du projet
+// (canEdit = propriétaire ou admin) et aux investisseurs connectés.
+const canViewFull = computed(() => canEdit.value || (auth.isAuthenticated && auth.hasRole('investor')));
 const posting = ref(false);
 const updateForm = reactive({ title: '', body: '' });
 

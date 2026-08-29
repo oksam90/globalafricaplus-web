@@ -189,6 +189,10 @@
                             <template v-if="plan.slug === 'free'">
                                 <span class="text-3xl font-black text-slate-900 dark:text-white">0 €</span>
                             </template>
+                            <template v-else-if="plan.slug === 'enterprise'">
+                                <!-- Enterprise : pas de prix public — devis sur mesure (cf. page Tarifs) -->
+                                <span class="text-3xl font-black text-slate-900 dark:text-white">Sur mesure</span>
+                            </template>
                             <template v-else>
                                 <span class="text-3xl font-black text-brand-gold-600 dark:text-brand-gold-400">
                                     {{ yearlyToggle ? fmtPrice(plan.price_yearly) : fmtPrice(plan.price_monthly) }}
