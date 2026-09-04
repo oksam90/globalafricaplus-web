@@ -69,11 +69,14 @@
                 <div class="text-5xl mb-3">⏳</div>
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Paiement en cours de traitement</h1>
                 <p class="mt-3 text-slate-600 dark:text-slate-300">
-                    Nous attendons la confirmation de PayDunya. Vous recevrez une notification dès son activation.
+                    Nous attendons la confirmation de {{ gatewayLabel }}. Vous recevrez une notification dès son activation.
                 </p>
-                <router-link to="/tarifs"
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Si vous avez interrompu le paiement, aucun montant n'a été débité — vous pouvez recommencer.
+                </p>
+                <router-link :to="backTo"
                     class="mt-6 inline-block px-5 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold">
-                    Retour aux tarifs
+                    {{ backLabel }}
                 </router-link>
             </template>
 
@@ -93,7 +96,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import InvestmentContract from '../../components/InvestmentContract.vue';
@@ -106,6 +109,16 @@ const receiptUrl = ref(null);
 const paymentType = ref(null);
 const investment = ref(null);
 const training = ref(null);
+// PSP qui a traité la transaction — le libellé ne doit pas être code en dur :
+// selon le moyen choisi, c'est PawaPay (mobile money) ou PayDunya (carte).
+const gateway = ref(null);
+
+const GATEWAY_LABELS = { pawapay: 'PawaPay', paydunya: 'PayDunya' };
+const gatewayLabel = computed(() => GATEWAY_LABELS[gateway.value] || 'votre opérateur de paiement');
+
+// Un investissement ramène au tableau de bord, pas à la page des tarifs.
+const backTo = computed(() => (paymentType.value === 'subscription' ? '/tarifs' : '/dashboard'));
+const backLabel = computed(() => (paymentType.value === 'subscription' ? 'Retour aux tarifs' : 'Tableau de bord'));
 
 function formatMoney(v, currency) {
     const n = parseFloat(v) || 0;
@@ -141,6 +154,7 @@ onMounted(async () => {
     let res = await tryVerify('/api/investments/verify', token);
     if (res.ok) {
         paymentType.value = 'investment';
+        gateway.value = res.data.transaction?.gateway || null;
         status.value = res.data.status;
         receiptUrl.value = res.data.receipt_url;
         investment.value = res.data.investment;
@@ -151,6 +165,7 @@ onMounted(async () => {
     res = await tryVerify('/api/trainings/verify', token);
     if (res.ok) {
         paymentType.value = 'training';
+        gateway.value = res.data.transaction?.gateway || null;
         status.value = res.data.status;
         receiptUrl.value = res.data.transaction?.paydunya_receipt_url || null;
         training.value = res.data.purchase?.training || null;
@@ -161,6 +176,7 @@ onMounted(async () => {
     res = await tryVerify('/api/subscription/verify', token);
     if (res.ok) {
         paymentType.value = 'subscription';
+        gateway.value = res.data.transaction?.gateway || null;
         status.value = res.data.status;
         receiptUrl.value = res.data.receipt_url;
         if (res.data.status === 'completed') {

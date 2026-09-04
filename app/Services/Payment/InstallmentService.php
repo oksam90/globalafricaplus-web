@@ -11,6 +11,7 @@ use App\Models\Training;
 use App\Models\TrainingPurchase;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Payment\DTOs\PaymentStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +49,7 @@ class InstallmentService
         int $totalInstallments,
         string $frequency = 'monthly',
         ?Carbon $startsAt = null,
+        ?string $paymentMethod = null,
     ): InstallmentPlan {
         if ($totalInstallments < 2 || $totalInstallments > 12) {
             throw new RuntimeException('Le nombre d\'échéances doit être compris entre 2 et 12.');
@@ -63,13 +65,16 @@ class InstallmentService
         $startsAt ??= now();
 
         return DB::transaction(function () use (
-            $user, $payable, $totalAmount, $currency, $totalInstallments, $frequency, $startsAt, $paymentType
+            $user, $payable, $totalAmount, $currency, $totalInstallments, $frequency, $startsAt, $paymentType, $paymentMethod
         ) {
             $plan = InstallmentPlan::create([
                 'user_id'            => $user->id,
                 'payable_type'       => get_class($payable),
                 'payable_id'         => $payable->getKey(),
                 'payment_type'       => $paymentType,
+                // Moyen choisi par l'utilisateur : chaque échéance doit repartir
+                // sur le MÊME PSP, sinon la 1re redirige vers un autre opérateur.
+                'payment_method'     => $paymentMethod,
                 'total_amount'       => $this->currency->round($totalAmount, $currency),
                 'currency'           => strtoupper($currency),
                 'total_installments' => $totalInstallments,
@@ -79,12 +84,16 @@ class InstallmentService
                 'status'             => 'active',
             ]);
 
-            // Splits égaux, le dernier absorbe le reste pour ne pas perdre de centimes.
-            $share = (float) round($totalAmount / $totalInstallments, 2);
+            // Splits égaux, le dernier absorbe le reste pour ne pas perdre de
+            // centimes. La part est arrondie À LA PRÉCISION DE LA DEVISE avant
+            // d'être cumulée : sinon, en XOF/XAF (pas de sous-unité), l'écart
+            // entre la part théorique et la part réellement enregistrée faisait
+            // perdre jusqu'à n-1 unités sur le total encaissé.
+            $share   = $this->currency->round($totalAmount / $totalInstallments, $currency);
             $running = 0.0;
             for ($i = 1; $i <= $totalInstallments; $i++) {
                 $amount = $i === $totalInstallments
-                    ? round($totalAmount - $running, 2)
+                    ? $this->currency->round($totalAmount - $running, $currency)
                     : $share;
                 $running += $amount;
 
@@ -136,7 +145,14 @@ class InstallmentService
         // Le pays doit être normalisé en ISO-2 : il alimente le choix du marché
         // mobile money ET la colonne char(2) `transactions.customer_country`.
         $country = $this->fees->normalizeCountry($user->country ?? null);
-        $gateway = $this->gatewayFactory->forCountry($country);
+
+        // Le PSP est celui du moyen retenu à la création du plan (carte →
+        // PayDunya, mobile money → PawaPay). Repli sur le routage par pays pour
+        // les plans créés avant l'introduction de la colonne.
+        $method  = $plan->payment_method;
+        $gateway = $method
+            ? $this->gatewayFactory->forMethod($method)
+            : $this->gatewayFactory->forCountry($country);
 
         // Devise réellement débitée : FCFA pour PayDunya, devise du marché
         // mobile money du pays pour PawaPay. Débiter en XOF un opérateur qui
@@ -182,6 +198,9 @@ class InstallmentService
                     'installment_id'      => $installment->id,
                     'installment_number'  => $installment->number,
                     'installment_total'   => $plan->total_installments,
+                    'payment_method'      => $plan->payment_method,
+                    'payable_type'        => $plan->payable_type,
+                    'payable_id'          => $plan->payable_id,
                     'native_amount'       => (float) $installment->amount,
                     'native_currency'     => $installment->currency,
                 ],
@@ -202,6 +221,7 @@ class InstallmentService
             'item_name'    => $description,
             'reference'    => (string) $transaction->id,
             'payment_type' => $plan->payment_type,
+            'channel'      => $method === 'card' ? 'card' : null,
             'country'      => $country,
             'customer'     => [
                 'name'  => $user->name,
@@ -278,10 +298,62 @@ class InstallmentService
                     'next_due_at'  => null,
                     'completed_at' => now(),
                 ]);
+                $plan->refresh();
+
+                // Toutes les échéances sont réglées : le payable parent peut
+                // enfin être activé. Tant que le plan court, l'investissement
+                // reste « en attente » — l'argent n'est pas intégralement reçu.
+                $this->settleParent($plan);
             }
 
             return $plan;
         });
+    }
+
+    /**
+     * Active le payable parent une fois le plan intégralement réglé.
+     *
+     * Le webhook ne peut pas le faire lui-même : il ne dispose que de la
+     * transaction de l'ÉCHÉANCE, dont les `custom_data` ne permettent pas de
+     * retrouver l'investissement. On repasse donc par la transaction
+     * « maîtresse » créée à l'initiation de l'investissement.
+     */
+    protected function settleParent(InstallmentPlan $plan): void
+    {
+        if ($plan->payment_type !== 'investment') {
+            // Abonnements et formations fractionnés : le règlement du parent
+            // n'est pas encore automatisé (les custom_data nécessaires ne sont
+            // pas portées par la transaction d'échéance).
+            Log::warning('installments.parent_settlement_unsupported', [
+                'plan_id'      => $plan->id,
+                'payment_type' => $plan->payment_type,
+            ]);
+
+            return;
+        }
+
+        $investment = Investment::find($plan->payable_id);
+        if (!$investment || in_array($investment->status, ['escrow', 'released'], true)) {
+            return;
+        }
+
+        $master = $investment->transaction;
+        if (!$master) {
+            Log::warning('installments.parent_master_transaction_missing', [
+                'plan_id'       => $plan->id,
+                'investment_id' => $investment->id,
+            ]);
+
+            return;
+        }
+
+        app(InvestmentService::class)->activate($master, new PaymentStatus(
+            status:   PaymentStatus::STATUS_COMPLETED,
+            token:    $master->pawapay_deposit_id ?: $master->paydunya_token,
+            amount:   (float) $plan->total_amount,
+            currency: $plan->currency,
+            raw:      ['settled_by' => 'installment_plan', 'plan_id' => $plan->id],
+        ));
     }
 
     /**

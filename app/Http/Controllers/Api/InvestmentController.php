@@ -53,6 +53,15 @@ class InvestmentController extends Controller
             'frequency'       => ['nullable', Rule::in(['weekly', 'biweekly', 'monthly'])],
         ]);
 
+        $installmentCount = (int) ($data['installments'] ?? 1);
+
+        // En paiement fractionné, le règlement passe par les échéances : inutile
+        // d'ouvrir un checkout pour la totalité, il serait immédiatement
+        // abandonné (et laissait un dépôt orphelin chez le PSP).
+        if ($installmentCount > 1) {
+            $data['skip_checkout'] = true;
+        }
+
         try {
             $result = $this->investments->initiate($user, $data);
         } catch (\Throwable $e) {
@@ -61,18 +70,20 @@ class InvestmentController extends Controller
             ], 422);
         }
 
-        $installmentCount = (int) ($data['installments'] ?? 1);
-
         if ($installmentCount > 1) {
             $investment = $result['investment'];
             try {
                 $plan = $this->installments->createPlan(
                     user: $user,
                     payable: $investment,
-                    totalAmount: (float) $investment->amount,
-                    currency: $investment->currency,
+                    // Le plan porte sur le MONTANT ENVOYÉ (frais + commission
+                    // inclus), pas sur le montant reçu par le porteur : sinon
+                    // les frais ne seraient jamais encaissés.
+                    totalAmount: (float) $investment->charged_amount,
+                    currency: $investment->charged_currency,
                     totalInstallments: $installmentCount,
                     frequency: $data['frequency'] ?? 'monthly',
+                    paymentMethod: $result['quote']['method'] ?? null,
                 );
                 $first = $this->installments->invoiceNext($plan);
             } catch (\Throwable $e) {

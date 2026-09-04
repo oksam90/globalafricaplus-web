@@ -108,14 +108,24 @@ class ProcessPayDunyaWebhook implements ShouldQueue
         $isInstallment = !empty($customData['installment_id']);
 
         try {
-            // Installment payments share their payment_type with the parent (investment/subscription/training)
-            // but are tracked individually — settle the installment row first, then let the parent handler
-            // decide whether the underlying record should activate.
-            if ($isInstallment && $status->isPaid()) {
+            // Une ÉCHÉANCE se règle seule : sa transaction n'est pas rattachée
+            // au payable parent, donc l'activer ici lèverait « Investment not
+            // found ». InstallmentService::markPaid() active le parent lui-même,
+            // et uniquement au règlement de la dernière échéance.
+            if ($isInstallment) {
                 $installment = Installment::find($customData['installment_id']);
-                if ($installment) {
-                    $installments->markPaid($installment, $transaction);
+
+                if ($status->isPaid()) {
+                    if ($installment) {
+                        $installments->markPaid($installment, $transaction);
+                    }
+                    $transaction->update(['status' => 'completed', 'paid_at' => now()]);
+                } else {
+                    $installment?->update(['status' => 'failed']);
+                    $this->markFailed($transaction, $status->status);
                 }
+
+                return;
             }
 
             match ($paymentType) {

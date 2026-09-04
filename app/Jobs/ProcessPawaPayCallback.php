@@ -109,11 +109,24 @@ class ProcessPawaPayCallback implements ShouldQueue
         $isInstallment = !empty($customData['installment_id']);
 
         try {
-            if ($isInstallment && $status->isPaid()) {
+            // Une ÉCHÉANCE se règle seule : elle ne doit jamais tenter d'activer
+            // le payable parent avec sa propre transaction (celle-ci n'est pas
+            // rattachée à l'investissement). C'est InstallmentService::markPaid()
+            // qui active le parent, et seulement au règlement de la dernière.
+            if ($isInstallment) {
                 $installment = Installment::find($customData['installment_id']);
-                if ($installment) {
-                    $installments->markPaid($installment, $transaction);
+
+                if ($status->isPaid()) {
+                    if ($installment) {
+                        $installments->markPaid($installment, $transaction);
+                    }
+                    $transaction->update(['status' => 'completed', 'paid_at' => now()]);
+                } elseif ($status->status !== PaymentStatus::STATUS_PENDING) {
+                    $installment?->update(['status' => 'failed']);
+                    $this->markFailed($transaction, $status);
                 }
+
+                return;
             }
 
             match ($transaction->payment_type) {

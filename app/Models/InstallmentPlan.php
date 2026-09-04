@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InstallmentPlan extends Model
 {
     protected $fillable = [
-        'user_id', 'payable_type', 'payable_id', 'payment_type',
+        'user_id', 'payable_type', 'payable_id', 'payment_type', 'payment_method',
         'total_amount', 'currency',
         'total_installments', 'paid_installments',
         'frequency', 'status',

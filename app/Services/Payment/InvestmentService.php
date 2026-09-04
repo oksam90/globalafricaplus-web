@@ -199,6 +199,20 @@ class InvestmentService
             return [$investment, $transaction];
         });
 
+        // Paiement fractionné : aucun checkout global — chaque échéance ouvre
+        // le sien. La transaction créée ci-dessus reste la transaction
+        // « maîtresse » de l'investissement, activée au règlement de la
+        // dernière échéance (cf. InstallmentService::settleParent()).
+        if (!empty($data['skip_checkout'])) {
+            return [
+                'status'      => 'installments_pending',
+                'investment'  => $investment,
+                'transaction' => $transaction,
+                'quote'       => $feeBreakdown,
+                'checkout'    => null,
+            ];
+        }
+
         $checkout = $gateway->createCheckout([
             'amount'       => $charged,
             'currency'     => $chargedCurrency,
