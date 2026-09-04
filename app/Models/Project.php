@@ -15,6 +15,9 @@ class Project extends Model
         'user_id', 'category_id', 'sub_category_id',
         'title', 'slug', 'summary', 'description',
         'country', 'city', 'amount_needed', 'amount_raised', 'currency',
+        // Compte de réception (séquestre) — canal principal : mobile money
+        'payout_mobile_number', 'payout_mobile_provider', 'payout_mobile_country', 'payout_mobile_holder',
+        // Canal secondaire : virement bancaire
         'payout_account_holder', 'payout_bank_name', 'payout_iban', 'payout_bic', 'payout_bank_country',
         'stage', 'status', 'jobs_target', 'views_count', 'followers_count',
         'cover_image', 'gallery', 'website', 'video_url', 'pitch_deck_url',
@@ -192,11 +195,21 @@ class Project extends Model
                   && !empty($data['tax_id']);
         }
 
-        $bank = !empty($this->payout_account_holder)
+        // Compte de réception (séquestre) : le badge est acquis dès qu'AU MOINS
+        // un canal de décaissement est complet — mobile money (canal principal,
+        // utilisé pour les paiements PawaPay) ou virement bancaire (canal
+        // secondaire, utilisé pour les paiements par carte via PayDunya).
+        $mobilePayout = !empty($this->payout_mobile_number)
+            && !empty($this->payout_mobile_provider)
+            && !empty($this->payout_mobile_country);
+
+        $bankPayout = !empty($this->payout_account_holder)
             && !empty($this->payout_bank_name)
             && !empty($this->payout_iban)
             && !empty($this->payout_bic)
             && !empty($this->payout_bank_country);
+
+        $bank = $mobilePayout || $bankPayout;
 
         // ── Badges propres au stade du projet ──
         $stage   = $this->stage ?: 'idea';

@@ -61,7 +61,7 @@
                                 {{ formatPrice(training.price, training.currency) }}
                             </div>
                             <div v-if="training.currency === 'EUR'" class="text-sm text-amber-600 dark:text-amber-400 font-semibold mt-1">
-                                &asymp; {{ formatXof(training.price) }} via PayDunya
+                                &asymp; {{ formatXof(training.price) }}
                             </div>
                         </div>
 
@@ -79,12 +79,17 @@
                             </button>
                         </div>
                         <div v-else class="space-y-3">
+                            <!-- Mobile Money (PawaPay) ou carte bancaire (PayDunya) -->
+                            <PaymentMethodSelector v-model="paymentMethod" />
+
                             <button @click="purchase" :disabled="purchasing"
                                 class="w-full px-4 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold">
                                 {{ purchasing ? 'Redirection…' : '🔓 Acheter cette formation' }}
                             </button>
                             <p class="text-xs text-slate-500 dark:text-slate-400 text-center">
-                                Paiement sécurisé via PayDunya · Garantie 30 jours satisfait ou remboursé
+                                Paiement sécurisé
+                                {{ paymentMethod === 'card' ? 'par carte bancaire via PayDunya' : 'par mobile money via PawaPay' }}
+                                · Garantie 30 jours satisfait ou remboursé
                             </p>
                         </div>
 
@@ -109,6 +114,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import PaymentMethodSelector from '../../components/PaymentMethodSelector.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -120,6 +126,8 @@ const contentUrl = ref(null);
 const myPurchase = ref(null);
 const loading = ref(true);
 const purchasing = ref(false);
+// mobile_money (PawaPay) | card (PayDunya) — renseigné par le sélecteur.
+const paymentMethod = ref('');
 const refunding = ref(false);
 const error = ref('');
 const toast = ref(null);
@@ -178,6 +186,7 @@ async function purchase() {
     try {
         const { data } = await window.axios.post(`/api/trainings/${training.value.slug}/purchase`, {
             country: auth.user?.country || 'SN',
+            payment_method: paymentMethod.value || undefined,
         });
         if (data.status === 'checkout_required' && data.checkout?.url) {
             window.location.href = data.checkout.url;

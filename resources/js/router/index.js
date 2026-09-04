@@ -198,6 +198,12 @@ const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/admin/formalisation',
+        name: 'admin.formalisation',
+        component: () => import('../pages/admin/Formalisation.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/admin/appels',
         name: 'admin.calls',
         component: () => import('../pages/admin/Calls.vue'),

@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Investment;
+use App\Models\Project;
 use App\Models\Transaction;
 use App\Services\Convention\ConventionGenerator;
 use App\Services\Convention\ConventionSignatureService;
-use App\Services\Payment\Gateways\PayDunyaGateway;
+use App\Services\Payment\FeeCalculator;
 use App\Services\Payment\InstallmentService;
 use App\Services\Payment\InvestmentService;
+use App\Services\Payment\PaymentGatewayFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -34,13 +36,21 @@ class InvestmentController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'project_id'    => ['required', 'integer', 'exists:projects,id'],
-            'amount'        => ['required', 'numeric', 'min:1'],
-            'type'          => ['nullable', Rule::in(['equity', 'donation', 'loan', 'reward'])],
-            'country'       => ['nullable', 'string', 'max:100'],
-            'channel'       => ['nullable', 'string', 'max:50'],
-            'installments'  => ['nullable', 'integer', 'min:1', 'max:12'],
-            'frequency'     => ['nullable', Rule::in(['weekly', 'biweekly', 'monthly'])],
+            'project_id'      => ['required', 'integer', 'exists:projects,id'],
+            // « Montant Reçu » — ce que le porteur de projet encaisse.
+            // `amount` reste accepté (compatibilité) et vaut alors le montant
+            // reçu exprimé dans la devise du projet.
+            'net_amount'      => ['required_without:amount', 'numeric', 'min:1'],
+            'amount'          => ['required_without:net_amount', 'numeric', 'min:1'],
+            'amount_currency' => ['nullable', 'string', 'size:3'],
+            'type'            => ['nullable', Rule::in(['equity', 'donation', 'loan', 'reward'])],
+            // Moyen de paiement : mobile money (PawaPay) ou carte bancaire (PayDunya)
+            'payment_method'  => ['nullable', Rule::in(array_keys(config('payments.methods', [])))],
+            'country'         => ['nullable', 'string', 'max:100'],
+            'channel'         => ['nullable', 'string', 'max:50'],
+            'provider'        => ['nullable', 'string', 'max:40'],
+            'installments'    => ['nullable', 'integer', 'min:1', 'max:12'],
+            'frequency'       => ['nullable', Rule::in(['weekly', 'biweekly', 'monthly'])],
         ]);
 
         try {
@@ -85,8 +95,51 @@ class InvestmentController extends Controller
             'message'        => 'Redirection vers la page de paiement sécurisée.',
             'investment_id'  => $result['investment']->id,
             'transaction_id' => $result['transaction']->id,
+            'quote'          => $result['quote'] ?? null,
             'checkout'       => $result['checkout'],
         ], 201);
+    }
+
+    /**
+     * Devis « Montant Reçu → Montant Envoyé ».
+     *
+     * Renvoie la décomposition complète utilisée par le popup « Investir dans
+     * ce projet » : commission GlobalAfrica+ (barème dégressif 3 % / 2 % / 1 %,
+     * montants pivots non exposés) + frais PawaPay du pays du projet.
+     *
+     * Lecture seule : aucune transaction n'est créée.
+     */
+    public function quote(Request $request, FeeCalculator $fees): JsonResponse
+    {
+        $data = $request->validate([
+            'project_id'     => ['required', 'integer', 'exists:projects,id'],
+            'net_amount'     => ['required', 'numeric', 'min:0.01'],
+            'currency'       => ['nullable', 'string', 'size:3'],
+            'payment_method' => ['nullable', Rule::in(array_keys(config('payments.methods', [])))],
+        ]);
+
+        $project = Project::findOrFail($data['project_id']);
+        $method  = $data['payment_method'] ?? $fees->defaultMethod();
+
+        try {
+            // Un devis par moyen de paiement : le popup affiche les deux
+            // options avec leur coût réel avant que l'utilisateur ne choisisse.
+            $all = $this->investments->quoteAllMethods(
+                $project,
+                (float) $data['net_amount'],
+                $data['currency'] ?? null,
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data'           => $all[$method] ?? reset($all),
+            'methods'        => $fees->availableMethods(),
+            'quotes'         => $all,
+            'default_method' => $fees->defaultMethod(),
+            'minimum'        => $fees->minimumAmount((string) ($all[$method]['currency'] ?? 'XOF')),
+        ]);
     }
 
     /**
@@ -241,22 +294,28 @@ class InvestmentController extends Controller
      * Verify an investment payment on return from PayDunya.
      * Mirrors SubscriptionController::verify.
      */
-    public function verify(Request $request, PayDunyaGateway $gateway): JsonResponse
+    public function verify(Request $request, PaymentGatewayFactory $gateways): JsonResponse
     {
         $data = $request->validate([
             'token' => ['required', 'string', 'max:200'],
         ]);
 
-        $transaction = Transaction::where('paydunya_token', $data['token'])
-            ->where('user_id', $request->user()->id)
+        // Le « token » est le token PayDunya OU le depositId PawaPay selon le
+        // PSP qui a traité la transaction.
+        $transaction = Transaction::where('user_id', $request->user()->id)
             ->where('payment_type', 'investment')
+            ->where(function ($q) use ($data) {
+                $q->where('paydunya_token', $data['token'])
+                  ->orWhere('pawapay_deposit_id', $data['token']);
+            })
             ->first();
 
         if (!$transaction) {
             return response()->json(['message' => 'Transaction introuvable.'], 404);
         }
 
-        $status = $gateway->verifyPayment($data['token']);
+        $gateway = $gateways->make($transaction->gateway ?: config('payments.default_gateway', 'pawapay'));
+        $status  = $gateway->verifyPayment($data['token']);
 
         if ($status->isPaid()) {
             try {

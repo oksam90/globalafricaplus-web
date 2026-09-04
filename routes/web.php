@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GovernmentController;
 use App\Http\Controllers\Api\FormalizationController;
+use App\Http\Controllers\Api\AdminFormalizationController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\EscrowController;
 use App\Http\Controllers\Api\ExchangeRateController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\TrainingController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SmileKYCController;
+use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\SmileWebhookController;
 use App\Http\Controllers\Api\AdvertisingController;
 use App\Http\Controllers\Api\StatsController;
@@ -86,6 +88,21 @@ Route::prefix('api')->group(function () {
     // Alias without the /v1 prefix to match legacy docs
     Route::post('/webhooks/paydunya', [WebhookController::class, 'paydunya'])
         ->middleware(['throttle:webhooks', 'paydunya.webhook']);
+
+    // Moyens de paiement activés + barème public de commission (sans pivots)
+    // et opérateurs mobile money par pays (compte de réception du porteur).
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+    Route::get('/payment-methods/providers/{country}', [PaymentMethodController::class, 'providers'])
+        ->where('country', '[A-Za-z]{2,60}');
+
+    // PawaPay callbacks (deposits / payouts / refunds / checkouts).
+    // Le statut est systématiquement re-vérifié auprès de l'API PawaPay avant
+    // toute action métier : le payload seul n'est jamais une source de vérité.
+    // ⚠️ Ces 4 URLs doivent être saisies dans Dashboard → Developers →
+    //    Callback URLs AVANT de pouvoir générer le token API.
+    Route::post('/v1/webhooks/pawapay/{type}', [WebhookController::class, 'pawapay'])
+        ->whereIn('type', ['deposits', 'payouts', 'refunds', 'checkouts'])
+        ->middleware('throttle:webhooks');
 
     // Yousign signature webhook (HMAC verified inside the controller if a secret is set).
     Route::post('/v1/webhooks/yousign', [WebhookController::class, 'yousign'])
@@ -181,6 +198,13 @@ Route::prefix('api')->group(function () {
         // limbo. The controller scopes the lookup by user_id and the call
         // is idempotent — safe to leave open to any authenticated user.
         Route::post('/investments/verify',                       [InvestmentController::class, 'verify']);
+
+        // Devis « Montant Reçu → Montant Envoyé » (popup d'investissement).
+        // Lecture seule et sans effet de bord : accessible dès que l'utilisateur
+        // est authentifié, pour que le calcul s'affiche pendant la saisie même
+        // si le KYC n'est pas encore finalisé.
+        Route::post('/investments/quote',                        [InvestmentController::class, 'quote'])
+            ->middleware('throttle:60,1');
 
         // ─── Investor actions — Pro/Entreprise + KYC + AML (Optimisation points 2 & 3) ─
         // Investing is gated to Pro / Entreprise tiers per the commercial
@@ -322,6 +346,15 @@ Route::prefix('api')->group(function () {
                 // Optimisation point 5 — Country guides admin.
                 Route::get('/country-guides',    [DiasporaController::class, 'adminCountriesIndex']);
                 Route::get('/country-guides/{id}', [DiasporaController::class, 'adminCountryShow']);
+                // Hub de formalisation — administration complète
+                // (parcours pays, modèles de business plan, partenaires).
+                Route::get('/formalisation/overview',      [AdminFormalizationController::class, 'overview']);
+                Route::get('/formalisation/steps',         [AdminFormalizationController::class, 'stepsIndex']);
+                Route::get('/formalisation/steps/{id}',    [AdminFormalizationController::class, 'stepShow']);
+                Route::get('/formalisation/templates',     [AdminFormalizationController::class, 'templatesIndex']);
+                Route::get('/formalisation/templates/{id}', [AdminFormalizationController::class, 'templateShow']);
+                Route::get('/formalisation/partners',      [AdminFormalizationController::class, 'partnersIndex']);
+                Route::get('/formalisation/partners/{id}', [AdminFormalizationController::class, 'partnerShow']);
                 // Optimisation point 7 — Government calls admin.
                 Route::get('/calls',             [GovernmentController::class, 'adminCallsIndex']);
                 Route::get('/calls/{id}',        [GovernmentController::class, 'adminCallShow']);
@@ -355,6 +388,17 @@ Route::prefix('api')->group(function () {
                 Route::post('/country-guides',               [DiasporaController::class, 'adminStoreCountry']);
                 Route::patch('/country-guides/{id}',         [DiasporaController::class, 'adminUpdateCountry']);
                 Route::delete('/country-guides/{id}',        [DiasporaController::class, 'adminDestroyCountry']);
+                // Hub de formalisation — administration complète.
+                Route::post('/formalisation/steps',            [AdminFormalizationController::class, 'stepStore']);
+                Route::post('/formalisation/steps/reorder',    [AdminFormalizationController::class, 'stepsReorder']);
+                Route::patch('/formalisation/steps/{id}',      [AdminFormalizationController::class, 'stepUpdate']);
+                Route::delete('/formalisation/steps/{id}',     [AdminFormalizationController::class, 'stepDestroy']);
+                Route::post('/formalisation/templates',        [AdminFormalizationController::class, 'templateStore']);
+                Route::patch('/formalisation/templates/{id}',  [AdminFormalizationController::class, 'templateUpdate']);
+                Route::delete('/formalisation/templates/{id}', [AdminFormalizationController::class, 'templateDestroy']);
+                Route::post('/formalisation/partners',         [AdminFormalizationController::class, 'partnerStore']);
+                Route::patch('/formalisation/partners/{id}',   [AdminFormalizationController::class, 'partnerUpdate']);
+                Route::delete('/formalisation/partners/{id}',  [AdminFormalizationController::class, 'partnerDestroy']);
                 // Optimisation point 7 — Government calls admin.
                 Route::post('/calls',                        [GovernmentController::class, 'adminStoreCall']);
                 Route::patch('/calls/{id}',                  [GovernmentController::class, 'adminUpdateCall']);

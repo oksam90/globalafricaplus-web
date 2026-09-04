@@ -146,18 +146,53 @@ class ConventionContext
         return array_slice($rows, 0, 3);
     }
 
+    /**
+     * Compte de réception (séquestre) tel qu'il figure dans la convention.
+     *
+     * Deux canaux possibles, le mobile money étant le canal principal depuis
+     * l'intégration PawaPay et le virement bancaire le canal secondaire
+     * (paiements par carte). Les deux sont restitués quand ils sont renseignés,
+     * afin que la convention reflète exactement les moyens de décaissement
+     * ouverts au porteur de projet.
+     */
     private function payoutAccount($project): string
     {
-        if (!$project || empty($project->payout_iban)) {
+        if (!$project) {
             return '—';
         }
-        $parts = array_filter([
-            $project->payout_account_holder,
-            'IBAN ' . $project->payout_iban,
-            $project->payout_bic ? 'BIC ' . $project->payout_bic : null,
-            $project->payout_bank_name,
-        ]);
-        return implode(' — ', $parts);
+
+        $channels = [];
+
+        if (!empty($project->payout_mobile_number) && !empty($project->payout_mobile_provider)) {
+            $channels[] = implode(' — ', array_filter([
+                $project->payout_mobile_holder ?: $project->payout_account_holder,
+                'Mobile Money ' . $this->providerLabel($project->payout_mobile_provider),
+                $project->payout_mobile_number,
+            ]));
+        }
+
+        if (!empty($project->payout_iban)) {
+            $channels[] = implode(' — ', array_filter([
+                $project->payout_account_holder,
+                'IBAN ' . $project->payout_iban,
+                $project->payout_bic ? 'BIC ' . $project->payout_bic : null,
+                $project->payout_bank_name,
+            ]));
+        }
+
+        return $channels ? implode(' / ', $channels) : '—';
+    }
+
+    /** Libellé lisible d'un code opérateur PawaPay (AIRTEL_GAB → Airtel Money). */
+    private function providerLabel(string $code): string
+    {
+        foreach (config('pawapay.markets', []) as $market) {
+            if (isset($market['providers'][$code]['label'])) {
+                return (string) $market['providers'][$code]['label'];
+            }
+        }
+
+        return $code;
     }
 
     private function address(?string $city, ?string $country): string

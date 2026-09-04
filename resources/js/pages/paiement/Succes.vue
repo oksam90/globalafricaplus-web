@@ -127,7 +127,9 @@ async function tryVerify(endpoint, token) {
 }
 
 onMounted(async () => {
-    const token = route.query.token;
+    // PayDunya renvoie `?token=…` ; PawaPay renvoie `?deposit_id=…` (le
+    // depositId que nous avons nous-mêmes généré avant l'appel).
+    const token = route.query.token || route.query.deposit_id;
     if (!token) {
         loading.value = false;
         status.value = 'unknown';

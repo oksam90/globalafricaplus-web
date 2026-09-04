@@ -24,6 +24,8 @@ class SubscriptionService
 {
     public function __construct(
         protected PaymentGatewayFactory $gatewayFactory,
+        protected FeeCalculator $fees,
+        protected CurrencyService $currency,
     ) {}
 
     /**
@@ -60,21 +62,25 @@ class SubscriptionService
         $priceRaw     = $cycle === 'yearly' ? (float) $plan->price_yearly : (float) $plan->price_monthly;
         $planCurrency = $plan->currency ?: 'XOF';
 
-        // Gateway routing (UEMOA/CEMAC → PayDunya).
-        $gateway = $this->gatewayFactory->forCountry($country);
+        // Moyen de paiement choisi : mobile_money (PawaPay) | card (PayDunya)
+        $method  = $data['payment_method'] ?? null;
+        $gateway = $this->gatewayFactory->forMethod($method);
 
-        // PayDunya only accepts XOF (FCFA) — convert EUR/USD prices if needed.
-        if ($gateway->getName() === 'paydunya' && strtoupper($planCurrency) !== 'XOF') {
-            $rate  = $gateway->getExchangeRate($planCurrency, 'XOF');
-            $price = (float) round($priceRaw * $rate, 0); // whole FCFA
-            $currency = 'XOF';
-        } else {
-            $price    = $priceRaw;
-            $currency = $planCurrency;
-        }
+        // Devise réellement débitée : FCFA pour PayDunya, devise du marché
+        // mobile money du pays de l'abonné pour PawaPay.
+        $currency = $gateway->getName() === 'pawapay'
+            ? $this->fees->marketCurrency($country)
+            : 'XOF';
+
+        $price = strtoupper($planCurrency) === $currency
+            ? $priceRaw
+            : $this->currency->round(
+                $this->currency->convert($priceRaw, $planCurrency, $currency),
+                $currency,
+            );
 
         // PayDunya sandbox minimum is 200 FCFA.
-        if ($gateway->getName() === 'paydunya' && $currency === 'XOF' && $price < 200) {
+        if ($gateway->getName() === 'paydunya' && $price < 200) {
             $price = 200;
         }
 
@@ -111,7 +117,8 @@ class SubscriptionService
             'item_name'    => "Globalafrica+ — {$plan->name}",
             'reference'    => (string) $transaction->id,
             'payment_type' => 'subscription',
-            'channel'      => $data['channel'] ?? null,
+            'channel'      => $data['channel'] ?? ($method === 'card' ? 'card' : null),
+            'country'      => $country,
             'customer'     => [
                 'name'  => $user->name,
                 'email' => $user->email,
@@ -133,11 +140,13 @@ class SubscriptionService
             throw new RuntimeException($checkout->message ?: 'Création du paiement impossible.');
         }
 
-        $transaction->update([
+        $transaction->update(array_filter([
             'paydunya_token'       => $checkout->token,
             'paydunya_invoice_url' => $checkout->invoiceUrl,
+            'pawapay_deposit_id'   => $gateway->getName() === 'pawapay' ? $checkout->token : null,
+            'pawapay_checkout_url' => $gateway->getName() === 'pawapay' ? $checkout->invoiceUrl : null,
             'status'               => 'processing',
-        ]);
+        ]));
 
         return [
             'status'        => 'checkout_required',
@@ -245,47 +254,14 @@ class SubscriptionService
 
     /**
      * Normalise a country value into an ISO-3166 alpha-2 code.
-     * Accepts already-valid 2-letter codes, common French/English country
-     * names used in the users table, falls back to 'SN' for unknowns.
+     *
+     * Délègue à FeeCalculator : la table de correspondance est centralisée là
+     * pour garantir que TOUTE écriture de `transactions.customer_country`
+     * (char(2)) reçoive bien un code sur 2 caractères ASCII.
      */
     protected function normalizeCountry(?string $raw): string
     {
-        if (!$raw) return 'SN';
-        $s = trim($raw);
-        if (strlen($s) === 2) return strtoupper($s);
-
-        $key = strtolower(str_replace(
-            ['é','è','ê','à','ï','ô','û','ç','-',"'",'`'],
-            ['e','e','e','a','i','o','u','c',' ',' ',' '],
-            $s,
-        ));
-        $map = [
-            'senegal'        => 'SN',
-            'cote d ivoire'  => 'CI',
-            'ivory coast'    => 'CI',
-            'mali'           => 'ML',
-            'burkina faso'   => 'BF',
-            'togo'           => 'TG',
-            'benin'          => 'BJ',
-            'niger'          => 'NE',
-            'guinee bissau'  => 'GW',
-            'cameroun'       => 'CM',
-            'cameroon'       => 'CM',
-            'gabon'          => 'GA',
-            'congo'          => 'CG',
-            'tchad'          => 'TD',
-            'chad'           => 'TD',
-            'nigeria'        => 'NG',
-            'ghana'          => 'GH',
-            'kenya'          => 'KE',
-            'france'         => 'FR',
-            'belgique'       => 'BE',
-            'suisse'         => 'CH',
-            'canada'         => 'CA',
-            'etats unis'     => 'US',
-            'united states'  => 'US',
-        ];
-        return $map[$key] ?? 'SN';
+        return $this->fees->normalizeCountry($raw);
     }
 
     /**

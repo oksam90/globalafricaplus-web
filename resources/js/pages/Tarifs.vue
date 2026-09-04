@@ -53,6 +53,11 @@
         <!-- Plans grid -->
         <section class="py-16 bg-slate-50 dark:bg-slate-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Moyen de paiement appliqué à l'abonnement choisi -->
+                <div class="max-w-xl mx-auto mb-10">
+                    <PaymentMethodSelector v-model="paymentMethod" label="Comment souhaitez-vous payer votre abonnement ?" />
+                </div>
+
                 <div v-if="loadingPlans" class="text-center text-slate-500 dark:text-slate-400 py-12">Chargement des plans...</div>
                 <div v-else class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div v-for="plan in plans" :key="plan.slug"
@@ -267,6 +272,7 @@ import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 import ExchangeRateBadge from '../components/ExchangeRateBadge.vue';
 import Modal from '../components/Modal.vue';
+import PaymentMethodSelector from '../components/PaymentMethodSelector.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -275,6 +281,8 @@ const yearly = ref(false);
 const plans = ref([]);
 const loadingPlans = ref(true);
 const subscribing = ref(false);
+// mobile_money (PawaPay) | card (PayDunya) — renseigné par le sélecteur.
+const paymentMethod = ref('');
 const refunding = ref(false);
 const isRefundable = ref(false);
 const openFaq = ref(-1);
@@ -376,6 +384,7 @@ async function subscribeTo(plan) {
             plan_slug: plan.slug,
             billing_cycle: yearly.value ? 'yearly' : 'monthly',
             country: auth.user?.country || 'SN',
+            payment_method: paymentMethod.value || undefined,
         });
 
         // Free plan: activated instantly, no redirect needed.
@@ -385,7 +394,7 @@ async function subscribeTo(plan) {
             return;
         }
 
-        // Paid plan: redirect to PayDunya hosted invoice.
+        // Paid plan: redirect to the PSP hosted checkout (PawaPay / PayDunya).
         if (data.status === 'checkout_required' && data.checkout?.url) {
             showToast('Redirection vers la page de paiement sécurisée...', 'success');
             window.location.href = data.checkout.url;

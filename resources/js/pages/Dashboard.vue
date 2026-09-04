@@ -627,6 +627,9 @@
                     <DashCard title="Guides pays" icon="🌍"
                         text="Cadre juridique, fiscalité, opportunités et programmes diaspora par pays."
                         cta="Gérer" to="/admin/guides-pays" />
+                    <DashCard title="Hub de formalisation" icon="🧭"
+                        text="Parcours de formalisation par pays, modèles de business plan et partenaires financiers."
+                        cta="Gérer" to="/admin/formalisation" />
                     <DashCard title="Appels à projets" icon="📢"
                         text="Créer et gérer les appels à projets publics (gouvernement, bailleurs)."
                         cta="Gérer" to="/admin/appels" />

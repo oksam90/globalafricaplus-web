@@ -27,6 +27,12 @@ class StoreProjectRequest extends FormRequest
             'legal_status' => ['nullable', 'string', 'max:80'],
             'rccm_number' => ['nullable', 'string', 'max:100'],
             'tax_number' => ['nullable', 'string', 'max:100'],
+            // Compte de réception — canal principal : mobile money (PawaPay)
+            'payout_mobile_number'   => ['nullable', 'string', 'min:8', 'max:20', 'regex:/^[0-9 +]+$/'],
+            'payout_mobile_provider' => ['nullable', 'string', 'max:40'],
+            'payout_mobile_country'  => ['nullable', 'string', 'size:2'],
+            'payout_mobile_holder'   => ['nullable', 'string', 'max:200'],
+            // Canal secondaire : virement bancaire (utilisé pour les paiements CB)
             'payout_account_holder' => ['nullable', 'string', 'max:200'],
             'payout_bank_name' => ['nullable', 'string', 'max:150'],
             'payout_iban' => ['nullable', 'string', 'min:15', 'max:34', 'regex:/^[A-Z0-9 ]+$/i'],

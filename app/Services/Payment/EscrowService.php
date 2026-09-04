@@ -145,18 +145,32 @@ class EscrowService
             throw new RuntimeException('Projet ou investissement introuvable.');
         }
 
-        if (empty($project->payout_iban)) {
-            throw new RuntimeException("Le porteur de projet n'a pas configuré son compte bancaire (IBAN).");
+        // Deux canaux de réception, dans l'ordre de priorité :
+        //  1. Mobile Money  → décaissement automatique PawaPay
+        //  2. Virement IBAN → repli (l'adaptateur bancaire reste à brancher)
+        $useMobile = !empty($project->payout_mobile_number) && !empty($project->payout_mobile_provider);
+
+        if (!$useMobile && empty($project->payout_iban)) {
+            throw new RuntimeException(
+                "Le porteur de projet n'a configuré aucun compte de réception "
+                . '(mobile money ou IBAN).'
+            );
         }
 
-        $gateway = $this->gatewayFactory->forCountry(
-            $project->payout_bank_country ?: ($project->country ?: 'SN'),
-        );
+        $gateway = $useMobile
+            ? $this->gatewayFactory->make('pawapay')
+            : $this->gatewayFactory->forCountry(
+                $project->payout_bank_country ?: ($project->country ?: 'SN'),
+            );
 
         // Convert milestone amount (project currency) → XOF for PayDunya disburse.
         $amountXof = $this->toXof((float) $milestone->amount, (string) $milestone->currency, $gateway);
 
-        $transaction = DB::transaction(function () use ($milestone, $project, $investment, $amountXof, $gateway) {
+        $payoutCountry = $useMobile
+            ? ($project->payout_mobile_country ?: $project->country)
+            : $project->payout_bank_country;
+
+        $transaction = DB::transaction(function () use ($milestone, $project, $investment, $amountXof, $gateway, $useMobile, $payoutCountry) {
             return Transaction::create([
                 'user_id'           => $project->user_id,
                 'transactable_type' => Project::class,
@@ -167,35 +181,42 @@ class EscrowService
                 'gateway_reference' => 'rel_' . Str::random(20),
                 'payment_type'      => 'escrow_release',
                 'status'            => 'processing',
-                'customer_name'     => $project->payout_account_holder,
-                'customer_country'  => $project->payout_bank_country,
+                'customer_name'     => $useMobile
+                    ? ($project->payout_mobile_holder ?: $project->payout_account_holder)
+                    : $project->payout_account_holder,
+                'customer_country'  => app(FeeCalculator::class)->normalizeCountry($payoutCountry),
                 'description'      => "Libération jalon #{$milestone->position} — {$project->title}",
-                'custom_data'      => [
+                'custom_data'      => array_filter([
                     'milestone_id'    => $milestone->id,
                     'investment_id'   => $investment->id,
                     'project_id'      => $project->id,
                     'native_amount'   => (float) $milestone->amount,
                     'native_currency' => $milestone->currency,
-                    'payout_method'   => 'bank_transfer',
-                    'account_holder'  => $project->payout_account_holder,
-                    'bank_name'       => $project->payout_bank_name,
-                    'iban'            => $project->payout_iban,
-                    'bic'             => $project->payout_bic,
-                ],
+                    'payout_method'   => $useMobile ? 'mobile_money' : 'bank_transfer',
+                    'mobile_provider' => $useMobile ? $project->payout_mobile_provider : null,
+                    'account_holder'  => $useMobile ? $project->payout_mobile_holder : $project->payout_account_holder,
+                    'bank_name'       => $useMobile ? null : $project->payout_bank_name,
+                    'iban'            => $useMobile ? null : $project->payout_iban,
+                    'bic'             => $useMobile ? null : $project->payout_bic,
+                ], fn ($v) => $v !== null),
             ]);
         });
 
-        // Le décaissement passe désormais par un virement bancaire au nom de
-        // l'entreprise (IBAN/BIC) plutôt que par un compte Mobile Money. La
-        // signature du gateway reste utilisée pour conserver le contrat unifié,
-        // mais le `phone` est remplacé par l'IBAN et le `provider` par le nom
-        // de la banque — l'adaptateur réel (SEPA / partenaire bancaire) reste
-        // à brancher côté gateway.
-        $result = $gateway->disburse(
-            $project->payout_iban,
-            $amountXof,
-            $project->payout_bank_name ?: 'bank_transfer',
-        );
+        // Mobile money : décaissement réel via PawaPay (numéro + opérateur).
+        // Virement bancaire : la signature unifiée du gateway est réutilisée,
+        // le `phone` portant l'IBAN et le `provider` le nom de la banque —
+        // l'adaptateur SEPA / partenaire bancaire reste à brancher.
+        $result = $useMobile
+            ? $gateway->disburse(
+                $project->payout_mobile_number,
+                $amountXof,
+                $project->payout_mobile_provider,
+            )
+            : $gateway->disburse(
+                $project->payout_iban,
+                $amountXof,
+                $project->payout_bank_name ?: 'bank_transfer',
+            );
 
         $this->logDisburse($transaction, $result);
 
@@ -204,7 +225,7 @@ class EscrowService
                 'status'    => 'failed',
                 'failed_at' => now(),
             ]);
-            throw new RuntimeException($result->message ?: 'Échec du décaissement PayDunya.');
+            throw new RuntimeException($result->message ?: 'Échec du décaissement (' . $gateway->getName() . ').');
         }
 
         DB::transaction(function () use ($milestone, $transaction, $result, $investment) {

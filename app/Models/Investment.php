@@ -13,10 +13,14 @@ class Investment extends Model
         'project_id', 'investor_id',
         'amount', 'currency',
         'charged_amount', 'charged_currency',
+        // Ventilation « Montant Reçu » / frais / commission (PawaPay)
+        'net_amount', 'platform_fee', 'platform_fee_rate', 'provider_fee',
+        'fee_currency', 'fee_breakdown',
         'type', 'status',
         'payment_provider', 'provider_reference',
         'transaction_id',
         'paydunya_token', 'paydunya_receipt_url', 'paydunya_channel',
+        'pawapay_deposit_id',
         'paid_at', 'refunded_at',
         // Convention générée automatiquement (étape 4)
         'contract_type', 'contract_path', 'contract_status', 'contract_generated_at',
@@ -28,6 +32,11 @@ class Investment extends Model
     protected $casts = [
         'amount'          => 'decimal:2',
         'charged_amount'  => 'decimal:2',
+        'net_amount'      => 'decimal:2',
+        'platform_fee'    => 'decimal:2',
+        'platform_fee_rate' => 'decimal:4',
+        'provider_fee'    => 'decimal:2',
+        'fee_breakdown'   => 'array',
         'paid_at'         => 'datetime',
         'refunded_at'     => 'datetime',
         'contract_generated_at' => 'datetime',

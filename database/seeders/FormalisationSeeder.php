@@ -199,6 +199,91 @@ class FormalisationSeeder extends Seeder
             );
         }
 
+        // ── GABON (zone CEMAC — XAF) ──
+        // Parcours de référence via le guichet unique de l'ANPI-Gabon.
+        // Les montants et délais sont indicatifs : ils sont éditables depuis
+        // l'administration (Hub de formalisation) sans redéploiement.
+        $gabonSteps = [
+            [
+                'title' => 'Choisir la forme juridique',
+                'description' => "Sélectionnez la forme la mieux adaptée à votre projet : entreprise individuelle, SARL, SA ou SAS (droit OHADA). L'ANPI-Gabon oriente gratuitement les porteurs de projet, y compris ceux de la diaspora.",
+                'institution' => 'ANPI-Gabon (Agence Nationale de Promotion des Investissements)',
+                'required_documents' => ['Pièce d\'identité ou passeport', 'Justificatif de domicile'],
+                'estimated_duration' => '1-2 jours',
+                'estimated_cost' => 'Gratuit (consultation)',
+                'link' => 'https://www.anpigabon.ga',
+                'tips' => "La SARL est la forme la plus répandue : capital librement fixé par les statuts en droit OHADA, et un associé unique suffit (SARL unipersonnelle).",
+            ],
+            [
+                'title' => 'Rédiger et faire enregistrer les statuts',
+                'description' => "Rédigez les statuts (objet social, capital, gérance, répartition des parts) puis faites-les enregistrer. Le recours au notaire est requis pour la SA et recommandé dès qu'il y a plusieurs associés ou des apports en nature.",
+                'institution' => 'Notaire / Conseil juridique',
+                'required_documents' => ['Projet de statuts', 'Pièces d\'identité des associés', 'Attestation de domiciliation du siège'],
+                'estimated_duration' => '2-5 jours',
+                'estimated_cost' => 'Variable selon le capital et le notaire',
+                'tips' => "Faites viser vos statuts avant le dépôt au guichet unique : une clause d'objet social mal rédigée est la première cause de rejet du dossier.",
+            ],
+            [
+                'title' => 'Immatriculation au guichet unique de l\'ANPI-Gabon',
+                'description' => "Le guichet unique centralise l'immatriculation au RCCM (Registre du Commerce et du Crédit Mobilier), l'identification fiscale et la déclaration sociale. Un dossier unique, un seul dépôt.",
+                'institution' => 'ANPI-Gabon — Guichet Unique',
+                'required_documents' => [
+                    'Statuts enregistrés',
+                    'PV de nomination du gérant',
+                    'Extrait de casier judiciaire du dirigeant',
+                    'Pièce d\'identité du gérant',
+                    'Attestation de domiciliation du siège',
+                ],
+                'estimated_duration' => 'Quelques jours ouvrés',
+                'estimated_cost' => 'Selon la forme juridique et le capital',
+                'link' => 'https://www.anpigabon.ga',
+                'tips' => "Constituez le dossier complet avant de vous déplacer : un dossier incomplet repart en attente et fait perdre plusieurs jours.",
+            ],
+            [
+                'title' => 'Obtenir le Numéro d\'Identification Fiscale (NIF)',
+                'description' => "Le NIF est délivré par la Direction Générale des Impôts et conditionne la facturation, la déclaration de TVA et l'accès aux marchés publics. Il est généralement attribué dans le cadre du guichet unique.",
+                'institution' => 'Direction Générale des Impôts (DGI)',
+                'required_documents' => ['Attestation RCCM', 'Statuts enregistrés'],
+                'estimated_duration' => 'Inclus au guichet unique',
+                'estimated_cost' => 'Gratuit',
+                'tips' => "Vérifiez que le NIF figure bien sur votre attestation avant de quitter le guichet : sans lui, aucune facture ne sera opposable.",
+            ],
+            [
+                'title' => 'Immatriculation à la CNSS et à la CNAMGS',
+                'description' => "Toute entreprise employant du personnel doit s'immatriculer à la Caisse Nationale de Sécurité Sociale (CNSS) et à la Caisse Nationale d'Assurance Maladie et de Garantie Sociale (CNAMGS), puis y déclarer ses salariés.",
+                'institution' => 'CNSS / CNAMGS',
+                'required_documents' => ['RCCM', 'NIF', 'Statuts', 'Liste nominative des employés', 'Contrats de travail'],
+                'estimated_duration' => '3-7 jours',
+                'estimated_cost' => 'Gratuit (cotisations mensuelles ensuite)',
+                'tips' => "Immatriculez-vous dès la première embauche : la régularisation rétroactive des cotisations est coûteuse.",
+            ],
+            [
+                'title' => 'Obtenir la patente et les autorisations d\'exercice',
+                'description' => "Déclarez votre activité auprès de la mairie du siège pour la patente. Certaines activités réglementées (agroalimentaire, transport, bois, mines, santé) exigent en plus un agrément sectoriel du ministère compétent.",
+                'institution' => 'Mairie / Ministère sectoriel compétent',
+                'required_documents' => ['RCCM', 'NIF', 'Contrat de bail ou titre d\'occupation'],
+                'estimated_duration' => '5-15 jours',
+                'estimated_cost' => 'Variable selon l\'activité et le chiffre d\'affaires',
+                'tips' => "Renseignez-vous sur l'agrément sectoriel AVANT de signer un bail : certains locaux ne sont pas éligibles à votre activité.",
+            ],
+            [
+                'title' => 'Ouvrir un compte bancaire professionnel',
+                'description' => "Ouvrez un compte au nom de la société (BGFIBank, UGB, Ecobank, BICIG…) pour libérer le capital et encaisser votre activité. C'est aussi le compte de réception des décaissements d'investissement sur GlobalAfrica+.",
+                'institution' => 'Banque commerciale',
+                'required_documents' => ['Statuts', 'RCCM', 'NIF', 'Pièce d\'identité du gérant', 'PV de nomination'],
+                'estimated_duration' => '3-10 jours',
+                'estimated_cost' => 'Frais d\'ouverture variables',
+                'tips' => "Ouvrez en parallèle un compte marchand Mobile Money (Airtel Money) : sur GlobalAfrica+, c'est le canal principal de réception des décaissements de jalons, l'IBAN servant de second canal.",
+            ],
+        ];
+
+        foreach ($gabonSteps as $i => $step) {
+            FormalizationStep::updateOrCreate(
+                ['country' => 'Gabon', 'order' => $i + 1],
+                array_merge($step, ['slug' => Str::slug($step['title']) . '-gabon'])
+            );
+        }
+
         // ── BUSINESS PLAN TEMPLATES (RG-030: gratuit) ──
         $templates = [
             [
@@ -326,6 +411,39 @@ class FormalisationSeeder extends Seeder
                 'min_amount' => '50 000 XOF',
                 'max_amount' => '5 000 000 XOF',
                 'interest_rate' => '1% - 1,5% mensuel',
+            ],
+            [
+                'name' => 'FGIS — Fonds Gabonais d\'Investissements Stratégiques',
+                'country' => 'Gabon',
+                'description' => "Fonds souverain gabonais. Intervient en fonds propres et quasi-fonds propres auprès des PME et projets structurants, en particulier dans la transformation locale (bois, agro-industrie).",
+                'type' => 'Fonds souverain',
+                'products' => ['Prise de participation', 'Quasi-fonds propres', 'Co-investissement'],
+                'min_amount' => 'Sur dossier',
+                'max_amount' => 'Sur dossier',
+                'interest_rate' => 'N/A (equity)',
+                'website' => 'https://www.fgis-gabon.com',
+            ],
+            [
+                'name' => 'BGFIBank Gabon',
+                'country' => 'Gabon',
+                'description' => "Premier groupe bancaire d'Afrique centrale. Offre des crédits d'investissement et de trésorerie aux TPE/PME gabonaises, ainsi que des comptes professionnels pour les entrepreneurs de la diaspora.",
+                'type' => 'Banque',
+                'products' => ['Crédit d\'investissement', 'Crédit de trésorerie', 'Compte professionnel', 'Financement d\'équipement'],
+                'min_amount' => 'Sur dossier',
+                'max_amount' => 'Sur dossier',
+                'interest_rate' => 'Selon dossier et garanties',
+                'website' => 'https://www.bgfi.com',
+            ],
+            [
+                'name' => 'Airtel Money Gabon',
+                'country' => 'Gabon',
+                'description' => "Opérateur mobile money de référence au Gabon. Comptes marchands, encaissement et décaissement en XAF — canal principal de réception des jalons d'investissement sur GlobalAfrica+.",
+                'type' => 'Fintech',
+                'products' => ['Compte marchand', 'Transfert d\'argent', 'Encaissement en ligne', 'Décaissement'],
+                'min_amount' => '500 XAF',
+                'max_amount' => 'Selon plafonds opérateur',
+                'interest_rate' => 'N/A (pas de crédit)',
+                'website' => 'https://www.airtel.ga',
             ],
             [
                 'name' => 'Wave',

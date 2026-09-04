@@ -27,6 +27,7 @@ class TrainingService
     public function __construct(
         protected PaymentGatewayFactory $gatewayFactory,
         protected CurrencyService       $currency,
+        protected FeeCalculator         $fees,
     ) {}
 
     public function initiate(User $user, Training $training, array $opts = []): array
@@ -44,23 +45,33 @@ class TrainingService
             throw new RuntimeException('Vous avez déjà acheté cette formation.');
         }
 
-        $country = strtoupper($opts['country'] ?? $user->country ?? 'SN');
+        // `transactions.customer_country` est un char(2) : un nom de pays non
+        // normalisé (« Sénégal ») y était tronqué en octets invalides et
+        // provoquait un SQLSTATE[22001] au moment de l'insertion.
+        $country      = $this->fees->normalizeCountry($opts['country'] ?? $user->country ?? null);
         $baseCurrency = strtoupper($training->currency ?: 'EUR');
-        $gateway = $this->gatewayFactory->forCountry($country);
+
+        // Moyen de paiement choisi : mobile_money (PawaPay) | card (PayDunya)
+        $method  = $opts['payment_method'] ?? null;
+        $gateway = $this->gatewayFactory->forMethod($method);
 
         $price = (float) $training->price;
-        if ($gateway->getName() === 'paydunya' && $baseCurrency !== 'XOF') {
-            $charged = $this->currency->round(
-                $this->currency->convert($price, $baseCurrency, 'XOF'),
-                'XOF',
+
+        // Devise réellement débitée : FCFA pour PayDunya, devise du marché
+        // mobile money du pays de l'acheteur pour PawaPay.
+        $chargedCurrency = $gateway->getName() === 'pawapay'
+            ? $this->fees->marketCurrency($country)
+            : 'XOF';
+
+        $charged = $chargedCurrency === $baseCurrency
+            ? $price
+            : $this->currency->round(
+                $this->currency->convert($price, $baseCurrency, $chargedCurrency),
+                $chargedCurrency,
             );
-            $chargedCurrency = 'XOF';
-        } else {
-            $charged = $price;
-            $chargedCurrency = $baseCurrency;
-        }
-        if ($gateway->getName() === 'paydunya' && $chargedCurrency === 'XOF' && $charged < 200) {
-            $charged = 200;
+
+        if ($gateway->getName() === 'paydunya' && $charged < 200) {
+            $charged = 200; // minimum PayDunya
         }
 
         [$purchase, $transaction] = DB::transaction(function () use (
@@ -110,7 +121,8 @@ class TrainingService
             'item_name'    => $training->title,
             'reference'    => (string) $transaction->id,
             'payment_type' => 'training',
-            'channel'      => $opts['channel'] ?? null,
+            'channel'      => $opts['channel'] ?? ($method === 'card' ? 'card' : null),
+            'country'      => $country,
             'customer'     => [
                 'name'  => $user->name,
                 'email' => $user->email,
@@ -132,11 +144,13 @@ class TrainingService
             throw new RuntimeException($checkout->message ?: 'Création du paiement impossible.');
         }
 
-        $transaction->update([
+        $transaction->update(array_filter([
             'paydunya_token'       => $checkout->token,
             'paydunya_invoice_url' => $checkout->invoiceUrl,
+            'pawapay_deposit_id'   => $gateway->getName() === 'pawapay' ? $checkout->token : null,
+            'pawapay_checkout_url' => $gateway->getName() === 'pawapay' ? $checkout->invoiceUrl : null,
             'status'               => 'processing',
-        ]);
+        ]));
 
         return [
             'status'      => 'checkout_required',

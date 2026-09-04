@@ -34,6 +34,7 @@ class InstallmentService
     public function __construct(
         protected PaymentGatewayFactory $gatewayFactory,
         protected CurrencyService       $currency,
+        protected FeeCalculator         $fees,
     ) {}
 
     /**
@@ -132,23 +133,33 @@ class InstallmentService
             throw new RuntimeException('Utilisateur introuvable pour ce plan.');
         }
 
-        $gateway = $this->gatewayFactory->forCountry($user->country ?? 'SN');
+        // Le pays doit être normalisé en ISO-2 : il alimente le choix du marché
+        // mobile money ET la colonne char(2) `transactions.customer_country`.
+        $country = $this->fees->normalizeCountry($user->country ?? null);
+        $gateway = $this->gatewayFactory->forCountry($country);
 
-        // Convertir en XOF si nécessaire (PayDunya).
-        $amount = (float) $installment->amount;
-        $charged = $installment->currency === 'XOF'
+        // Devise réellement débitée : FCFA pour PayDunya, devise du marché
+        // mobile money du pays pour PawaPay. Débiter en XOF un opérateur qui
+        // règle en XAF (Gabon, Cameroun…) ferait rejeter le dépôt.
+        $chargedCurrency = $gateway->getName() === 'pawapay'
+            ? $this->fees->marketCurrency($country)
+            : 'XOF';
+
+        $amount  = (float) $installment->amount;
+        $charged = $installment->currency === $chargedCurrency
             ? $amount
             : $this->currency->round(
-                $this->currency->convert($amount, $installment->currency, 'XOF'),
-                'XOF',
+                $this->currency->convert($amount, $installment->currency, $chargedCurrency),
+                $chargedCurrency,
             );
-        $chargedCurrency = 'XOF';
 
-        if ($charged < 200) $charged = 200; // sandbox minimum
+        if ($gateway->getName() === 'paydunya' && $charged < 200) {
+            $charged = 200; // minimum PayDunya
+        }
 
         $description = "Échéance {$installment->number}/{$plan->total_installments} — plan #{$plan->id}";
 
-        $transaction = DB::transaction(function () use ($user, $plan, $installment, $charged, $chargedCurrency, $gateway, $description) {
+        $transaction = DB::transaction(function () use ($user, $plan, $installment, $charged, $chargedCurrency, $gateway, $description, $country) {
             $tx = Transaction::create([
                 'user_id'           => $user->id,
                 'transactable_type' => $plan->payable_type,
@@ -164,6 +175,7 @@ class InstallmentService
                 'customer_name'     => $user->name,
                 'customer_email'    => $user->email,
                 'customer_phone'    => $user->phone ?? null,
+                'customer_country'  => $country,
                 'description'       => $description,
                 'custom_data'       => [
                     'installment_plan_id' => $plan->id,
@@ -190,6 +202,7 @@ class InstallmentService
             'item_name'    => $description,
             'reference'    => (string) $transaction->id,
             'payment_type' => $plan->payment_type,
+            'country'      => $country,
             'customer'     => [
                 'name'  => $user->name,
                 'email' => $user->email,
@@ -212,11 +225,13 @@ class InstallmentService
             throw new RuntimeException($checkout->message ?: 'Création de l\'invoice échouée.');
         }
 
-        $transaction->update([
+        $transaction->update(array_filter([
             'paydunya_token'       => $checkout->token,
             'paydunya_invoice_url' => $checkout->invoiceUrl,
+            'pawapay_deposit_id'   => $gateway->getName() === 'pawapay' ? $checkout->token : null,
+            'pawapay_checkout_url' => $gateway->getName() === 'pawapay' ? $checkout->invoiceUrl : null,
             'status'               => 'processing',
-        ]);
+        ]));
 
         return [
             'installment'  => $installment->fresh(),

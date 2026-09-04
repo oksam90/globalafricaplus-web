@@ -2,81 +2,103 @@
 
 namespace App\Services\Payment;
 
+use App\Services\Payment\Gateways\PawaPayGateway;
 use App\Services\Payment\Gateways\PayDunyaGateway;
 use InvalidArgumentException;
 
 /**
- * Strategy-Pattern factory that selects the appropriate payment gateway
- * based on the payer's country code or an explicit gateway name.
+ * Strategy-Pattern factory qui sélectionne le PSP à utiliser.
  *
- * Routing rules (per Globalafrica+ PayDunya spec §7):
- *   - UEMOA countries (SN, CI, ML, BF, TG, BJ, NE, GW) → PayDunya
- *   - CEMAC countries (CM, CF, TD, CG, GQ, GA)         → PayDunya (XAF)
- *   - Nigeria, Ghana, Kenya (NG, GH, KE)               → Flutterwave (TODO)
- *   - Rest of world                                     → Stripe (TODO)
+ * Depuis 2026-09 le PSP par défaut est **PawaPay** (config/payments.php).
+ * PayDunya reste entièrement fonctionnel et réactivable en basculant
+ * PAYMENT_GATEWAY=paydunya dans le .env — aucune configuration n'a été
+ * supprimée.
+ *
+ * Routage :
+ *   - pays couvert par PawaPay (config/pawapay.php `markets`) → PawaPay
+ *   - sinon → `payments.fallback_gateway` (PayDunya), ou le PSP par défaut
  */
 class PaymentGatewayFactory
 {
     /**
-     * Instantiate a gateway by its string identifier.
+     * Instancie un PSP par son identifiant.
      */
     public function make(string $gateway): PaymentGatewayInterface
     {
         return match (strtolower($gateway)) {
-            'paydunya'    => app(PayDunyaGateway::class),
-            // 'flutterwave' => app(FlutterwaveGateway::class),
-            // 'stripe'      => app(StripeGateway::class),
-            // 'paypal'      => app(PayPalGateway::class),
-            default       => throw new InvalidArgumentException("Unsupported payment gateway: {$gateway}"),
+            'pawapay'  => app(PawaPayGateway::class),
+            'paydunya' => app(PayDunyaGateway::class),
+            default    => throw new InvalidArgumentException("Unsupported payment gateway: {$gateway}"),
         };
     }
 
+    /** PSP par défaut de la plateforme. */
+    public function default(): PaymentGatewayInterface
+    {
+        return $this->make((string) config('payments.default_gateway', 'pawapay'));
+    }
+
     /**
-     * Choose a gateway automatically based on the ISO-3166 alpha-2 country code.
+     * PSP correspondant au moyen de paiement choisi par l'utilisateur :
+     *   mobile_money → PawaPay, card → PayDunya.
+     */
+    public function forMethod(?string $method): PaymentGatewayInterface
+    {
+        $gateway = config('payments.methods.' . strtolower((string) $method) . '.gateway');
+
+        return $this->make((string) ($gateway ?: config('payments.default_gateway', 'pawapay')));
+    }
+
+    /**
+     * Sélection automatique à partir du code pays ISO-3166 alpha-2.
      */
     public function forCountry(string $countryCode): PaymentGatewayInterface
     {
         $countryCode = strtoupper($countryCode);
+        $default     = (string) config('payments.default_gateway', 'pawapay');
 
-        if ($this->isUEMOA($countryCode) || $this->isCEMAC($countryCode)) {
-            return $this->make('paydunya');
+        if ($default === 'pawapay' && $this->isPawaPayMarket($countryCode)) {
+            return $this->make('pawapay');
         }
 
-        if (in_array($countryCode, ['NG', 'GH', 'KE'], true)) {
-            // Fallback to PayDunya until Flutterwave adapter is implemented.
-            return $this->make('paydunya');
+        if ($default !== 'pawapay') {
+            return $this->make($default);
         }
 
-        // Default: Stripe (not yet implemented) → fallback PayDunya for dev.
-        return $this->make('paydunya');
+        $fallback = config('payments.fallback_gateway');
+
+        return $fallback ? $this->make((string) $fallback) : $this->make('pawapay');
     }
 
     /**
-     * Choose a gateway automatically based on the currency.
+     * Sélection automatique à partir de la devise.
      */
     public function forCurrency(string $currency): PaymentGatewayInterface
     {
-        return match (strtoupper($currency)) {
-            'XOF', 'XAF' => $this->make('paydunya'),
-            default       => $this->make('paydunya'), // TODO: Stripe for EUR/USD
-        };
+        $currency = strtoupper($currency);
+
+        foreach (config('pawapay.markets', []) as $market) {
+            if (($market['currency'] ?? null) === $currency) {
+                return $this->default();
+            }
+        }
+
+        return $this->default();
+    }
+
+    /** Le pays est-il un marché mobile money couvert par PawaPay ? */
+    public function isPawaPayMarket(string $countryCode): bool
+    {
+        return isset(config('pawapay.markets', [])[strtoupper($countryCode)]);
     }
 
     public function isUEMOA(string $countryCode): bool
     {
-        return in_array(
-            strtoupper($countryCode),
-            config('paydunya.uemoa_countries', []),
-            true,
-        );
+        return in_array(strtoupper($countryCode), config('paydunya.uemoa_countries', []), true);
     }
 
     public function isCEMAC(string $countryCode): bool
     {
-        return in_array(
-            strtoupper($countryCode),
-            config('paydunya.cemac_countries', []),
-            true,
-        );
+        return in_array(strtoupper($countryCode), config('paydunya.cemac_countries', []), true);
     }
 }

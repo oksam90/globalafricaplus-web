@@ -70,6 +70,8 @@ class TrainingController extends Controller
         $opts = $request->validate([
             'country' => ['nullable', 'string', 'max:100'],
             'channel' => ['nullable', 'string', 'max:50'],
+            // mobile_money (PawaPay) | card (PayDunya)
+            'payment_method' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(config('payments.methods', [])))],
         ]);
 
         try {

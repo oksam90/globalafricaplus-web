@@ -303,8 +303,46 @@
                         Compte de réception (séquestre)
                     </legend>
                     <p class="text-xs text-emerald-800/80 dark:text-emerald-300/80 -mt-2">
-                        Ces informations sont nécessaires pour recevoir, par virement bancaire, le décaissement des jalons validés par vos investisseurs. Le compte doit être au nom de l'entreprise porteuse du projet.
+                        Ces informations permettent de recevoir le décaissement des jalons validés par vos investisseurs.
+                        <strong>Deux canaux</strong> : le <strong>Mobile Money</strong> (canal principal, utilisé pour les
+                        investissements réglés par mobile money) et le <strong>virement bancaire</strong> (canal secondaire,
+                        utilisé pour les investissements réglés par carte bancaire). Renseignez-en au moins un ;
+                        les comptes doivent être au nom de l'entreprise porteuse du projet.
                     </p>
+
+                    <!-- ── Canal principal : Mobile Money ── -->
+                    <div class="rounded-lg bg-white/70 dark:bg-slate-800/50 p-3 space-y-4">
+                        <h4 class="text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                            📱 Mobile Money <span class="font-semibold normal-case tracking-normal opacity-70">— canal principal</span>
+                        </h4>
+                        <div class="grid sm:grid-cols-3 gap-4">
+                            <Field label="Pays du compte mobile" hint="Détermine les opérateurs disponibles">
+                                <select v-model="form.payout_mobile_country" @change="loadMobileProviders" class="input">
+                                    <option value="">— Sélectionner —</option>
+                                    <option v-for="c in MOBILE_COUNTRIES" :key="c.code" :value="c.code">{{ c.name }}</option>
+                                </select>
+                            </Field>
+                            <Field label="Opérateur" hint="Réseau mobile money du compte">
+                                <select v-model="form.payout_mobile_provider" class="input" :disabled="!mobileProviders.length">
+                                    <option value="">{{ mobileProviders.length ? '— Sélectionner —' : 'Choisissez d\'abord un pays' }}</option>
+                                    <option v-for="p in mobileProviders" :key="p.code" :value="p.code">{{ p.label }}</option>
+                                </select>
+                            </Field>
+                            <Field label="Numéro mobile money" :hint="mobilePrefixHint">
+                                <input v-model="form.payout_mobile_number" type="tel" maxlength="20"
+                                    placeholder="24107123456" class="input font-mono" />
+                            </Field>
+                        </div>
+                        <Field label="Titulaire du compte mobile" hint="Nom associé au numéro (entreprise ou représentant légal)">
+                            <input v-model="form.payout_mobile_holder" type="text" maxlength="200"
+                                placeholder="SARL AgriDrone Sahel" class="input" />
+                        </Field>
+                    </div>
+
+                    <!-- ── Canal secondaire : virement bancaire ── -->
+                    <h4 class="text-xs font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-300 pt-1">
+                        🏦 Virement bancaire <span class="font-semibold normal-case tracking-normal opacity-70">— canal secondaire (paiements par carte)</span>
+                    </h4>
                     <div class="grid sm:grid-cols-2 gap-4">
                         <Field label="Titulaire du compte" hint="Raison sociale de l'entreprise">
                             <input v-model="form.payout_account_holder" type="text" maxlength="200" placeholder="SARL AgriDrone Sahel" class="input" />
@@ -472,6 +510,9 @@ function blankForm() {
         sdg_ids: [],
         website: '', video_url: '', pitch_deck_url: '',
         legal_status: '', rccm_number: '', tax_number: '',
+        // Compte de réception — canal principal : mobile money
+        payout_mobile_country: '', payout_mobile_provider: '', payout_mobile_number: '', payout_mobile_holder: '',
+        // Canal secondaire : virement bancaire
         payout_account_holder: '', payout_bank_name: '', payout_iban: '', payout_bic: '', payout_bank_country: '',
         status: 'draft',
     };
@@ -486,7 +527,44 @@ function resetForm() {
 // ── Récapitulatif : complétude indicative (miroir léger des badges) ──
 const categoryName = computed(() => categories.value.find((c) => c.id == form.category_id)?.name || '—');
 const legalComplete = computed(() => !!(form.legal_status && form.rccm_number && form.tax_number));
-const bankComplete = computed(() => !!(form.payout_account_holder && form.payout_bank_name && form.payout_iban && form.payout_bic && form.payout_bank_country));
+// Le badge « Compte vérifié » est acquis dès qu'AU MOINS un canal de
+// décaissement est complet (mobile money OU virement bancaire).
+const mobilePayoutComplete = computed(() => !!(form.payout_mobile_country && form.payout_mobile_provider && form.payout_mobile_number));
+const bankPayoutComplete = computed(() => !!(form.payout_account_holder && form.payout_bank_name && form.payout_iban && form.payout_bic && form.payout_bank_country));
+const bankComplete = computed(() => mobilePayoutComplete.value || bankPayoutComplete.value);
+
+// ── Opérateurs mobile money disponibles selon le pays choisi ──
+const MOBILE_COUNTRIES = [
+    { code: 'BJ', name: 'Bénin' }, { code: 'BF', name: 'Burkina Faso' },
+    { code: 'CM', name: 'Cameroun' }, { code: 'CI', name: "Côte d'Ivoire" },
+    { code: 'CG', name: 'Congo-Brazzaville' }, { code: 'CD', name: 'RD Congo' },
+    { code: 'ET', name: 'Éthiopie' }, { code: 'GA', name: 'Gabon' },
+    { code: 'GH', name: 'Ghana' }, { code: 'KE', name: 'Kenya' },
+    { code: 'LS', name: 'Lesotho' }, { code: 'MW', name: 'Malawi' },
+    { code: 'MZ', name: 'Mozambique' }, { code: 'NG', name: 'Nigeria' },
+    { code: 'RW', name: 'Rwanda' }, { code: 'SN', name: 'Sénégal' },
+    { code: 'SL', name: 'Sierra Leone' }, { code: 'TZ', name: 'Tanzanie' },
+    { code: 'UG', name: 'Ouganda' }, { code: 'ZM', name: 'Zambie' },
+];
+const mobileProviders = ref([]);
+const mobilePrefix = ref('');
+const mobilePrefixHint = computed(() => mobilePrefix.value
+    ? `Format international sans « + » — commence par ${mobilePrefix.value}`
+    : 'Format international sans « + », indicatif pays inclus');
+
+async function loadMobileProviders() {
+    form.payout_mobile_provider = '';
+    mobileProviders.value = [];
+    mobilePrefix.value = '';
+    if (!form.payout_mobile_country) return;
+    try {
+        const { data } = await window.axios.get(`/api/payment-methods/providers/${form.payout_mobile_country}`);
+        mobileProviders.value = data.providers || [];
+        mobilePrefix.value = data.prefix || '';
+    } catch {
+        mobileProviders.value = [];
+    }
+}
 const financingComplete = computed(() => ['fin_contrat', 'fin_lettre_attribution', 'fin_attestation_institution', 'fin_releves_bancaires'].every((k) => form.stage_details?.[k]));
 const equityComplete = computed(() => ['eq_declaration_montant', 'eq_detail_nature', 'eq_releves_bancaires', 'eq_attestation_bancaire'].every((k) => form.stage_details?.[k]));
 
@@ -541,6 +619,10 @@ async function loadProject() {
         website: p.website || '',
         video_url: p.video_url || '',
         pitch_deck_url: p.pitch_deck_url || '',
+        payout_mobile_country: p.payout_mobile_country || '',
+        payout_mobile_provider: p.payout_mobile_provider || '',
+        payout_mobile_number: p.payout_mobile_number || '',
+        payout_mobile_holder: p.payout_mobile_holder || '',
         payout_account_holder: p.payout_account_holder || '',
         payout_bank_name: p.payout_bank_name || '',
         payout_iban: p.payout_iban || '',
@@ -549,6 +631,14 @@ async function loadProject() {
         status: p.status,
     });
     refreshSubCategories();
+
+    // Recharge la liste d'opérateurs pour que le <select> affiche le libellé
+    // (et non le code brut) du provider déjà enregistré.
+    if (form.payout_mobile_country) {
+        const saved = form.payout_mobile_provider;
+        await loadMobileProviders();
+        form.payout_mobile_provider = saved;
+    }
 }
 
 function cleanPayload() {

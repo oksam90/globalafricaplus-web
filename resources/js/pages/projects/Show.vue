@@ -272,13 +272,76 @@
         </p>
 
         <form id="invest-form" @submit.prevent="submitInvestment" class="space-y-4">
+                    <!-- Moyen de paiement : mobile money (PawaPay) ou carte (PayDunya) -->
+                    <PaymentMethodSelector v-model="investForm.paymentMethod" :prices="methodPrices" />
+
+                    <!-- Montant Reçu : ce que le porteur de projet encaisse -->
                     <div>
-                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">Montant ({{ projectCurrency }})</label>
-                        <input v-model.number="investForm.amount" type="number" min="1" step="1" required
+                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">
+                            Montant Reçu <span class="text-slate-500 font-normal">({{ quoteCurrency }})</span>
+                        </label>
+                        <input v-model.number="investForm.amount" type="number" min="1" :step="quoteStep" required
                             class="w-full px-3 py-2 rounded-md border border-slate-200 dark:border-slate-600 dark:bg-slate-900 focus:border-emerald-400 focus:outline-none text-sm" />
-                        <p v-if="projectCurrency === 'EUR' && investForm.amount" class="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                            &asymp; {{ formatXof(investForm.amount) }} seront débités via PayDunya
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <template v-if="investForm.paymentMethod === 'card'">
+                                Montant que le porteur de projet recevra sur son compte de réception
+                                <span v-if="quote">&nbsp;({{ quote.country_name }})</span>.
+                            </template>
+                            <template v-else>
+                                Montant que le porteur de projet recevra sur son mobile money
+                                <span v-if="quote">&nbsp;({{ quote.provider_label }}, {{ quote.country_name }})</span>.
+                            </template>
                         </p>
+                    </div>
+
+                    <!-- Montant Envoyé : débit total investisseur (frais + commission inclus) -->
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-slate-800 dark:text-slate-200">
+                            Montant Envoyé <span class="text-slate-500 font-normal">({{ quoteCurrency }})</span>
+                        </label>
+                        <div class="w-full px-3 py-2 rounded-md border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/20 text-sm font-black text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                            <span>{{ quoting ? 'Calcul…' : formatMoney(quote?.gross_amount, quoteCurrency) }}</span>
+                            <span v-if="quote?.gross_amount_project_currency && quote.project_currency !== quoteCurrency"
+                                class="text-xs font-semibold text-emerald-700/70 dark:text-emerald-400/70">
+                                &asymp; {{ formatMoney(quote.gross_amount_project_currency, quote.project_currency) }}
+                            </span>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Montant total débité de votre compte. Les frais et commissions sont à la charge de l'investisseur.
+                        </p>
+                    </div>
+
+                    <!-- Détail du calcul -->
+                    <div v-if="quote" class="rounded-lg border border-slate-200 dark:border-slate-600 p-3 text-xs space-y-1.5">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                            <span>Montant reçu par le porteur</span>
+                            <span class="font-semibold">{{ formatMoney(quote.net_amount, quote.currency) }}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                            <span>Commission GlobalAfrica+ ({{ (quote.commission_rate * 100).toFixed(0) }}&nbsp;%)</span>
+                            <span class="font-semibold">+ {{ formatMoney(quote.commission_amount, quote.currency) }}</span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-300">
+                            <span>
+                                Frais {{ quote.gateway === 'paydunya' ? 'PayDunya' : 'PawaPay' }}
+                                — {{ quote.method === 'card' ? 'carte bancaire' : quote.country_name }}
+                            </span>
+                            <span class="font-semibold">+ {{ formatMoney(quote.provider_fees, quote.currency) }}</span>
+                        </div>
+                        <div class="flex justify-between pt-1.5 border-t border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white">
+                            <span class="font-bold">Montant envoyé</span>
+                            <span class="font-black">{{ formatMoney(quote.gross_amount, quote.currency) }}</span>
+                        </div>
+                        <p v-if="quote.customer_operator_fee > 0" class="pt-1 text-[11px] text-amber-600 dark:text-amber-400">
+                            Votre opérateur mobile money peut prélever en plus
+                            {{ formatMoney(quote.customer_operator_fee, quote.currency) }} de frais qui lui sont propres.
+                        </p>
+                        <p class="pt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            Commission dégressive 3&nbsp;% / 2&nbsp;% / 1&nbsp;% selon le montant.
+                        </p>
+                    </div>
+                    <div v-else-if="quoteError" class="rounded-lg border border-rose-200 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-900/20 p-3 text-xs text-rose-800 dark:text-rose-200">
+                        {{ quoteError }}
                     </div>
 
                     <div>
@@ -374,6 +437,7 @@ import { useAuthStore } from '../../stores/auth';
 import ProjectCard from '../../components/ProjectCard.vue';
 import EscrowMilestones from '../../components/EscrowMilestones.vue';
 import Modal from '../../components/Modal.vue';
+import PaymentMethodSelector from '../../components/PaymentMethodSelector.vue';
 import TrustBadges from '../../components/TrustBadges.vue';
 import { stageConfig, FINANCING, EQUITY } from '../../utils/projectStages';
 
@@ -392,34 +456,114 @@ const auth = useAuthStore();
 const showInvestModal = ref(false);
 const investing = ref(false);
 const investError = ref('');
-const investForm = reactive({ amount: 100, type: 'equity', installments: 3, frequency: 'monthly' });
+// `amount` = « Montant Reçu » : ce que le porteur de projet encaissera, exprimé
+// dans la devise mobile money de SON pays (XAF au Gabon, XOF au Sénégal…).
+const investForm = reactive({
+    amount: 3000,
+    type: 'equity',
+    installments: 3,
+    frequency: 'monthly',
+    // mobile_money (PawaPay) | card (PayDunya) — valeur réelle fournie par le
+    // serveur via PaymentMethodSelector.
+    paymentMethod: '',
+});
 const splitPayment = ref(false);
+
+// ─── Devis « Montant Reçu → Montant Envoyé » ───────────────────────────────
+// Le calcul (commission dégressive + frais PawaPay du pays du projet) est
+// TOUJOURS fait côté serveur : le barème n'est pas exposé au navigateur.
+const quote = ref(null);          // devis du moyen sélectionné
+const quotesByMethod = ref({});   // devis de CHAQUE moyen (comparaison)
+const quoting = ref(false);
+const quoteError = ref('');
+let quoteTimer = null;
+
+/** Montant Envoyé de chaque option, affiché sur les cartes du sélecteur. */
+const methodPrices = computed(() => {
+    const out = {};
+    for (const [key, q] of Object.entries(quotesByMethod.value || {})) {
+        out[key] = `${formatMoney(q.gross_amount, q.currency)} à débiter`;
+    }
+    return out;
+});
+
+const quoteCurrency = computed(() => quote.value?.currency || projectCurrency.value);
+const quoteStep = computed(() => (['XOF', 'XAF', 'RWF', 'UGX'].includes(quoteCurrency.value) ? 1 : 0.01));
+
+function formatMoney(value, currency) {
+    const n = parseFloat(value);
+    if (!Number.isFinite(n)) return '—';
+    try {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currency || 'EUR',
+            maximumFractionDigits: ['XOF', 'XAF', 'RWF', 'UGX'].includes(currency) ? 0 : 2,
+        }).format(n);
+    } catch {
+        return `${n.toLocaleString('fr-FR')} ${currency || ''}`.trim();
+    }
+}
+
+async function fetchQuote() {
+    if (!project.value || !(investForm.amount > 0)) {
+        quote.value = null;
+        return;
+    }
+    quoting.value = true;
+    quoteError.value = '';
+    try {
+        const { data } = await window.axios.post('/api/investments/quote', {
+            project_id: project.value.id,
+            net_amount: investForm.amount,
+            payment_method: investForm.paymentMethod || undefined,
+            // Pas de `currency` : le serveur interprète la saisie dans la devise
+            // du marché du projet (source de vérité).
+        });
+        quotesByMethod.value = data.quotes || {};
+        quote.value = data.data;
+        if (!investForm.paymentMethod && data.default_method) {
+            investForm.paymentMethod = data.default_method;
+        }
+    } catch (e) {
+        quote.value = null;
+        quotesByMethod.value = {};
+        quoteError.value = e?.response?.data?.message || 'Impossible de calculer les frais pour le moment.';
+    } finally {
+        quoting.value = false;
+    }
+}
+
+function scheduleQuote() {
+    clearTimeout(quoteTimer);
+    quoteTimer = setTimeout(fetchQuote, 400);
+}
+
+watch(() => investForm.amount, () => {
+    if (showInvestModal.value) scheduleQuote();
+});
+
+// Changement de moyen de paiement : on bascule sur le devis déjà calculé
+// (pas d'aller-retour réseau), le serveur recalculera de toute façon.
+watch(() => investForm.paymentMethod, (method) => {
+    if (method && quotesByMethod.value[method]) {
+        quote.value = quotesByMethod.value[method];
+    } else if (method && showInvestModal.value) {
+        scheduleQuote();
+    }
+});
 
 /** Disables the Payer submit when the user is pre-known to be ineligible. */
 const isInvestBlocked = computed(() =>
     investError.value?.kind === 'subscription' || investError.value?.kind === 'kyc'
 );
 
+// L'échelonnement porte sur le MONTANT ENVOYÉ (ce qui est réellement débité) ;
+// on retombe sur le montant reçu tant que le devis n'est pas revenu.
 const installmentPreview = computed(() => {
     if (!splitPayment.value || !investForm.amount || !investForm.installments) return '';
-    const per = (investForm.amount / investForm.installments);
-    try {
-        return new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: projectCurrency.value,
-            maximumFractionDigits: 2,
-        }).format(per);
-    } catch {
-        return `${per.toFixed(2)} ${projectCurrency.value}`;
-    }
+    const total = quote.value?.gross_amount ?? investForm.amount;
+    return formatMoney(total / investForm.installments, quoteCurrency.value);
 });
-
-const EUR_TO_XOF = 655.957;
-const xofFmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 });
-function formatXof(eur) {
-    const n = parseFloat(eur) || 0;
-    return xofFmt.format(Math.round(n * EUR_TO_XOF));
-}
 
 const projectCurrency = computed(() => (project.value?.currency || 'EUR').toUpperCase());
 
@@ -434,6 +578,7 @@ function openInvestModal() {
     // remains the source of truth.
     investError.value = null;
     showInvestModal.value = true;
+    fetchQuote();
 
     if (!auth.canInvest) {
         investError.value = {
@@ -472,8 +617,11 @@ async function submitInvestment() {
     investError.value = null;
     try {
         const payload = {
+            // `net_amount` = Montant Reçu. Le serveur recalcule frais et
+            // commission, puis débite le Montant Envoyé correspondant.
             project_id: project.value.id,
-            amount: investForm.amount,
+            net_amount: investForm.amount,
+            payment_method: investForm.paymentMethod || undefined,
             type: investForm.type,
             country: auth.user?.country || 'SN',
         };

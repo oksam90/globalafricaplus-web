@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Convention\ConventionGenerator;
 use App\Services\Convention\ConventionSignatureService;
+use App\Services\Payment\DTOs\FeeQuote;
 use App\Services\Payment\DTOs\PaymentStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,20 +27,72 @@ class InvestmentService
 {
     public function __construct(
         protected PaymentGatewayFactory $gatewayFactory,
+        protected FeeCalculator $fees,
+        protected CurrencyService $currency,
     ) {}
+
+    /**
+     * Devis « Montant Reçu → Montant Envoyé » pour le popup d'investissement.
+     *
+     * @param float       $netAmount Montant que le porteur doit recevoir
+     * @param string|null $currency  Devise du montant saisi (défaut : devise du
+     *                               marché du projet). Si l'utilisateur saisit
+     *                               en devise du projet (EUR), on convertit.
+     */
+    public function quote(
+        Project $project,
+        float $netAmount,
+        ?string $currency = null,
+        ?string $method = null,
+    ): FeeQuote {
+        $country        = $this->fees->resolveCountry($project);
+        $marketCurrency = $this->fees->marketCurrency($country);
+        $currency       = strtoupper($currency ?: $marketCurrency);
+
+        if ($currency !== $marketCurrency) {
+            $netAmount = $netAmount * $this->currency->getRate($currency, $marketCurrency);
+        }
+
+        return $this->fees->quoteForProject($project, $netAmount, $method);
+    }
+
+    /**
+     * Devis pour CHAQUE moyen de paiement activé — le popup affiche les deux
+     * options (mobile money PawaPay / carte bancaire PayDunya) avec leur coût.
+     *
+     * @return array<string, array>
+     */
+    public function quoteAllMethods(Project $project, float $netAmount, ?string $currency = null): array
+    {
+        $out = [];
+
+        foreach (array_keys($this->fees->availableMethods()) as $method) {
+            $out[$method] = $this->quote($project, $netAmount, $currency, $method)->toArray();
+        }
+
+        return $out;
+    }
 
     /**
      * Start a new investment payment flow.
      *
-     * @param array{project_id:int, amount:float, type?:string, country?:string, channel?:string} $data
+     * L'investisseur supporte la TOTALITÉ des frais : le montant débité
+     * (« Montant Envoyé ») est majoré des frais PSP du pays du projet et de la
+     * commission GlobalAfrica+, de sorte que le porteur encaisse exactement le
+     * « Montant Reçu ».
+     *
+     * @param array{project_id:int, amount?:float, net_amount?:float, amount_currency?:string, type?:string, country?:string, channel?:string} $data
      */
     public function initiate(User $user, array $data): array
     {
         $project = Project::where('status', 'published')
             ->findOrFail($data['project_id']);
 
-        $amount = (float) $data['amount'];
-        if ($amount <= 0) {
+        // `net_amount` = Montant Reçu (nouvelle UI). `amount` reste accepté
+        // pour compatibilité : il est alors interprété comme le Montant Reçu
+        // exprimé dans la devise du projet.
+        $rawAmount = (float) ($data['net_amount'] ?? $data['amount'] ?? 0);
+        if ($rawAmount <= 0) {
             throw new RuntimeException('Le montant d\'investissement doit être supérieur à zéro.');
         }
 
@@ -48,28 +101,46 @@ class InvestmentService
             throw new RuntimeException('Type d\'investissement invalide.');
         }
 
-        $country = $this->normalizeCountry($data['country'] ?? $user->country ?? 'SN');
-        $baseCurrency = strtoupper($project->currency ?: 'EUR');
+        $baseCurrency  = strtoupper($project->currency ?: 'EUR');
+        $inputCurrency = strtoupper((string) ($data['amount_currency'] ?? ''))
+            ?: (isset($data['net_amount']) ? $this->fees->marketCurrency($this->fees->resolveCountry($project)) : $baseCurrency);
 
-        $gateway = $this->gatewayFactory->forCountry($country);
+        // Moyen de paiement choisi par l'investisseur :
+        //   mobile_money → PawaPay   |   card → PayDunya (carte bancaire)
+        $method = $data['payment_method'] ?? null;
 
-        // PayDunya only handles XOF — convert if the project is priced in EUR/USD.
-        if ($gateway->getName() === 'paydunya' && $baseCurrency !== 'XOF') {
-            $rate     = $gateway->getExchangeRate($baseCurrency, 'XOF');
-            $charged  = (float) round($amount * $rate, 0);
+        // Le barème est recalculé côté serveur : le devis renvoyé au navigateur
+        // n'est jamais une source de vérité.
+        $quote  = $this->quote($project, $rawAmount, $inputCurrency, $method);
+        $method = $quote->method;
+
+        // Pays de facturation = pays du PROJET (assiette des frais).
+        $country = $quote->country;
+
+        $gateway  = $this->gatewayFactory->forMethod($method);
+        $charged  = $quote->grossAmount;          // Montant Envoyé
+        $chargedCurrency = $quote->currency;      // Devise du marché (XAF, XOF…)
+
+        // Montant « natif » du projet : c'est le NET qui alimente amount_raised,
+        // pour que la barre de progression reste cohérente avec amount_needed.
+        $nativeAmount = $quote->netAmountProjectCurrency
+            ?? (float) round($quote->netAmount * $this->currency->getRate($chargedCurrency, $baseCurrency), 2);
+
+        // PayDunya n'encaisse qu'en FCFA : on convertit le Montant Envoyé si le
+        // marché du projet est dans une autre devise.
+        if ($gateway->getName() === 'paydunya' && !in_array($chargedCurrency, ['XOF', 'XAF'], true)) {
+            $charged = (float) round($charged * $this->currency->getRate($chargedCurrency, 'XOF'), 0);
             $chargedCurrency = 'XOF';
-        } else {
-            $charged  = $amount;
-            $chargedCurrency = $baseCurrency;
+        }
+        if ($gateway->getName() === 'paydunya' && $charged < 200) {
+            $charged = 200; // minimum PayDunya
         }
 
-        // Sandbox minimum
-        if ($gateway->getName() === 'paydunya' && $chargedCurrency === 'XOF' && $charged < 200) {
-            $charged = 200;
-        }
+        $feeBreakdown = $quote->toArray();
 
         [$investment, $transaction] = DB::transaction(function () use (
-            $user, $project, $amount, $baseCurrency, $charged, $chargedCurrency, $type, $gateway, $country
+            $user, $project, $nativeAmount, $baseCurrency, $charged, $chargedCurrency,
+            $type, $gateway, $country, $quote, $feeBreakdown
         ) {
             $transaction = Transaction::create([
                 'user_id'           => $user->id,
@@ -77,8 +148,13 @@ class InvestmentService
                 'transactable_id'   => $project->id,
                 'amount'            => $charged,
                 'currency'          => $chargedCurrency,
+                'platform_fee'      => $quote->commissionAmount,
+                'gateway_fee'       => $quote->providerFees(),
+                'net_amount'        => $quote->netAmount,
+                'fee_breakdown'     => $feeBreakdown,
                 'gateway'           => $gateway->getName(),
                 'gateway_reference' => 'inv_' . Str::random(20),
+                'pawapay_provider'  => $gateway->getName() === 'pawapay' ? $quote->provider : null,
                 'payment_type'      => 'investment',
                 'status'            => 'pending',
                 'customer_name'     => $user->name,
@@ -90,8 +166,11 @@ class InvestmentService
                     'project_id'       => $project->id,
                     'project_slug'     => $project->slug,
                     'investment_type'  => $type,
-                    'native_amount'    => $amount,
+                    'native_amount'    => $nativeAmount,
                     'native_currency'  => $baseCurrency,
+                    'net_amount'       => $quote->netAmount,
+                    'gross_amount'     => $quote->grossAmount,
+                    'fee_currency'     => $quote->currency,
                 ],
                 'ip_address' => request()?->ip(),
                 'user_agent' => substr((string) request()?->userAgent(), 0, 500),
@@ -100,10 +179,16 @@ class InvestmentService
             $investment = Investment::create([
                 'project_id'         => $project->id,
                 'investor_id'        => $user->id,
-                'amount'             => $amount,
+                'amount'             => $nativeAmount,
                 'currency'           => $baseCurrency,
                 'charged_amount'     => $charged,
                 'charged_currency'   => $chargedCurrency,
+                'net_amount'         => $quote->netAmount,
+                'platform_fee'       => $quote->commissionAmount,
+                'platform_fee_rate'  => $quote->commissionRate,
+                'provider_fee'       => $quote->providerFees(),
+                'fee_currency'       => $quote->currency,
+                'fee_breakdown'      => $feeBreakdown,
                 'type'               => $type,
                 'status'             => 'pending',
                 'payment_provider'   => $gateway->getName(),
@@ -121,7 +206,11 @@ class InvestmentService
             'item_name'    => "Projet {$project->title}",
             'reference'    => (string) $transaction->id,
             'payment_type' => 'investment',
-            'channel'      => $data['channel'] ?? null,
+            // Carte bancaire : on restreint PayDunya au seul canal « card ».
+            'channel'      => $data['channel']
+                ?? ($method === 'card' ? 'card' : null),
+            'country'      => $country,
+            'provider'     => $data['provider'] ?? $quote->provider,
             'customer'     => [
                 'name'  => $user->name,
                 'email' => $user->email,
@@ -144,20 +233,27 @@ class InvestmentService
             throw new RuntimeException($checkout->message ?: 'Création du paiement impossible.');
         }
 
-        $transaction->update([
+        // Le « token » est stocké dans les deux colonnes : `paydunya_token`
+        // reste la clé de recherche historique (webhooks, vérification retour),
+        // `pawapay_deposit_id` documente explicitement l'identifiant PawaPay.
+        $transaction->update(array_filter([
             'paydunya_token'       => $checkout->token,
             'paydunya_invoice_url' => $checkout->invoiceUrl,
+            'pawapay_deposit_id'   => $gateway->getName() === 'pawapay' ? $checkout->token : null,
+            'pawapay_checkout_url' => $gateway->getName() === 'pawapay' ? $checkout->invoiceUrl : null,
             'status'               => 'processing',
-        ]);
+        ]));
 
-        $investment->update([
-            'paydunya_token' => $checkout->token,
-        ]);
+        $investment->update(array_filter([
+            'paydunya_token'     => $checkout->token,
+            'pawapay_deposit_id' => $gateway->getName() === 'pawapay' ? $checkout->token : null,
+        ]));
 
         return [
             'status'      => 'checkout_required',
             'investment'  => $investment,
             'transaction' => $transaction,
+            'quote'       => $feeBreakdown,
             'checkout'    => [
                 'token'   => $checkout->token,
                 'url'     => $checkout->invoiceUrl,

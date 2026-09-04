@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessPawaPayCallback;
 use App\Jobs\ProcessPayDunyaWebhook;
 use App\Models\Investment;
 use App\Services\Convention\ConventionSignatureService;
@@ -22,6 +23,21 @@ class WebhookController extends Controller
     public function paydunya(Request $request): JsonResponse
     {
         ProcessPayDunyaWebhook::dispatch($request->all());
+
+        return response()->json(['received' => true]);
+    }
+
+    /**
+     * Callbacks PawaPay (deposits / payouts / refunds / checkouts).
+     *
+     * PawaPay poste le statut final d'une opération. On répond 200 le plus vite
+     * possible (tout non-2xx déclenche des retentatives) et on traite en file.
+     * Le job re-vérifie systématiquement le statut auprès de l'API : le payload
+     * n'est qu'un déclencheur, jamais la source de vérité.
+     */
+    public function pawapay(Request $request, string $type = 'deposits'): JsonResponse
+    {
+        ProcessPawaPayCallback::dispatch($type, $request->all());
 
         return response()->json(['received' => true]);
     }

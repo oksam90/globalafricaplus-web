@@ -84,6 +84,8 @@ class SubscriptionController extends Controller
             'billing_cycle' => ['required', Rule::in(['monthly', 'yearly'])],
             'country'       => ['nullable', 'string', 'max:100'],
             'channel'       => ['nullable', 'string', 'max:50'],
+            // mobile_money (PawaPay) | card (PayDunya)
+            'payment_method' => ['nullable', Rule::in(array_keys(config('payments.methods', [])))],
         ]);
 
         try {
