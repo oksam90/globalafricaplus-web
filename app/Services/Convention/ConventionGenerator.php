@@ -59,6 +59,9 @@ class ConventionGenerator
 
         $queues = $this->buildQueues($plan, $ctx['data'], $ctx['milestones']);
 
+        // Tableaux à hauteur variable (échéancier de versement : 1 à 12 lignes).
+        $collections = ['funding_schedule' => $ctx['funding_schedule'] ?? []];
+
         // 4) Production
         $disk = (string) config('conventions.disk', 'local');
         $dir  = trim((string) config('conventions.storage_dir', 'contracts'), '/');
@@ -78,7 +81,7 @@ class ConventionGenerator
             throw new RuntimeException('Impossible de copier le gabarit.');
         }
 
-        $this->fillDocx($absolute, $queues);
+        $this->fillDocx($absolute, $queues, $collections);
 
         // 5) Conversion PDF (best-effort).
         $pdfRelative = null;
@@ -141,8 +144,9 @@ class ConventionGenerator
      * occurrence. Chaque placeholder est un run <w:t> atomique.
      *
      * @param array<string,array<int,string>> $queues
+     * @param array<string,array<int,array<string,string>>> $collections
      */
-    private function fillDocx(string $docxAbsolutePath, array $queues): void
+    private function fillDocx(string $docxAbsolutePath, array $queues, array $collections = []): void
     {
         $zip = new ZipArchive();
         if ($zip->open($docxAbsolutePath) !== true) {
@@ -154,6 +158,11 @@ class ConventionGenerator
             $zip->close();
             throw new RuntimeException('document.xml introuvable dans le .docx.');
         }
+
+        // Les lignes répétables sont dupliquées AVANT la passe de remplacement
+        // ordonnée : elles portent leurs propres placeholders, distincts de
+        // ceux du plan d'injection, et n'en décalent donc pas les compteurs.
+        $xml = $this->expandRepeatRows($xml, $collections);
 
         $counters = [];
         $newXml = preg_replace_callback(
@@ -188,5 +197,80 @@ class ConventionGenerator
         $zip->deleteName('word/document.xml');
         $zip->addFromString('word/document.xml', $newXml);
         $zip->close();
+    }
+
+    /**
+     * Duplique les lignes de tableau à hauteur variable.
+     *
+     * Le gabarit ne contient qu'UNE ligne modèle par tableau répétable,
+     * reconnue à son placeholder « marqueur ». Elle est clonée autant de fois
+     * qu'il y a d'éléments dans la collection (l'échéancier de versement compte
+     * de 1 à 12 lignes selon le fractionnement choisi), chaque clone recevant
+     * les valeurs de son élément.
+     *
+     * @param array<string,array<int,array<string,string>>> $collections
+     */
+    private function expandRepeatRows(string $xml, array $collections): string
+    {
+        foreach ((array) config('conventions.repeat', []) as $key => $spec) {
+            $rows   = $collections[$key] ?? [];
+            $marker = (string) ($spec['marker'] ?? '');
+            $fields = (array) ($spec['fields'] ?? []);
+
+            if ($rows === [] || $marker === '' || $fields === []) {
+                continue; // Rien à répéter : la ligne modèle reste en l'état.
+            }
+
+            // Ligne modèle : le premier <w:tr> qui contient le marqueur.
+            if (!preg_match_all('/<w:tr\b[^>]*>.*?<\/w:tr>/su', $xml, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+
+            $template = null;
+            $offset   = null;
+            foreach ($matches[0] as [$candidate, $at]) {
+                if (str_contains($candidate, htmlspecialchars($marker, ENT_QUOTES | ENT_XML1, 'UTF-8'))
+                    || str_contains($candidate, $marker)) {
+                    $template = $candidate;
+                    $offset   = $at;
+                    break;
+                }
+            }
+
+            if ($template === null) {
+                continue;
+            }
+
+            $rendered = '';
+            foreach ($rows as $row) {
+                $rendered .= $this->renderRow($template, $fields, $row);
+            }
+
+            $xml = substr_replace($xml, $rendered, $offset, strlen($template));
+        }
+
+        return $xml;
+    }
+
+    /**
+     * @param array<string,string> $fields  placeholder → clé de la ligne
+     * @param array<string,string> $row
+     */
+    private function renderRow(string $template, array $fields, array $row): string
+    {
+        return preg_replace_callback(
+            '/(<w:t\b[^>]*>)(.*?)(<\/w:t>)/su',
+            function ($m) use ($fields, $row) {
+                $decoded = trim(html_entity_decode($m[2], ENT_QUOTES | ENT_XML1, 'UTF-8'));
+                $field   = $fields[$decoded] ?? null;
+
+                if ($field === null || !array_key_exists($field, $row)) {
+                    return $m[0];
+                }
+
+                return $m[1] . htmlspecialchars((string) $row[$field], ENT_QUOTES | ENT_XML1, 'UTF-8') . $m[3];
+            },
+            $template,
+        );
     }
 }

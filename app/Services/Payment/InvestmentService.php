@@ -353,7 +353,10 @@ class InvestmentService
 
         // Étape 6 — envoi automatique à la signature électronique (si activé).
         // Best-effort : ne bloque jamais le paiement déjà encaissé.
-        if (config('yousign.auto_send') && $investment->contract_pdf_path) {
+        // On se base sur le .docx et non sur le PDF : en mode « gabarit »
+        // DocuSeal, le document vit chez le prestataire et l'absence de
+        // LibreOffice ne doit pas faire sauter l'envoi en silence.
+        if (config('signature.auto_send') && $investment->contract_path) {
             try {
                 app(ConventionSignatureService::class)->sendForSignature($investment);
                 $investment->refresh();

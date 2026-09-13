@@ -126,6 +126,13 @@ return [
         '[DEVISE]'                            => ['currency'],
         '[MOYEN]'                             => ['payment_means'],
 
+        // ── Modalité de versement (Article 3.2) ───────────────────────────
+        // « en un versement unique » ou « en N échéances mensuelles… », selon
+        // le plan de paiement fractionné réellement souscrit.
+        '[MODALITÉ DE VERSEMENT]' => ['funding_mode'],
+        '[TOTAL VERSEMENTS]'      => ['funding_total'],
+        '[NOTE VERSEMENTS]'       => ['funding_note'],
+
         // ── Tableau des jalons (J1, J2, J3) + total d'annexe ──────────────
         // 1re occurrence de [À COMPLÉTER] = exemple de l'avertissement → KEEP.
         '[À COMPLÉTER]' => ['KEEP', 'milestones.0.desc', 'milestones.1.desc', 'milestones.2.desc'],
@@ -140,5 +147,32 @@ return [
         '[SÉNÉGALAIS / OHADA]'  => ['jurisdiction_law'],
         // Juridiction/arbitrage = choix juridique → laissé au conseil.
         '[JURIDICTION / ARBITRAGE]' => ['KEEP'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4) RÉPÉTITION — tableaux à hauteur variable
+    |--------------------------------------------------------------------------
+    | Le tableau des Jalons a une hauteur fixe (J1/J2/J3) ; celui de
+    | l'ÉCHÉANCIER DE VERSEMENT ne l'a pas : le popup « Investir dans ce
+    | projet » autorise de 2 à 12 échéances (hebdomadaire, bimensuelle,
+    | mensuelle), et 1 seule ligne en versement unique.
+    |
+    | Le gabarit ne contient donc qu'UNE ligne modèle, repérée par `marker` ;
+    | le générateur la clone autant de fois que nécessaire. Les placeholders
+    | listés ici sont PROPRES à cette ligne : ils ne doivent apparaître nulle
+    | part ailleurs, sans quoi ils décaleraient les files d'injection.
+    */
+    'repeat' => [
+        'funding_schedule' => [
+            'marker' => '[N° ÉCH.]',
+            'fields' => [
+                '[N° ÉCH.]'      => 'number',
+                '[DATE ÉCH.]'    => 'date',
+                '[MONTANT ÉCH.]' => 'amount',
+                '[CUMUL ÉCH.]'   => 'cumulative',
+                '[MOYEN ÉCH.]'   => 'method',
+            ],
+        ],
     ],
 ];

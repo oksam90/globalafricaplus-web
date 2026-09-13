@@ -21,6 +21,12 @@
                     ✍️ {{ busy.send ? 'Envoi…' : 'Envoyer à la signature' }}
                 </button>
 
+                <!-- Signer maintenant — lien direct DocuSeal, propre à l'utilisateur -->
+                <a v-if="mySignUrl" :href="mySignUrl" target="_blank" rel="noopener"
+                    class="text-xs font-semibold px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white">
+                    🖊️ Signer maintenant
+                </a>
+
                 <!-- Rafraîchir le statut (en attente de signature) -->
                 <button v-if="statusLocal === 'sent'" type="button" :disabled="busy.refresh" @click="refreshStatus"
                     class="text-xs font-semibold px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 disabled:opacity-60">
@@ -35,8 +41,12 @@
             </div>
         </div>
 
-        <p v-if="statusLocal === 'sent'" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-            Les deux parties ont reçu un email de signature. Cliquez sur « Rafraîchir » pour vérifier l'avancement.
+        <p v-if="statusLocal === 'sent' && mySignUrl" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+            Cliquez sur « Signer maintenant » pour apposer votre signature. La convention sera finalisée
+            une fois les deux parties signataires.
+        </p>
+        <p v-else-if="statusLocal === 'sent'" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+            Signature en attente de l'autre partie. Cliquez sur « Rafraîchir » pour vérifier l'avancement.
         </p>
     </div>
 </template>
@@ -53,6 +63,10 @@ const toast = useToast();
 
 const statusLocal = ref(props.investment.contract_status || 'none');
 const signedLocal = ref(!!props.investment.has_signed_contract);
+// Lien de signature propre à l'utilisateur courant (le serveur ne renvoie
+// jamais celui de l'autre partie).
+const signUrlLocal = ref(props.investment.my_sign_url || null);
+const mySignUrl = computed(() => (statusLocal.value === 'sent' ? signUrlLocal.value : null));
 const hasPdf = computed(() => !!props.investment.has_contract_pdf);
 
 const busy = reactive({ dl: false, send: false, refresh: false, dlSigned: false });
@@ -102,6 +116,7 @@ async function sendForSignature() {
     try {
         const { data } = await window.axios.post(`/api/investments/${id.value}/contract/send`);
         statusLocal.value = data.contract_status || 'sent';
+        signUrlLocal.value = data.my_sign_url || signUrlLocal.value;
         toast.success('Convention envoyée à la signature des deux parties.');
         emit('updated', statusLocal.value);
     } catch (e) {

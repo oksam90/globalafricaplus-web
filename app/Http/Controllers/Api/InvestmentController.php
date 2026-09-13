@@ -246,10 +246,15 @@ class InvestmentController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        $fresh = $investment->fresh();
+
         return response()->json([
-            'message'              => 'Convention envoyée à la signature des deux parties.',
-            'contract_status'      => $investment->fresh()->contract_status,
-            'signature_request_id' => $investment->fresh()->signature_request_id,
+            'message'         => 'Convention envoyée à la signature des deux parties.',
+            'contract_status' => $fresh->contract_status,
+            'provider'        => $fresh->signature_provider,
+            // Lien de signature de l'utilisateur COURANT uniquement — celui de
+            // l'autre partie n'est jamais exposé.
+            'my_sign_url'     => $fresh->my_sign_url,
         ]);
     }
 
@@ -268,10 +273,13 @@ class InvestmentController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
+        $fresh = $investment->fresh();
+
         return response()->json([
             'provider_status' => $status,
-            'contract_status' => $investment->fresh()->contract_status,
-            'signed'          => $investment->fresh()->contract_status === 'signed',
+            'contract_status' => $fresh->contract_status,
+            'signed'          => $fresh->contract_status === 'signed',
+            'my_sign_url'     => $fresh->my_sign_url,
         ]);
     }
 

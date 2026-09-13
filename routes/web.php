@@ -104,6 +104,12 @@ Route::prefix('api')->group(function () {
         ->whereIn('type', ['deposits', 'payouts', 'refunds', 'checkouts'])
         ->middleware('throttle:webhooks');
 
+    // DocuSeal — webhook de signature (instance auto-hébergée).
+    // À saisir dans DocuSeal → Paramètres → Webhooks. Le statut est re-vérifié
+    // auprès de l'API avant toute écriture : le payload n'est qu'un déclencheur.
+    Route::post('/v1/webhooks/docuseal', [WebhookController::class, 'docuseal'])
+        ->middleware('throttle:webhooks');
+
     // Yousign signature webhook (HMAC verified inside the controller if a secret is set).
     Route::post('/v1/webhooks/yousign', [WebhookController::class, 'yousign'])
         ->middleware('throttle:webhooks');

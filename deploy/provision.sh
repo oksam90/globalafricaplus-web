@@ -45,6 +45,11 @@ echo ">>> [6/10] Node.js 20 (pour builds locaux éventuels)"
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y nodejs
 
+# LibreOffice headless — conversion .docx → PDF des conventions
+# (ConventionGenerator / PdfConverter, binaire « soffice »). Le paquet
+# writer suffit : ~200 Mo contre ~800 Mo pour la suite complète.
+apt-get install -y --no-install-recommends libreoffice-writer fonts-liberation
+
 echo ">>> [7/10] Utilisateur de déploiement"
 if ! id -u "${APP_USER}" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "${APP_USER}"
