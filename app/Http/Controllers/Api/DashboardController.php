@@ -74,6 +74,25 @@ class DashboardController extends Controller
             ->limit(5)
             ->get(['id', 'title', 'slug', 'status', 'stage', 'amount_needed', 'amount_raised', 'views_count', 'followers_count', 'category_id', 'created_at']);
 
+        // Investissements REÇUS sur les projets du porteur.
+        //
+        // Le porteur est le second signataire de chaque convention : sans cette
+        // liste, son lien de signature existait en base sans qu'aucun écran ne
+        // le lui présente, et la convention restait bloquée après la signature
+        // de l'investisseur. On expose le nom de l'investisseur — il figure
+        // déjà dans la convention que le porteur signe — mais jamais son email.
+        $receivedInvestments = Investment::whereIn('project_id', (clone $projects)->select('id'))
+            ->whereIn('status', ['escrow', 'released'])
+            ->with([
+                // `user_id` est indispensable : il identifie le porteur comme
+                // partie à la convention (cf. Investment::ownerId()).
+                'project:id,user_id,title,slug,currency',
+                'investor:id,name,country',
+            ])
+            ->latest()
+            ->limit(10)
+            ->get();
+
         // Mentorships as mentee
         $mentorships = Mentorship::where('mentee_id', $user->id)
             ->with('mentor:id,name,avatar,country')
@@ -127,6 +146,8 @@ class DashboardController extends Controller
             'total_raised' => $totalRaised,
             'total_needed' => $totalNeeded,
             'recent_projects' => $recentProjects,
+            'received_investments' => $receivedInvestments,
+            'pending_signatures' => $receivedInvestments->where('contract_status', 'sent')->count(),
             'active_mentorships' => $mentorships,
             'formalization' => $formalizationData,
             'legal_status' => $legalStatus,

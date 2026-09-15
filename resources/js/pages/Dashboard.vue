@@ -243,6 +243,40 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Investissements reçus — le porteur est le second signataire
+                     de chaque convention : c'est ici qu'il signe. -->
+                <div v-if="roleData.received_investments?.length" class="mt-8">
+                    <div class="flex flex-wrap items-center gap-3 mb-4">
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Investissements reçus</h2>
+                        <span v-if="roleData.pending_signatures"
+                            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                            {{ roleData.pending_signatures }} convention{{ roleData.pending_signatures > 1 ? 's' : '' }} à signer
+                        </span>
+                    </div>
+                    <div class="space-y-3">
+                        <div v-for="inv in roleData.received_investments" :key="inv.id"
+                            class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <router-link v-if="inv.project" :to="`/projets/${inv.project.slug}`"
+                                        class="font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                                        {{ inv.project.title }}
+                                    </router-link>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                                        par {{ inv.investor?.name || 'Investisseur' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 text-sm">
+                                    <span class="font-bold text-slate-900 dark:text-slate-100">{{ fmtMoney(inv.amount) }}</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                        :class="invStatusClass(inv.status)">{{ invStatusLabel(inv.status) }}</span>
+                                </div>
+                            </div>
+                            <InvestmentContract :investment="inv" class="mt-3" />
+                        </div>
+                    </div>
+                </div>
             </template>
 
             <!-- ============================================ -->

@@ -79,13 +79,27 @@ class Investment extends Model
             return $urls['investor'] ?? null;
         }
 
-        // Le porteur de projet : on évite de charger la relation si elle ne
-        // l'est pas déjà (cet accesseur est appelé à chaque sérialisation).
-        $ownerId = $this->relationLoaded('project')
-            ? $this->project?->user_id
-            : Project::whereKey($this->project_id)->value('user_id');
+        return $this->ownerId() === (int) $userId ? ($urls['owner'] ?? null) : null;
+    }
 
-        return (int) $ownerId === (int) $userId ? ($urls['owner'] ?? null) : null;
+    /**
+     * Identifiant du porteur du projet financé.
+     *
+     * On évite de charger la relation si elle ne l'est pas déjà — cet appel a
+     * lieu à chaque sérialisation. Mais une relation chargée avec une SÉLECTION
+     * PARTIELLE de colonnes (`with('project:id,title')`) ne porte pas
+     * `user_id` : sans le repli ci-dessous, le porteur cesserait
+     * silencieusement d'être reconnu comme partie à la convention.
+     */
+    public function ownerId(): ?int
+    {
+        $ownerId = $this->relationLoaded('project')
+            ? $this->project?->getAttributeValue('user_id')
+            : null;
+
+        $ownerId ??= Project::whereKey($this->project_id)->value('user_id');
+
+        return $ownerId === null ? null : (int) $ownerId;
     }
 
     public function getHasContractAttribute(): bool

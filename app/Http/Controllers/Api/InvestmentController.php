@@ -173,10 +173,7 @@ class InvestmentController extends Controller
      */
     public function show(Request $request, Investment $investment): JsonResponse
     {
-        $user = $request->user();
-
-        $isAdmin = method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
-        if ($investment->investor_id !== $user->id && !$isAdmin) {
+        if (!$this->canManageContract($request, $investment)) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -191,9 +188,7 @@ class InvestmentController extends Controller
      */
     public function contract(Request $request, Investment $investment, ConventionGenerator $generator): StreamedResponse|JsonResponse
     {
-        $user = $request->user();
-        $isAdmin = method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
-        if ($investment->investor_id !== $user->id && !$isAdmin) {
+        if (!$this->canManageContract($request, $investment)) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
@@ -301,12 +296,31 @@ class InvestmentController extends Controller
         return Storage::disk($disk)->download($investment->contract_signed_path, $filename);
     }
 
-    /** Le porteur (investisseur) du contrat ou un admin. */
+    /**
+     * Les deux PARTIES à la convention — investisseur et porteur du projet —
+     * ou un administrateur.
+     *
+     * Le porteur doit y figurer : c'est lui le second signataire. Tant qu'il
+     * était exclu, son lien de signature existait en base sans qu'aucune
+     * réponse d'API ne le lui transmette, et la convention restait bloquée à
+     * mi-parcours.
+     */
     private function canManageContract(Request $request, Investment $investment): bool
     {
         $user = $request->user();
-        $isAdmin = method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
-        return $investment->investor_id === $user->id || $isAdmin;
+        if (!$user) {
+            return false;
+        }
+
+        if ((int) $investment->investor_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($investment->ownerId() === (int) $user->id) {
+            return true;
+        }
+
+        return method_exists($user, 'hasRole') ? $user->hasRole('admin') : false;
     }
 
     /**
