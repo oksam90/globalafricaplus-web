@@ -41,12 +41,19 @@
             </div>
         </div>
 
-        <p v-if="statusLocal === 'sent' && mySignUrl" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+        <p v-if="awaitingPayment" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+            Votre convention est prête : vous pouvez la lire dès maintenant. Elle sera envoyée à la
+            signature des deux parties dès la confirmation de votre paiement.
+        </p>
+        <p v-else-if="statusLocal === 'sent' && mySignUrl" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             Cliquez sur « Signer maintenant » pour apposer votre signature. La convention sera finalisée
             une fois les deux parties signataires.
         </p>
         <p v-else-if="statusLocal === 'sent'" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             Signature en attente de l'autre partie. Cliquez sur « Rafraîchir » pour vérifier l'avancement.
+        </p>
+        <p v-else-if="statusLocal === 'none'" class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+            Convention en cours de préparation — quelques instants.
         </p>
     </div>
 </template>
@@ -84,10 +91,16 @@ const badge = computed(() => {
     return map[statusLocal.value] || map.none;
 });
 
+// Paiement encore en attente : la convention est consultable, mais elle ne
+// part à la signature qu'une fois le premier encaissement confirmé.
+const awaitingPayment = computed(() => props.investment.status === 'pending');
+
 // On peut télécharger dès qu'une convention existe (ou à la demande, qui la génère).
 const canDownload = computed(() => ['generated', 'sent', 'signed', 'failed'].includes(statusLocal.value) || props.investment.has_contract);
-// On peut (r)envoyer tant que ce n'est pas déjà envoyé/signé.
-const canSend = computed(() => !['sent', 'signed'].includes(statusLocal.value));
+// On peut (r)envoyer tant que ce n'est pas déjà envoyé/signé — et jamais avant
+// paiement : le serveur refuserait, et le porteur n'a pas à être sollicité pour
+// un montant qui n'est pas arrivé.
+const canSend = computed(() => !awaitingPayment.value && !['sent', 'signed'].includes(statusLocal.value));
 
 async function blobDownload(url, filename) {
     const res = await window.axios.get(url, { responseType: 'blob' });

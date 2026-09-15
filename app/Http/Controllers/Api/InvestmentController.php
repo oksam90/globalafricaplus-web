@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\PrepareConvention;
 use App\Models\Investment;
 use App\Models\Project;
 use App\Models\Transaction;
@@ -92,6 +93,10 @@ class InvestmentController extends Controller
                 ], 422);
             }
 
+            // La convention est produite MAINTENANT, le plan d'échéances
+            // existant : elle décrit donc l'échéancier réellement souscrit.
+            $this->dispatchConventionOnValidation($investment);
+
             return response()->json([
                 'status'         => 'installments_scheduled',
                 'message'        => 'Plan d\'échéances créé. Redirection vers le 1er paiement.',
@@ -101,6 +106,8 @@ class InvestmentController extends Controller
             ], 201);
         }
 
+        $this->dispatchConventionOnValidation($result['investment']);
+
         return response()->json([
             'status'         => 'checkout_required',
             'message'        => 'Redirection vers la page de paiement sécurisée.',
@@ -109,6 +116,32 @@ class InvestmentController extends Controller
             'quote'          => $result['quote'] ?? null,
             'checkout'       => $result['checkout'],
         ], 201);
+    }
+
+    /**
+     * Met la convention en fabrication dès la validation de l'investissement.
+     *
+     * Appelé au clic sur « Payer », avant la redirection vers le prestataire de
+     * paiement : l'investisseur dispose ainsi de son contrat pendant qu'il
+     * règle. L'ENVOI à la signature, lui, n'est déclenché ici que si la
+     * politique le prévoit explicitement — par défaut il attend le premier
+     * encaissement, pour qu'un abandon au checkout ne laisse pas une demande
+     * de signature orpheline chez le porteur.
+     *
+     * Le travail part en file d'attente : la conversion PDF et l'appel au
+     * prestataire prennent plusieurs secondes, qu'il serait absurde d'ajouter
+     * avant la redirection.
+     */
+    private function dispatchConventionOnValidation(Investment $investment): void
+    {
+        if (config('signature.generate_on', 'validation') !== 'validation') {
+            return;
+        }
+
+        PrepareConvention::dispatch(
+            $investment->id,
+            send: config('signature.send_on', 'first_payment') === 'validation',
+        );
     }
 
     /**
@@ -192,8 +225,12 @@ class InvestmentController extends Controller
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
-        if (!in_array($investment->status, ['escrow', 'released'], true)) {
-            return response()->json(['message' => "La convention n'est disponible qu'après confirmation du paiement."], 422);
+        // « pending » est admis : la convention est produite dès la validation,
+        // précisément pour que l'investisseur puisse la lire pendant qu'il
+        // règle. Elle n'est alors ni envoyée ni signée — seulement consultable
+        // par les deux parties.
+        if (!in_array($investment->status, ['pending', 'escrow', 'released'], true)) {
+            return response()->json(['message' => "La convention n'est plus disponible pour cet investissement."], 422);
         }
 
         $disk = (string) config('conventions.disk', 'local');

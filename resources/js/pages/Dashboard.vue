@@ -335,8 +335,10 @@
                                         :class="invStatusClass(inv.status)">{{ invStatusLabel(inv.status) }}</span>
                                 </div>
                             </div>
-                            <!-- Convention d'investissement (paiement confirmé) -->
-                            <InvestmentContract v-if="['escrow', 'released'].includes(inv.status)"
+                            <!-- Convention d'investissement. Visible dès « pending » :
+                                 elle est produite à la validation, pour que
+                                 l'investisseur puisse la lire pendant qu'il règle. -->
+                            <InvestmentContract v-if="['pending', 'escrow', 'released'].includes(inv.status)"
                                 :investment="inv" class="mt-3" />
                         </div>
                     </div>

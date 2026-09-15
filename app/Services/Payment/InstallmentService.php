@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Jobs\PrepareConvention;
 use App\Models\Installment;
 use App\Models\InstallmentPlan;
 use App\Models\Investment;
@@ -270,7 +271,7 @@ class InstallmentService
      */
     public function markPaid(Installment $installment, Transaction $transaction): InstallmentPlan
     {
-        return DB::transaction(function () use ($installment, $transaction) {
+        $plan = DB::transaction(function () use ($installment, $transaction) {
             if ($installment->status === 'paid') {
                 return $installment->plan;
             }
@@ -308,6 +309,47 @@ class InstallmentService
 
             return $plan;
         });
+
+        // Hors transaction, délibérément : l'échéance est désormais COMMITÉE.
+        // Mise en file à l'intérieur, la convention serait partie à la
+        // signature même si la transaction avait fini par être annulée — une
+        // convention envoyée pour une échéance jamais enregistrée.
+        $this->sendConventionOnFirstInstallment($plan);
+
+        return $plan;
+    }
+
+    /**
+     * Met la convention à la signature dès la PREMIÈRE échéance encaissée.
+     *
+     * Sans ce point d'accroche, un plan sur douze mois laissait l'investisseur
+     * engagé et payant pendant onze mois sans contrat signé : `activate()`
+     * n'est appelé qu'au règlement intégral, via `settleParent()`.
+     *
+     * Ne concerne que les investissements — abonnements et formations n'ont pas
+     * de convention. Idempotent : le job sort immédiatement si une demande de
+     * signature porte déjà un identifiant.
+     */
+    protected function sendConventionOnFirstInstallment(InstallmentPlan $plan): void
+    {
+        if ($plan->payment_type !== 'investment') {
+            return;
+        }
+
+        if ((int) $plan->paid_installments !== 1) {
+            return; // seule la première échéance déclenche l'envoi
+        }
+
+        if (config('signature.send_on', 'first_payment') !== 'first_payment') {
+            return;
+        }
+
+        $investment = Investment::find($plan->payable_id);
+        if (!$investment || $investment->signature_request_id) {
+            return;
+        }
+
+        PrepareConvention::dispatch($investment->id, send: true);
     }
 
     /**

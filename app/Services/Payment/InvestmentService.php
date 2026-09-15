@@ -2,13 +2,12 @@
 
 namespace App\Services\Payment;
 
+use App\Jobs\PrepareConvention;
 use App\Models\EscrowMilestone;
 use App\Models\Investment;
 use App\Models\Project;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\Convention\ConventionGenerator;
-use App\Services\Convention\ConventionSignatureService;
 use App\Services\Payment\DTOs\FeeQuote;
 use App\Services\Payment\DTOs\PaymentStatus;
 use Illuminate\Support\Facades\DB;
@@ -337,36 +336,19 @@ class InvestmentService
             return $investment->fresh();
         });
 
-        // Génération automatique de la convention (aiguillage par type + injection
-        // des vraies données). Best-effort : un échec ne doit jamais bloquer le
-        // paiement déjà encaissé. Idempotent côté générateur.
-        try {
-            app(ConventionGenerator::class)->generateForInvestment($investment);
-            $investment->refresh();
-        } catch (\Throwable $e) {
-            Log::warning('convention.generate_failed', [
-                'investment_id' => $investment->id,
-                'type'          => $investment->type,
-                'message'       => $e->getMessage(),
-            ]);
+        // Paiement confirmé : la convention peut partir à la signature.
+        //
+        // En paiement comptant, c'est LE premier encaissement. En fractionné,
+        // l'envoi a normalement déjà eu lieu à la première échéance
+        // (InstallmentService::sendConventionOnFirstInstallment) et le garde
+        // ci-dessous rend cet appel inopérant. Il reste comme filet pour les
+        // cas passés entre les mailles : paiement repris après expiration,
+        // reprise manuelle, bascule de configuration.
+        if (!$investment->signature_request_id) {
+            PrepareConvention::dispatch($investment->id, send: true);
         }
 
-        // Étape 6 — envoi automatique à la signature électronique (si activé).
-        // Best-effort : ne bloque jamais le paiement déjà encaissé.
-        // On se base sur le .docx et non sur le PDF : en mode « gabarit »
-        // DocuSeal, le document vit chez le prestataire et l'absence de
-        // LibreOffice ne doit pas faire sauter l'envoi en silence.
-        if (config('signature.auto_send') && $investment->contract_path) {
-            try {
-                app(ConventionSignatureService::class)->sendForSignature($investment);
-                $investment->refresh();
-            } catch (\Throwable $e) {
-                Log::warning('convention.signature_send_failed', [
-                    'investment_id' => $investment->id,
-                    'message'       => $e->getMessage(),
-                ]);
-            }
-        }
+        $investment->refresh();
 
         return $investment;
     }
