@@ -45,9 +45,14 @@ class DocuSealCheckCommand extends Command
         // configuration de DocuSeal.
         $this->line('  ' . rtrim((string) config('app.url'), '/') . '/api/v1/webhooks/docuseal');
         $this->line('  Événements : form.completed, form.declined, submission.completed, submission.expired');
-        $this->line('  Signature  : ' . (filled(config('docuseal.webhook_secret'))
-            ? 'HMAC vérifiée (secret configuré)'
-            : 'NON VÉRIFIÉE — renseignez DOCUSEAL_WEBHOOK_SECRET'));
+        // Le webhook est fermé par défaut : sans secret, les appels entrants
+        // sont REFUSÉS, pas seulement non vérifiés.
+        if (filled(config('docuseal.webhook_secret'))) {
+            $this->line('  Signature  : HMAC vérifiée (secret configuré)');
+        } else {
+            $this->error('  Signature  : secret ABSENT — tous les appels DocuSeal sont refusés.');
+            $this->line('               Renseignez DOCUSEAL_WEBHOOK_SECRET (Webhooks → Sécurité → HMAC).');
+        }
         $this->newLine();
 
         if (!$client->isConfigured()) {

@@ -119,8 +119,19 @@ class WebhookController extends Controller
     private function docusealSignatureValid(Request $request): bool
     {
         $secret = (string) config('docuseal.webhook_secret');
+
+        // Fermé par défaut : sans secret, on ne traite rien. L'inverse — « pas
+        // de secret, on laisse passer » — transforme une variable d'environnement
+        // oubliée en endpoint ouvert, sans le moindre signal. Le coût de ce
+        // choix est assumé : une configuration incomplète fait taire le webhook
+        // au lieu de l'exposer. `php artisan docuseal:check` le dit.
         if ($secret === '') {
-            return true;
+            Log::warning('docuseal.webhook_rejected_no_secret', [
+                'ip'     => $request->ip(),
+                'reason' => 'DOCUSEAL_WEBHOOK_SECRET absent — webhook refusé',
+            ]);
+
+            return false;
         }
 
         $header = (string) $request->header('X-Docuseal-Signature', '');
@@ -153,20 +164,34 @@ class WebhookController extends Controller
     /**
      * Webhook Yousign (signature électronique).
      *
-     * Vérifie la signature HMAC-SHA256 si un secret est configuré, puis
-     * synchronise l'investissement concerné (récupère le PDF signé quand prêt).
-     * Toujours 200 pour éviter les retentatives inutiles.
+     * Yousign n'est plus le prestataire actif — DocuSeal l'a remplacé — mais la
+     * route est CONSERVÉE : `SIGNATURE_PROVIDER=yousign` suffit à y revenir, et
+     * les conventions déjà envoyées chez Yousign continuent d'y être suivies.
+     *
+     * Elle est en revanche fermée par défaut. Tant que YOUSIGN_WEBHOOK_SECRET
+     * est vide — c'est le cas aujourd'hui — aucun appel n'est traité. Sans cela,
+     * un prestataire désactivé laissait derrière lui un endpoint public capable
+     * de déclencher des appels sortants.
      */
     public function yousign(Request $request, ConventionSignatureService $signatures): JsonResponse
     {
         $secret = (string) config('yousign.webhook_secret');
-        if ($secret !== '') {
-            $sig = (string) $request->header('X-Yousign-Signature-256', '');
-            $expected = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
-            if (!hash_equals($expected, $sig)) {
-                Log::warning('yousign.webhook_bad_signature', ['ip' => $request->ip()]);
-                return response()->json(['received' => false], 200);
-            }
+
+        if ($secret === '') {
+            Log::warning('yousign.webhook_rejected_no_secret', [
+                'ip'     => $request->ip(),
+                'reason' => 'YOUSIGN_WEBHOOK_SECRET absent — prestataire inactif',
+            ]);
+
+            return response()->json(['received' => false], 200);
+        }
+
+        $sig = (string) $request->header('X-Yousign-Signature-256', '');
+        $expected = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
+        if (!hash_equals($expected, $sig)) {
+            Log::warning('yousign.webhook_bad_signature', ['ip' => $request->ip()]);
+
+            return response()->json(['received' => false], 200);
         }
 
         $requestId = data_get($request->all(), 'data.signature_request.id')

@@ -101,7 +101,14 @@ class ProcessPawaPayCallback implements ShouldQueue
             ],
             'gateway_reference' => $depositId,
             'status_code'       => 200,
-            'signature_valid'   => true,
+            // `null`, pas `true` : PawaPay propose des callbacks signés
+            // (RFC-9421) mais nous ne les avons pas encore activés. Inscrire
+            // « signature valide » dans un journal d'audit alors qu'aucune
+            // signature n'a été vérifiée est pire que de ne rien inscrire —
+            // c'est une affirmation fausse dans une piste de conformité.
+            // L'authenticité repose ici sur la re-vérification auprès de
+            // GET /v2/deposits/{id}, pas sur le contenu du callback.
+            'signature_valid'   => null,
             'created_at'        => now(),
         ]);
 
