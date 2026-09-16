@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\PaymentLog;
 use App\Models\Subscription;
 use App\Models\Transaction;
@@ -34,7 +35,7 @@ class RefundService
     public function refundSubscription(Subscription $sub, User $requester): Subscription
     {
         if ($sub->user_id !== $requester->id) {
-            throw new RuntimeException("Vous n'êtes pas le titulaire de cet abonnement.");
+            throw new AuthorizationException("Vous n'êtes pas le titulaire de cet abonnement.");
         }
         if (!$sub->isRefundable()) {
             throw new RuntimeException('La fenêtre de garantie de 30 jours est dépassée.');
@@ -75,7 +76,7 @@ class RefundService
     public function refundTrainingPurchase(TrainingPurchase $purchase, User $requester): TrainingPurchase
     {
         if ($purchase->user_id !== $requester->id) {
-            throw new RuntimeException("Vous n'êtes pas l'acheteur de cette formation.");
+            throw new AuthorizationException("Vous n'êtes pas l'acheteur de cette formation.");
         }
         if (!$purchase->isRefundable()) {
             throw new RuntimeException('La fenêtre de garantie de 30 jours est dépassée.');

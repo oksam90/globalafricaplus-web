@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Jobs\ProcessEscrowRelease;
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\EscrowMilestone;
 use App\Models\Investment;
 use App\Models\PaymentLog;
@@ -45,7 +46,7 @@ class EscrowService
     {
         $project = $milestone->project;
         if (!$project || $project->user_id !== $entrepreneur->id) {
-            throw new RuntimeException("Vous n'êtes pas le propriétaire de ce projet.");
+            throw new AuthorizationException("Vous n'êtes pas le propriétaire de ce projet.");
         }
 
         if (!in_array($milestone->status, ['pending', 'rejected'], true)) {
@@ -67,7 +68,7 @@ class EscrowService
     {
         $investment = $milestone->investment;
         if (!$investment || $investment->investor_id !== $investor->id) {
-            throw new RuntimeException("Vous n'êtes pas l'investisseur de ce jalon.");
+            throw new AuthorizationException("Vous n'êtes pas l'investisseur de ce jalon.");
         }
 
         if ($milestone->status !== 'in_review') {
@@ -97,7 +98,7 @@ class EscrowService
     {
         $investment = $milestone->investment;
         if (!$investment || $investment->investor_id !== $investor->id) {
-            throw new RuntimeException("Vous n'êtes pas l'investisseur de ce jalon.");
+            throw new AuthorizationException("Vous n'êtes pas l'investisseur de ce jalon.");
         }
 
         if ($milestone->status !== 'in_review') {

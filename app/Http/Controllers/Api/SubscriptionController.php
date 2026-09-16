@@ -33,7 +33,7 @@ class SubscriptionController extends Controller
         try {
             $sub = $this->refunds->refundSubscription($sub, $request->user());
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([
@@ -91,9 +91,7 @@ class SubscriptionController extends Controller
         try {
             $result = $this->subscriptions->initiate($user, $data);
         } catch (\Throwable $e) {
-            return response()->json([
-                'message' => $e->getMessage() ?: 'Impossible d\'initier le paiement.',
-            ], 422);
+            return $this->failure($e, 'Impossible d\'initier le paiement.');
         }
 
         if ($result['status'] === 'activated') {
@@ -122,7 +120,7 @@ class SubscriptionController extends Controller
         try {
             $sub = $this->subscriptions->cancel($user);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([

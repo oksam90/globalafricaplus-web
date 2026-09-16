@@ -66,9 +66,7 @@ class InvestmentController extends Controller
         try {
             $result = $this->investments->initiate($user, $data);
         } catch (\Throwable $e) {
-            return response()->json([
-                'message' => $e->getMessage() ?: 'Impossible d\'initier l\'investissement.',
-            ], 422);
+            return $this->failure($e, 'Impossible d\'initier l\'investissement.');
         }
 
         if ($installmentCount > 1) {
@@ -88,9 +86,9 @@ class InvestmentController extends Controller
                 );
                 $first = $this->installments->invoiceNext($plan);
             } catch (\Throwable $e) {
-                return response()->json([
-                    'message' => 'Investissement créé, mais la planification a échoué : ' . $e->getMessage(),
-                ], 422);
+                // L'investissement existe déjà : on ne le perd pas, mais la
+                // cause de l'échec de planification ne regarde pas le client.
+                return $this->failure($e, 'Investissement créé, mais la planification des échéances a échoué.');
             }
 
             // La convention est produite MAINTENANT, le plan d'échéances
@@ -174,7 +172,7 @@ class InvestmentController extends Controller
                 $data['currency'] ?? null,
             );
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([
@@ -275,7 +273,7 @@ class InvestmentController extends Controller
         try {
             $signatures->sendForSignature($investment);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         $fresh = $investment->fresh();
@@ -302,7 +300,7 @@ class InvestmentController extends Controller
         try {
             $status = $signatures->syncStatus($investment);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         $fresh = $investment->fresh();

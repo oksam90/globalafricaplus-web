@@ -77,7 +77,7 @@ class TrainingController extends Controller
         try {
             $result = $this->trainings->initiate($request->user(), $training, $opts);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([
@@ -145,7 +145,7 @@ class TrainingController extends Controller
         try {
             $purchase = $this->refunds->refundTrainingPurchase($purchase, $request->user());
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([

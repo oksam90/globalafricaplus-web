@@ -24,7 +24,7 @@ class ExchangeRateController extends Controller
         try {
             $rate = $this->currency->getRate($from, $to);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([

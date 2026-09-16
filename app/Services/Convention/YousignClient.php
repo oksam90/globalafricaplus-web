@@ -2,6 +2,8 @@
 
 namespace App\Services\Convention;
 
+use App\Exceptions\GatewayException;
+
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -33,7 +35,7 @@ class YousignClient
     private function http(): PendingRequest
     {
         if (!$this->isConfigured()) {
-            throw new RuntimeException('Yousign non configuré (YOUSIGN_API_KEY manquante).');
+            throw new GatewayException('Yousign non configuré (YOUSIGN_API_KEY manquante).');
         }
         return Http::baseUrl($this->baseUrl)
             ->withToken($this->apiKey)
@@ -90,7 +92,7 @@ class YousignClient
     {
         $resp = $this->http()->get("/signature_requests/{$requestId}/documents/{$documentId}/download");
         if (!$resp->successful()) {
-            throw new RuntimeException("Yousign downloadDocument: HTTP {$resp->status()}");
+            throw new GatewayException("Yousign downloadDocument: HTTP {$resp->status()}");
         }
         return $resp->body();
     }
@@ -98,7 +100,7 @@ class YousignClient
     private function ok($resp, string $op): array
     {
         if (!$resp->successful()) {
-            throw new RuntimeException("Yousign {$op}: HTTP {$resp->status()} — " . substr($resp->body(), 0, 300));
+            throw new GatewayException("Yousign {$op}: HTTP {$resp->status()} — " . substr($resp->body(), 0, 300));
         }
         return $resp->json() ?? [];
     }

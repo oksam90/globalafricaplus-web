@@ -86,7 +86,7 @@ class EscrowController extends Controller
         try {
             $milestone = $this->escrow->submitMilestone($milestone, $request->user(), $data['evidence']);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json(['data' => $milestone]);
@@ -97,7 +97,7 @@ class EscrowController extends Controller
         try {
             $milestone = $this->escrow->approveMilestone($milestone, $request->user());
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([
@@ -115,7 +115,7 @@ class EscrowController extends Controller
         try {
             $milestone = $this->escrow->rejectMilestone($milestone, $request->user(), $data['reason']);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json(['data' => $milestone]);

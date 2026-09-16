@@ -2,6 +2,8 @@
 
 namespace App\Services\Convention;
 
+use App\Exceptions\GatewayException;
+
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -95,7 +97,7 @@ class DocuSealClient
         $resp = Http::timeout($this->timeout)->retry(2, 300, throw: false)->get($url);
 
         if ($resp->failed()) {
-            throw new RuntimeException("DocuSeal : téléchargement du document signé impossible (HTTP {$resp->status()}).");
+            throw new GatewayException("DocuSeal : téléchargement du document signé impossible (HTTP {$resp->status()}).");
         }
 
         return $resp->body();
@@ -112,7 +114,7 @@ class DocuSealClient
     private function http(): PendingRequest
     {
         if (!$this->isConfigured()) {
-            throw new RuntimeException('DocuSeal non configuré (DOCUSEAL_API_TOKEN manquant).');
+            throw new GatewayException('DocuSeal non configuré (DOCUSEAL_API_TOKEN manquant).');
         }
 
         return Http::baseUrl($this->baseUrl)
@@ -133,7 +135,7 @@ class DocuSealClient
             // « one-off » depuis un PDF/DOCX/HTML). Message explicite plutôt
             // qu'un 404 trompeur qui ferait chercher une URL erronée.
             if ($response->status() === 404 && str_contains((string) ($body['message'] ?? ''), 'Pro Edition')) {
-                throw new RuntimeException(
+                throw new GatewayException(
                     "DocuSeal {$context} : cet endpoint est réservé à l'édition Pro. "
                     . "En édition libre, la convention doit passer par un gabarit créé depuis "
                     . "l'interface DocuSeal, puis POST /submissions avec son template_id."
@@ -146,7 +148,7 @@ class DocuSealClient
                 'error'   => $body['error'] ?? substr($response->body(), 0, 300),
             ]);
 
-            throw new RuntimeException(
+            throw new GatewayException(
                 "DocuSeal {$context} — HTTP {$response->status()} : "
                 . ($body['error'] ?? substr($response->body(), 0, 200))
             );

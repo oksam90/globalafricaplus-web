@@ -47,7 +47,7 @@ class InstallmentController extends Controller
                 frequency: $data['frequency'] ?? 'monthly',
             );
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         // Génère immédiatement le 1er invoice pour rediriger l'utilisateur.
@@ -94,7 +94,7 @@ class InstallmentController extends Controller
         try {
             $result = $this->installments->invoiceNext($plan);
         } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+            return $this->failure($e);
         }
 
         return response()->json([

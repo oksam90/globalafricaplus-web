@@ -2,6 +2,8 @@
 
 namespace App\Services\Payment;
 
+use App\Exceptions\GatewayException;
+
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -93,7 +95,7 @@ class PawaPayClient
     protected function http(): PendingRequest
     {
         if (!$this->isConfigured()) {
-            throw new RuntimeException('PawaPay n\'est pas configuré (PAWAPAY_API_TOKEN manquant).');
+            throw new GatewayException('PawaPay n\'est pas configuré (PAWAPAY_API_TOKEN manquant).');
         }
 
         return Http::withToken($this->token)
@@ -130,7 +132,7 @@ class PawaPayClient
                 'body'    => $this->redact($body),
             ]);
 
-            throw new RuntimeException(
+            throw new GatewayException(
                 'PawaPay ' . $context . ' — HTTP ' . $response->status() . ' : '
                 . (data_get($body, 'failureReason.failureMessage')
                     ?? data_get($body, 'message')
