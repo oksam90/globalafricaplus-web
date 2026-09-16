@@ -118,5 +118,19 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('contact-form', static fn (Request $request) =>
             Limit::perHour(5)->by((string) $request->ip())
         );
+
+        // Connexion et inscription — les seules routes publiques qui valident
+        // un secret. Sans limite, le bourrage d'identifiants s'exécute à la
+        // vitesse du réseau, et l'inscription en masse pollue la base.
+        //
+        // Double seau : par identifiant (email + IP) pour gêner l'attaque
+        // ciblée sur un compte, et par IP seule pour casser le balayage d'une
+        // liste d'emails depuis une même source.
+        RateLimiter::for('auth-attempts', static fn (Request $request) => [
+            Limit::perMinute(5)->by(
+                strtolower((string) $request->input('email')) . '|' . $request->ip()
+            ),
+            Limit::perMinute(20)->by((string) $request->ip()),
+        ]);
     }
 }

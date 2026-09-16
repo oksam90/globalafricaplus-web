@@ -860,8 +860,14 @@ class AdminController extends Controller
      */
     public function uploadImage(Request $request): JsonResponse
     {
+        // SVG volontairement exclu : c'est un document XML, pas une image
+        // inerte. Il peut porter <script> ou des gestionnaires d'événements,
+        // et il est servi depuis /storage — donc depuis NOTRE origine. Un SVG
+        // téléversé devient alors du XSS stocké sur le domaine principal, avec
+        // accès aux cookies de session. `nosniff` n'y change rien : le type
+        // annoncé EST image/svg+xml, et le navigateur l'exécute à ce titre.
         $request->validate([
-            'file'   => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,svg,gif', 'max:4096'],
+            'file'   => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
             'folder' => ['nullable', 'string', 'max:60'],
         ]);
 

@@ -52,11 +52,25 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Webhook endpoints are server-to-server (no CSRF token).
+        //
+        // ATTENTION — toute NOUVELLE route de webhook doit être ajoutée ici.
+        // Ces routes vivent dans routes/web.php et héritent donc du groupe
+        // `web`, CSRF compris : un appel entrant sans jeton reçoit 419 AVANT
+        // d'atteindre l'application. L'oubli est silencieux côté plateforme —
+        // c'est l'émetteur qui voit l'échec, pas nos journaux.
+        //
+        // Régression constatée le 16/09/2026 : PawaPay et DocuSeal ont été
+        // intégrés sans mettre cette liste à jour. Leurs rappels étaient
+        // rejetés en 419 depuis leur mise en service, masqués par les chemins
+        // de repli (vérification au retour du paiement, bouton « Rafraîchir »).
         $middleware->validateCsrfTokens(except: [
             'api/v1/webhooks/paydunya',
             'api/webhooks/paydunya',
             'api/v1/webhooks/smile-identity',
             'api/v1/webhooks/yousign',
+            'api/v1/webhooks/pawapay',
+            'api/v1/webhooks/pawapay/*',
+            'api/v1/webhooks/docuseal',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

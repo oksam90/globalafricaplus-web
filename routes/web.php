@@ -136,9 +136,12 @@ Route::prefix('api')->group(function () {
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::get('/projects/{slug}', [ProjectController::class, 'show']);
 
-    // Auth
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    // Auth — limitées : ce sont les seules routes publiques qui valident un
+    // secret, donc la cible naturelle du bourrage d'identifiants.
+    Route::post('/auth/register', [AuthController::class, 'register'])
+        ->middleware('throttle:auth-attempts');
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:auth-attempts');
     Route::get('/auth/me', [AuthController::class, 'me']);
 
     // Authenticated
